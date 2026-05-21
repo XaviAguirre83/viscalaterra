@@ -1,0 +1,29 @@
+{
+  "name": "viscalaterra",
+  "version": "0.1.0",
+  "description": "Plataforma de descoberta de Catalunya",
+  "type": "module",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "prepare": "husky",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "lint-staged": {
+    "**/*.{js,ts,vue,json,md}": "prettier --write --ignore-unknown"
+  },
+  "keywords": [],
+  "author": "Xavier Tecnic",
+  "license": "AGPL-3.0-only",
+  "devDependencies": {
+    "@commitlint/cli": "^20.5.3",
+    "@commitlint/config-conventional": "^20.5.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.8.3"
+  }
+}
