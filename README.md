@@ -11,14 +11,14 @@ Plataforma de descoberta de Catalunya. El mapa actua com a filtre geogràfic: l'
 
 ## Stack tecnològic
 
-| Capa | Tecnologia |
-|------|-----------|
-| Frontend | Vue 3 + Vite + TypeScript |
-| Backend | Node.js + Express + TypeScript |
-| Base de dades | PostgreSQL + PostGIS |
-| Mapa | Leaflet.js |
-| Temps real | Socket.io |
-| Contenidors | Docker + Docker Compose |
+| Capa          | Tecnologia                     |
+| ------------- | ------------------------------ |
+| Frontend      | Vue 3 + Vite + TypeScript      |
+| Backend       | Node.js + Express + TypeScript |
+| Base de dades | PostgreSQL + PostGIS           |
+| Mapa          | Leaflet.js                     |
+| Temps real    | Socket.io                      |
+| Contenidors   | Docker + Docker Compose        |
 
 ## Posada en marxa (desenvolupament local)
 

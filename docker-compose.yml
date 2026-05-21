@@ -8,12 +8,12 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - '${DB_PORT:-5432}:5432'
     volumes:
       - db_data:/var/lib/postgresql/data
       - ./infra/db/init:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER} -d ${DB_NAME}']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -26,7 +26,7 @@ services:
     restart: unless-stopped
     env_file: .env
     ports:
-      - "${PORT:-3000}:3000"
+      - '${PORT:-3000}:3000'
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -43,7 +43,7 @@ services:
     environment:
       - VITE_API_URL=${VITE_API_URL}
     ports:
-      - "5173:5173"
+      - '5173:5173'
     volumes:
       - ./frontend:/app
       - /app/node_modules
