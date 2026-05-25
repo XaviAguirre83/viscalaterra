@@ -97,9 +97,17 @@ npm workspaces: `frontend` y `backend` son paquetes independientes. Las dependen
 ### Frontend
 
 - **Entrada**: `frontend/src/main.ts` monta la app Vue, registra Pinia y Vue Router.
-- **Estado global**: Pinia (`frontend/src/stores/`). Cada dominio funcional tiene su propio store.
+- **Estado global**: Pinia (`frontend/src/stores/`). Stores activos:
+  - `territoris` — árbol provincial completo (província → comarca → municipi), municipis seleccionats, helpers de selección global y per-provincia (distinción necesaria por las comarques transfrontereres)
+  - `mapa` — zoom y centro del mapa Leaflet
+  - `filtres` — pestaña activa del panel On?/Què?/Quan?
+- **Temàtica de colors**: `frontend/src/theme/provincies.ts` — paleta central por provincia (Barcelona=rojo, Girona=verde, Lleida=oro, Tarragona=azul). Usada tanto por Leaflet (L.PathOptions) como por el panel On? (CSS custom properties `--prov-base`, `--prov-parcial`, etc.).
 - **Routing**: Vue Router con `createWebHistory`. Las rutas se definen en `frontend/src/router/index.ts`.
 - **Componentes**: `frontend/src/components/` para reutilizables, `frontend/src/views/` para páginas completas (una por ruta).
+
+### Comarques transfrontereres
+
+Berguedà, Cerdanya, Osona i Selva tenen municipis a dues províncies. El model les gestiona correctament: la BD no guarda `provincia_codi` a la taula `comarques` — cada municipi porta la seva pròpia província. L'API agrupa per `(provincia_codi, comarca_codi)`, de manera que la mateixa comarca apareix a dues columnes del panell On?, cadascuna amb els seus municipis. El store té mètodes duals: `estatSeleccioComarca` (global, per al mapa) i `estatSeleccioComarcaEnProvincia` (per columna, per al panell).
 
 ### Backend
 

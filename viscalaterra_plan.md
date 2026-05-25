@@ -36,9 +36,12 @@ Cada pestaña expande un desplegable hacia abajo al hacer clic.
 
 ### On?
 
-- Desplegable de 4 columnas, una por Província
-- Dentro de cada Província: sus Comarques desplegables
-- Dentro de cada Comarca: sus Municipis (checkboxes)
+- Desplegable de 4 columnas, una por Província (ordre: Barcelona · Girona · Lleida · Tarragona)
+- Cada columna usa els colors temàtics de la seva província (veure secció "Temàtica de colors")
+- Dentro de cada Província: sus Comarques, cada una amb un botó expandir/col·lapsar (▶/▼)
+  - Per defecte totes col·lapsades; expandir una no col·lapsa les altres
+- Dentro de cada Comarca: sus Municipis com a botons de selecció (sense checkboxes)
+  - Cantonades adaptatives: rodones a dalt al primer, rodones a baix a l'últim, totes rodones si és únic
 - Las Veguerías NO aparecen en este desplegable (poco conocidas popularmente)
   pero sí aparecen como capa visual en el mapa y como opción en el selector del mapa
 - Sincronización bidireccional con el mapa:
@@ -343,6 +346,38 @@ Expansió del mapa i la base de dades per incloure la Comunitat Valenciana i les
 - Descartada per ara, condicionada a l'èxit de la versió Catalunya
 - Implicació tècnica: les capes GeoJSON haurien d'ampliar-se; l'arquitectura modular ho hauria de permetre sense grans refactors
 - Ja mencionat a la secció d'Idiomes com a visió a llarg termini
+
+## Temàtica de colors per província
+
+Cada província té una paleta pròpia usada tant al mapa (Leaflet) com al panell On?:
+
+| Província | Codi | Color base | Ús                            |
+| --------- | ---- | ---------- | ----------------------------- |
+| Barcelona | `08` | Vermell    | `#c4382e` / parcial `#f0d4d2` |
+| Girona    | `17` | Verd       | `#2d6a2d` / parcial `#dfe9d0` |
+| Lleida    | `25` | Or         | `#b8860b` / parcial `#f0e3b8` |
+| Tarragona | `43` | Blau       | `#2b6cb0` / parcial `#d4e2f3` |
+
+- **Base**: selecció total (fons ple, text blanc)
+- **Parcial**: selecció parcial (fons suau, text de color `vora`)
+- **Hover**: previsualització al passar el cursor (fons molt suau)
+- Les comarques al mapa (zoom intermedi) usen verd neutre perquè poden abastar dues províncies
+
+### Comarques transfrontereres (partides entre dues províncies)
+
+Quatre comarques tenen municipis a dues províncies diferents. Al panell On? apareixen
+a les dues columnes corresponents, cadascuna amb només els seus municipis d'aquella província:
+
+| Comarca  | Província A | Província B                                   |
+| -------- | ----------- | --------------------------------------------- |
+| Berguedà | Barcelona   | Lleida (Gósol, únic municipi)                 |
+| Cerdanya | Girona      | Lleida                                        |
+| Osona    | Barcelona   | Girona                                        |
+| Selva    | Girona      | Barcelona (Fogars de la Selva, únic municipi) |
+
+Seleccionar la comarca des del mapa (nivell comarca) selecciona **tots** els seus municipis
+independentment de la província. Seleccionar des del panell On? afecta només els municipis
+de la columna de la província on es fa clic.
 
 ## Notas y decisiones
 
