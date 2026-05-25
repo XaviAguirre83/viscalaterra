@@ -55,6 +55,22 @@ function toggleMunicipi(m: Municipi) {
   const ja = territoris.municipisSeleccionats.has(m.codi)
   territoris.seleccionaMunicipi(m.codi, !ja)
 }
+
+function comptadorComarca(comarca: Comarca): { sel: number; total: number } {
+  const total = comarca.municipis.length
+  const sel = comarca.municipis.filter((m) => territoris.municipisSeleccionats.has(m.codi)).length
+  return { sel, total }
+}
+
+function comptadorProvincia(provincia: Provincia): { sel: number; total: number } {
+  const total = provincia.comarques.reduce((acc, c) => acc + c.municipis.length, 0)
+  const sel = provincia.comarques.reduce(
+    (acc, c) =>
+      acc + c.municipis.filter((m) => territoris.municipisSeleccionats.has(m.codi)).length,
+    0
+  )
+  return { sel, total }
+}
 </script>
 
 <template>
@@ -74,7 +90,12 @@ function toggleMunicipi(m: Municipi) {
           :class="`estat--${territoris.estatSeleccioProvincia(provincia.codi)}`"
           @click="toggleProvincia(provincia)"
         >
-          {{ provincia.nom }}
+          <span>{{ provincia.nom }}</span>
+          <span v-if="comptadorProvincia(provincia).sel > 0" class="comptador"
+            >[{{ comptadorProvincia(provincia).sel }}/{{
+              comptadorProvincia(provincia).total
+            }}]</span
+          >
         </button>
 
         <div class="comarques">
@@ -102,6 +123,9 @@ function toggleMunicipi(m: Municipi) {
               >
                 {{ comarca.nom }}
               </button>
+              <span v-if="comptadorComarca(comarca).sel > 0" class="comptador"
+                >[{{ comptadorComarca(comarca).sel }}/{{ comptadorComarca(comarca).total }}]</span
+              >
             </div>
 
             <div v-show="estaExpandida(provincia.codi, comarca.codi)" class="municipis">
@@ -173,6 +197,10 @@ button:focus-visible {
 
 /* ── Provincia ─────────────────────────────────────────── */
 .provincia__btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
   font-size: 1rem;
   font-weight: 700;
   color: var(--prov-vora);
@@ -208,6 +236,7 @@ button:focus-visible {
   align-items: center;
   border-radius: 6px;
   margin-bottom: 2px;
+  padding-right: 12px;
   transition:
     background 0.12s,
     color 0.12s;
@@ -302,6 +331,16 @@ button:focus-visible {
 .municipi__btn.estat--total:hover {
   background: var(--prov-vora);
   color: var(--prov-contrast);
+}
+
+/* ── Comptador [sel/total] ─────────────────────────────── */
+.comptador {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .estat-carregant,
