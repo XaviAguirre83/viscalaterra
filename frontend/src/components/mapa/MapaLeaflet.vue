@@ -13,6 +13,26 @@ let mapa: L.Map | null = null
 const capesGeoJSON: Record<string, L.GeoJSON> = {}
 let mascaraCatalunya: L.Polygon | null = null
 
+// Extensió geogràfica real de Catalunya (SW → NE)
+const LIMITS_CATALUNYA: [[number, number], [number, number]] = [
+  [40.51, 0.15],
+  [42.86, 3.33],
+]
+
+// Calcula els maxBounds dinàmicament afegint mig viewport als límits reals de Catalunya,
+// de manera que el centre del mapa sempre pugui arribar a qualsevol cantonada del territori
+// independentment de la mida de la finestra o el nivell de zoom.
+function actualitzaMaxBounds() {
+  if (!mapa) return
+  const b = mapa.getBounds()
+  const halfLat = (b.getNorth() - b.getSouth()) / 2
+  const halfLng = (b.getEast() - b.getWest()) / 2
+  mapa.setMaxBounds([
+    [LIMITS_CATALUNYA[0][0] - halfLat, LIMITS_CATALUNYA[0][1] - halfLng],
+    [LIMITS_CATALUNYA[1][0] + halfLat, LIMITS_CATALUNYA[1][1] + halfLng],
+  ])
+}
+
 // ── Estils ─────────────────────────────────────────────────────────────────
 
 const ESTIL_BASE: L.PathOptions = {
@@ -247,9 +267,15 @@ function actualitzaEstilsTotes() {
 // ── Lifecycle ──────────────────────────────────────────────────────────────
 
 onMounted(() => {
+  const zoomInicial = mapaStore.zoom
+  const centreInicial = mapaStore.centre
+
   mapa = L.map('mapa-contenidor', {
-    center: mapaStore.centre,
-    zoom: mapaStore.zoom,
+    center: centreInicial,
+    zoom: zoomInicial,
+    minZoom: zoomInicial,
+    dragging: false,
+    maxBoundsViscosity: 1.0,
     zoomControl: true,
   })
 
@@ -258,10 +284,41 @@ onMounted(() => {
     maxZoom: 19,
   }).addTo(mapa)
 
+  // Si el viewport cobreix tot Catalunya, el mapa és immòbil (no cal desplaçar-se).
+  // Si no ho cobreix (finestra petita), permet el desplaçament per accedir a tot el territori.
+  function actualitzaDragging() {
+    if (!mapa) return
+    if (mapa.getZoom() > zoomInicial) {
+      mapa.dragging.enable()
+      return
+    }
+    const b = mapa.getBounds()
+    const [sw, ne] = LIMITS_CATALUNYA
+    const cobreixTot =
+      b.getSouth() <= sw[0] && b.getNorth() >= ne[0] && b.getWest() <= sw[1] && b.getEast() >= ne[1]
+    if (cobreixTot) {
+      mapa.dragging.disable()
+    } else {
+      mapa.dragging.enable()
+    }
+  }
+
   mapa.on('zoomend', () => {
     const zoom = mapa!.getZoom()
     mapaStore.actualitzaZoom(zoom)
     carregaCapa(zoom)
+    actualitzaMaxBounds()
+    if (zoom <= zoomInicial) {
+      mapa!.setView(centreInicial, zoomInicial, { animate: true })
+      mapa!.once('moveend', actualitzaDragging)
+    } else {
+      mapa!.dragging.enable()
+    }
+  })
+
+  mapa.on('resize', () => {
+    actualitzaMaxBounds()
+    actualitzaDragging()
   })
 
   mapa.on('moveend', () => {
@@ -271,6 +328,8 @@ onMounted(() => {
 
   carregaMascaraCatalunya()
   carregaCapa(mapaStore.zoom)
+  actualitzaMaxBounds()
+  actualitzaDragging()
 })
 
 onUnmounted(() => {

@@ -142,6 +142,15 @@ La divisió seleccionada al selector pren sempre el Nivell 1. La resta es distri
 | Comarca   | Comarca   | Província | Vegueria | Municipi |
 | Municipi  | Municipi  | Província | Vegueria | Comarca  |
 
+### Restriccions de navegació del mapa
+
+- **Zoom mínim**: el nivell de zoom inicial (Catalunya sencera visible) és el límit màxim de zoom out — no es pot allunyar més.
+- **Re-centrat automàtic**: en fer zoom out fins al mínim, el mapa torna suaument a la posició inicial (Catalunya centrada), per evitar quedar-se descentrat després d'haver navegat.
+- **Desplaçament adaptatiu al zoom mínim**:
+  - Si la finestra del navegador és prou gran per veure tot Catalunya → el mapa és immòbil (no cal desplaçar-se).
+  - Si la finestra és petita (part de Catalunya queda fora de la pantalla) → el desplaçament s'habilita per poder accedir a tot el territori.
+- **Límits de desplaçament dinàmics**: els límits de moviment es calculen automàticament en funció de la mida del viewport i el zoom actual, garantint sempre que qualsevol punt de Catalunya sigui accessible sense poder anar a territoris irrellevants. Es recalculen en cada canvi de zoom i en redimensionar la finestra.
+
 ### Panell de context geogràfic (part superior central del mapa)
 
 Mostra la jerarquia completa des del nivell superior fins al nivell actiu al selector:

@@ -105,6 +105,15 @@ npm workspaces: `frontend` y `backend` son paquetes independientes. Las dependen
 - **Routing**: Vue Router con `createWebHistory`. Las rutas se definen en `frontend/src/router/index.ts`.
 - **Componentes**: `frontend/src/components/` para reutilizables, `frontend/src/views/` para páginas completas (una por ruta).
 
+### Navegació del mapa (restriccions i límits)
+
+`MapaLeaflet.vue` implementa una lògica de navegació adaptativa:
+
+- **`minZoom`**: igual al zoom inicial (8). No es pot fer zoom out més enllà de la vista inicial de Catalunya.
+- **Re-centrat**: en tornar al zoom mínim (`zoomend` amb `zoom <= zoomInicial`), el mapa fa `setView` al `centreInicial` (capturat una sola vegada a `onMounted`, no el del store que s'actualitza en moure's).
+- **`maxBounds` dinàmics** (`actualitzaMaxBounds`): en lloc d'uns bounds estàtics, es calculen com `LIMITS_CATALUNYA` (bbox real) + mig viewport en graus. Això garanteix que el centre del mapa sempre pugui arribar a qualsevol cantonada del territori independentment de la mida de la finestra o el zoom. Es recalcula a `zoomend` i `resize`.
+- **Dragging adaptatiu** (`actualitzaDragging`): al zoom mínim, comprova si el viewport cobreix tot `LIMITS_CATALUNYA`. Si sí → `dragging.disable()` (immòbil, tot és visible). Si no → `dragging.enable()` (finestra petita, cal poder desplaçar-se). Als zooms superiors, sempre habilitat.
+
 ### Comarques transfrontereres
 
 Berguedà, Cerdanya, Osona i Selva tenen municipis a dues províncies. El model les gestiona correctament: la BD no guarda `provincia_codi` a la taula `comarques` — cada municipi porta la seva pròpia província. L'API agrupa per `(provincia_codi, comarca_codi)`, de manera que la mateixa comarca apareix a dues columnes del panell On?, cadascuna amb els seus municipis. El store té mètodes duals: `estatSeleccioComarca` (global, per al mapa) i `estatSeleccioComarcaEnProvincia` (per columna, per al panell).
