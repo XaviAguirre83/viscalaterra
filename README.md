@@ -48,4 +48,4 @@ Les contribucions són benvingudes. Consulta [CONTRIBUTING.md](CONTRIBUTING.md) 
 
 ## Llicència
 
-[AGPL-3.0](LICENSE) — Xavier Tecnic, 2026
+[AGPL-3.0](LICENSE) — Xavi Aguirre Torres, 2026
