@@ -83,8 +83,8 @@ Interfaz del Quan? _(pendiente de definir: selector de días, calendario, rango 
 - Mapa de Catalunya con selector de división territorial (radio button, una sola activa):
   - Província (4)
   - Vegueria (8)
-  - Comarca (42)
-  - Municipi (+900)
+  - Comarca (43)
+  - Municipi (947)
 - Cuatro estados visuales por zona:
   1. **Normal** — zona no seleccionada
   2. **Hover** — zona bajo el cursor
@@ -174,17 +174,52 @@ Muestra la jerarquía completa desde el nivel superior hasta el nivel activo en 
 
 ## Best practices i ways of working
 
-| Pràctica         | Eina                                                | Equivalent embedded  |
-| ---------------- | --------------------------------------------------- | -------------------- |
-| Unit testing     | Vitest                                              | TDD amb CUnit/Unity  |
-| E2E / BDD        | Playwright + Cucumber.js                            | BDD                  |
-| Linting          | ESLint + Prettier                                   | Linters              |
-| Anàlisi estàtic  | TypeScript                                          | Anàlisi estàtic de C |
-| Pre-commit hooks | Husky + lint-staged                                 | Pre-commit hooks     |
-| CI/CD pipelines  | GitHub Actions _(pendent de decisió de plataforma)_ | Pipelines CI/CD      |
-| Code coverage    | Integrat a Vitest                                   | Coverage             |
+| Pràctica         | Eina                     | Equivalent embedded  |
+| ---------------- | ------------------------ | -------------------- |
+| Unit testing     | Vitest                   | TDD amb CUnit/Unity  |
+| E2E / BDD        | Playwright + Cucumber.js | BDD                  |
+| Linting          | ESLint + Prettier        | Linters              |
+| Anàlisi estàtic  | TypeScript               | Anàlisi estàtic de C |
+| Pre-commit hooks | Husky + lint-staged      | Pre-commit hooks     |
+| CI/CD pipelines  | GitHub Actions           | Pipelines CI/CD      |
+| Code coverage    | Integrat a Vitest        | Coverage             |
 
 **Principi:** totes aquestes pràctiques es configuren des del primer commit, no s'afegeixen després. Si s'incorporen col·laboradors, les regles ja estan definides i automatitzades.
+
+## Infraestructura i desplegament
+
+### Filosofia
+
+Docker garanteix que l'entorn de producció sigui idèntic al de desenvolupament local. El `docker-compose.yml` que s'usa en local és el mateix que s'usa al servidor. Això elimina la clàssica bretxa "funciona a la meva màquina".
+
+### Fases de desplegament
+
+**Fase 1 — Desenvolupament (ara, cost 0€)**
+Tot corre en local amb `docker compose up`. No cal cap servidor extern.
+
+**Fase 2 — MVP / primers col·laboradors (cost 0€)**
+| Peça | Servei | Notes |
+|---|---|---|
+| Frontend | Vercel o Cloudflare Pages | Deploy automàtic des de GitHub. Domini personalitzat inclòs. |
+| Backend | Render (tier gratuït) | S'adorm als 15 min sense peticions. Vàlid per a proves. |
+| Base de dades | Supabase (tier gratuït) | PostgreSQL + PostGIS. 500 MB. Suficient per a les geodades. |
+
+**Fase 3 — Producció real (quan hi hagi usuaris, ~4-6€/mes)**
+Un VPS (Hetzner, OVH o similar) on s'executa exactament el mateix `docker compose up` que en local. Tota la complexitat ja està resolta al `docker-compose.yml`. La migració des de la Fase 2 és trivial.
+
+### Domini
+
+`viscalaterra.cat` — ja adquirit. S'apunta al servidor de la fase activa.
+
+### Costos estimats a llarg termini
+
+| Concepte                  | Cost            |
+| ------------------------- | --------------- |
+| Domini `viscalaterra.cat` | ~10-15€/any     |
+| Repositori GitHub         | 0€              |
+| Frontend (Vercel)         | 0€              |
+| VPS quan calgui           | ~4-6€/mes       |
+| **Total fase producció**  | **~60-85€/any** |
 
 ## Repositori i control de versions
 
@@ -311,4 +346,20 @@ Expansió del mapa i la base de dades per incloure la Comunitat Valenciana i les
 
 ## Notas y decisiones
 
-_(aquí iremos apuntando decisiones importantes y su razonamiento)_
+### Geodades (maig 2026)
+
+- **Font:** ICC — divisions-administratives-v2r1, data de referència 2024-01-18. Llicència CC BY 4.0.
+- **Estratègia híbrida:** els fitxers GeoJSON es serveixen estàtics des del backend per a Leaflet (ja estan optimitzats en 6 resolucions). PostGIS s'usa per a les queries territorials (quin municipi pertany a quina comarca, filtres de cerca). No es regenera GeoJSON des de PostGIS.
+- **GeoJSON fora del repo:** 115 MB de fitxers no es guarden a Git. Es descarreguen manualment i s'importen amb `npm run seed`. Documentat a `backend/data/README.md`.
+- **Resolució per zoom:** 1000000 (zoom ≤8) → 500000 → 250000 → 100000 → 5000 (zoom ≥15). El backend tria el fitxer automàticament segons el zoom que envia el frontend.
+
+### API (maig 2026)
+
+- `GET /api/territoris/arbre` — retorna l'arbre complet (província → comarca → municipi) en una sola petició. El frontend el carrega a l'inici i navega localment sense més peticions.
+- `GET /api/geojson/:nivell?zoom=N` — GeoJSON per a Leaflet a la resolució adequada.
+- Endpoints de `llocs` (Què?) i `auth` dissenyats però no implementats encara.
+
+### Plataforma Git i estratègia de branques (maig 2026)
+
+- **Plataforma:** GitHub, repositori públic.
+- **Branques:** `main` (estable) → `develop` (integració) → `feature/*` / `fix/*`. PRs sempre cap a `develop`.

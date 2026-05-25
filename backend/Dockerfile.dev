@@ -3,7 +3,9 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+
+# Instala les dependències ignorant el workspace arrel
+RUN npm install --ignore-scripts
 
 COPY . .
 

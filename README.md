@@ -31,13 +31,20 @@ cd viscalaterra
 cp .env.example .env
 # Edita .env amb els teus valors
 
-# 3. Aixeca l'entorn
+# 3. Baixa les geodades (ICC, divisions administratives v2r1)
+# Consulta backend/data/README.md per a les instruccions de descàrrega
+# Col·loca els fitxers a backend/data/geojson/
+
+# 4. Aixeca l'entorn
 docker compose up
+
+# 5. Importa les geodades a la base de dades (només el primer cop)
+cd backend && npm run seed
 ```
 
 ## Contribuir
 
-Les contribucions són benvingudes. Consulta [CONTRIBUTING.md](docs/CONTRIBUTING.md) per a les instruccions i el codi de conducta.
+Les contribucions són benvingudes. Consulta [CONTRIBUTING.md](CONTRIBUTING.md) per a les instruccions.
 
 ## Llicència
 

@@ -59,3 +59,13 @@ Thumbs.db
 # TypeScript
 # ================================
 *.tsbuildinfo
+
+# ================================
+# Geodades — no al repo (ICC, v2r1 2024-01-18)
+# ================================
+backend/data/geojson/
+
+# ================================
+# Documentació privada
+# ================================
+docs/ownership_document_viscalaterra.cat.pdf
