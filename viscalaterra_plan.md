@@ -1,13 +1,13 @@
-# Plan del Proyecto: viscalaterra.cat
+# Pla del Projecte: viscalaterra.cat
 
-## Descripción general
+## Descripció general
 
-Plataforma de descubrimiento de Catalunya. El mapa actúa como filtro geográfico:
-el usuario primero selecciona el territorio de interés (municipis, comarques, etc.)
-y luego busca contenido dentro de esa selección geográfica.
+Plataforma de descoberta de Catalunya. El mapa actua com a filtre geogràfic:
+l'usuari primer selecciona el territori d'interès (municipis, comarques, etc.)
+i després cerca contingut dins d'aquella selecció geogràfica.
 
-El mapa está construido con Leaflet.js. Catalunya aparece como región principal;
-el resto del territorio español en color más tenue (inspirado en meteo.cat).
+El mapa està construït amb Leaflet.js. Catalunya apareix com a regió principal;
+la resta del territori espanyol en color més tenue (inspirat en meteo.cat).
 
 ## Manifest / Esperit del projecte
 
@@ -25,135 +25,136 @@ el resto del territorio español en color más tenue (inspirado en meteo.cat).
 
 **Implicació tècnica important:** cal construir la plataforma amb i18n (internacionalització) des del primer dia, encara que inicialment només hi hagi català. Afegir-ho a posteriori és molt més costós que preveure-ho des de l'inici.
 
-## Público objetivo
+## Públic objectiu
 
-_(pendiente de definir)_
+_(pendent de definir)_
 
-## Barra de menú (encima del mapa)
+## Barra de menú (sobre el mapa)
 
-Tres pestañas principales: **On?** | **Què?** | **Quan?**
-Cada pestaña expande un desplegable hacia abajo al hacer clic.
+Tres pestanyes principals: **On?** | **Què?** | **Quan?**
+Cada pestanya expandeix un desplegable cap avall en fer clic.
 
 ### On?
 
-- Desplegable de 4 columnas, una por Província (ordre: Barcelona · Girona · Lleida · Tarragona)
+- Desplegable de 4 columnes, una per Província (ordre: Barcelona · Girona · Lleida · Tarragona)
 - Cada columna usa els colors temàtics de la seva província (veure secció "Temàtica de colors")
-- Dentro de cada Província: sus Comarques, cada una amb un botó expandir/col·lapsar (▶/▼)
+- Dins de cada Província: les seves Comarques, cada una amb un botó expandir/col·lapsar (▶/▼)
   - Per defecte totes col·lapsades; expandir una no col·lapsa les altres
-- Dentro de cada Comarca: sus Municipis com a botons de selecció (sense checkboxes)
+- Dins de cada Comarca: els seus Municipis com a botons de selecció (sense checkboxes)
   - Cantonades adaptatives: rodones a dalt al primer, rodones a baix a l'últim, totes rodones si és únic
-- Las Veguerías NO aparecen en este desplegable (poco conocidas popularmente)
-  pero sí aparecen como capa visual en el mapa y como opción en el selector del mapa
-- Sincronización bidireccional con el mapa:
-  - Seleccionar en el desplegable → se refleja en el mapa
-  - Seleccionar en el mapa → se refleja en el desplegable
-- La unidad de selección final siempre es el municipi (igual que en el mapa)
+  - Els municipis capital de comarca apareixen en negreta
+- Les Vegueries NO apareixen en aquest desplegable (poc conegudes popularment)
+  però sí apareixen com a capa visual al mapa i com a opció al selector del mapa
+- Sincronització bidireccional amb el mapa:
+  - Seleccionar al desplegable → es reflecteix al mapa
+  - Seleccionar al mapa → es reflecteix al desplegable
+- La unitat de selecció final sempre és el municipi (igual que al mapa)
 
 ### Què?
 
-Desplegable con grandes temas, cada uno con subtemas. Enfocado en **espacio público
-y equipamientos colectivos** (no negocios privados). El contenido proviene de fuentes
-de datos abiertos (Generalitat, ajuntaments, diputacions).
+Desplegable amb grans temes, cadascun amb subtemes. Enfocat en **espai públic
+i equipaments col·lectius** (no negocis privats). El contingut prové de fonts
+de dades obertes (Generalitat, ajuntaments, diputacions).
 
-Temas y subtemas iniciales (lista abierta):
+Temes i subtemes inicials (llista oberta):
 
-- **Esports**: pistas de fútbol, básquet, tenis, patinaje, ping-pong, skate park...
-- **Nens**: parcs infantils, toboganes, columpios...
+- **Esports**: pistes de futbol, bàsquet, tennis, patinatge, ping-pong, skate park...
+- **Nens**: parcs infantils, tobogans, gronxadors...
 - **Culinari**: mercats setmanals, fires culinàries...
-- **Activitats a l'aire lliure**: zones de picnic, merenderos, zones de barbacoa...
+- **Activitats a l'aire lliure**: zones de pícnic, merenderos, zones de barbacoa...
 - **Patrimoni**: castells, monuments...
 - **Natura i aventura**: 100 cims, rutes de muntanya, rutes de bici...
-- _(lista completamente abierta, el concepto puede pivotar)_
+- _(llista completament oberta, el concepte pot pivotar)_
 
 ### Quan?
 
-Tres naturalezas de contenido según temporalidad:
+Tres naturaleses de contingut segons temporalitat:
 
-- **Permanent**: siempre disponible (parc infantil, taula de ping-pong, castell...)
-  No requiere filtro temporal pero puede incluirse en cualquier búsqueda.
-- **Recurrent**: patrón repetitivo (mercat setmanal els dimarts, festa major cada agost...)
-  Filtrable por día de la semana o por fecha concreta.
-- **Puntual**: evento único con fecha concreta (fira, concert, activitat...)
-  Filtrable por rango de fechas.
+- **Permanent**: sempre disponible (parc infantil, taula de ping-pong, castell...)
+  No requereix filtre temporal però pot incloure's en qualsevol cerca.
+- **Recurrent**: patró repetitiu (mercat setmanal els dimarts, festa major cada agost...)
+  Filtrable per dia de la setmana o per data concreta.
+- **Puntual**: esdeveniment únic amb data concreta (fira, concert, activitat...)
+  Filtrable per rang de dates.
 
-Caso de uso típico: "Estic de vacances al Maresme del 15 al 22 de juliol,
-¿què passa a prop meu aquesta setmana?" → combina On? + Quan? + opcionalment Què?
+Cas d'ús típic: "Estic de vacances al Maresme del 15 al 22 de juliol,
+què passa a prop meu aquesta setmana?" → combina On? + Quan? + opcionalment Què?
 
-Interfaz del Quan? _(pendiente de definir: selector de días, calendario, rango de fechas...)_
+Interfície del Quan? _(pendent de definir: selector de dies, calendari, rang de dates...)_
 
-## Funcionalidades principales
+## Funcionalitats principals
 
-- Mapa de Catalunya con selector de división territorial (radio button, una sola activa):
+- Mapa de Catalunya amb selector de divisió territorial (ràdio button, una sola activa):
   - Província (4)
   - Vegueria (8)
   - Comarca (43)
   - Municipi (947)
-- Cuatro estados visuales por zona:
+- Quatre estats visuals per zona:
   1. **Normal** — zona no seleccionada
-  2. **Hover** — zona bajo el cursor
-  3. **Seleccionat** — territoire incluido en el filtro On? activo
-  4. **Resultat** — municipi que cumple todos los filtros tras ejecutar la cerca (color distintivo)
-- Los municipis "Seleccionat" que no coinciden con el resultado mantienen su color de selección (el filtro On? sigue activo)
-- Cada nivel tiene su propio GeoJSON (fuente: Institut Cartogràfic de Catalunya)
-- La unidad mínima de selección es siempre el **municipi**
-- Los niveles superiores (Província, Vegueria, Comarca) son atajos para seleccionar conjuntos de municipis
-- Clic sobre una división: toggle que selecciona/deselecciona todos los municipis que contiene
-- La selección respeta los límites exactos: si una comarca pertenece parcialmente a dos provincias,
-  seleccionar la provincia solo marca los municipis de esa comarca que le pertenecen
-  (ej. seleccionar Província Girona → Cerdanya queda parcialmente seleccionada)
-- Seleccionar directamente la Comarca Cerdanya sí marca todos sus municipis (Girona + Lleida)
-- Ejemplo de filtro refinado:
-  1. Selector Província → clic Barcelona → todos los municipis de Barcelona seleccionados
-  2. Selector Municipi → clic Barcelona ciutat + L'Hospitalet → se deseleccionan
-  3. Filtro resultante = todos los municipis de la província excepto esos dos
-- Las divisiones seleccionadas actuarán como filtros de búsqueda
+  2. **Hover** — zona sota el cursor
+  3. **Seleccionat** — territori inclòs al filtre On? actiu
+  4. **Resultat** — municipi que compleix tots els filtres en executar la cerca (color distintiu)
+- Els municipis "Seleccionat" que no coincideixen amb el resultat mantenen el seu color de selecció (el filtre On? segueix actiu)
+- Cada nivell té el seu propi GeoJSON (font: Institut Cartogràfic de Catalunya)
+- La unitat mínima de selecció és sempre el **municipi**
+- Els nivells superiors (Província, Vegueria, Comarca) són dreceres per seleccionar conjunts de municipis
+- Clic sobre una divisió: toggle que selecciona/deselecciona tots els municipis que conté
+- La selecció respecta els límits exactes: si una comarca pertany parcialment a dues províncies,
+  seleccionar la província només marca els municipis d'aquella comarca que li pertanyen
+  (ex. seleccionar Província Girona → Cerdanya queda parcialment seleccionada)
+- Seleccionar directament la Comarca Cerdanya sí marca tots els seus municipis (Girona + Lleida)
+- Exemple de filtre refinat:
+  1. Selector Província → clic Barcelona → tots els municipis de Barcelona seleccionats
+  2. Selector Municipi → clic Barcelona ciutat + L'Hospitalet → es deseleccionen
+  3. Filtre resultant = tots els municipis de la província excepte aquests dos
+- Les divisions seleccionades actuaran com a filtres de cerca
 
-## Cerca (búsqueda)
+## Cerca
 
-### Botón "Executar cerca"
+### Botó "Executar cerca"
 
-- Combina los tres filtros activos: On? + Què? + Quan?
-- Pinta de color **Resultat** los municipis que cumplen los criterios dentro del territorio seleccionado
-- Los criterios son **persistentes**: se puede modificar cualquier filtro y re-ejecutar sin perder el contexto
-- La lista de resultados aparece en un scroll list debajo del mapa con información adicional de cada resultado
+- Combina els tres filtres actius: On? + Què? + Quan?
+- Pinta de color **Resultat** els municipis que compleixen els criteris dins del territori seleccionat
+- Els criteris són **persistents**: es pot modificar qualsevol filtre i re-executar sense perdre el context
+- La llista de resultats apareix en un scroll list sota el mapa amb informació addicional de cada resultat
 
-### Botón "Netejar cerca"
+### Botó "Netejar cerca"
 
-- Resetea los tres filtros (On?, Què?, Quan?) completamente
-- El mapa vuelve al estado inicial (sin selecciones ni resultados)
-- _(Posible futura distinción entre reset parcial y total — pendiente de definir)_
+- Reinicia els tres filtres (On?, Què?, Quan?) completament
+- El mapa torna a l'estat inicial (sense seleccions ni resultats)
+- _(Possible futura distinció entre reset parcial i total — pendent de definir)_
 
-## Interactividad
+## Interactivitat
 
-### Sistema de niveles de líneas delimitantes
+### Sistema de nivells de línies delimitants
 
-- Nivel 1: 100% opacidad, 2px
-- Nivel 2: 75% opacidad, 1.5px
-- Nivel 3: 50% opacidad, 1px
-- Nivel 4: 25% opacidad, 0.5px
+- Nivell 1: 100% opacitat, 2px
+- Nivell 2: 75% opacitat, 1.5px
+- Nivell 3: 50% opacitat, 1px
+- Nivell 4: 25% opacitat, 0.5px
 
-La división seleccionada en el selector toma siempre Nivel 1. El resto se distribuyen así:
+La divisió seleccionada al selector pren sempre el Nivell 1. La resta es distribueixen així:
 
-| Selector  | Nivel 1   | Nivel 2   | Nivel 3  | Nivel 4  |
+| Selector  | Nivell 1  | Nivell 2  | Nivell 3 | Nivell 4 |
 | --------- | --------- | --------- | -------- | -------- |
 | Província | Província | Vegueria  | Comarca  | Municipi |
 | Vegueria  | Vegueria  | Província | Comarca  | Municipi |
 | Comarca   | Comarca   | Província | Vegueria | Municipi |
 | Municipi  | Municipi  | Província | Vegueria | Comarca  |
 
-### Panel de contexto geográfico (parte superior central del mapa)
+### Panell de context geogràfic (part superior central del mapa)
 
-Muestra la jerarquía completa desde el nivel superior hasta el nivel activo en el selector:
+Mostra la jerarquia completa des del nivell superior fins al nivell actiu al selector:
 
-| Selector  | Panel muestra (de arriba a abajo)               |
+| Selector  | Panell mostra (de dalt a baix)                  |
 | --------- | ----------------------------------------------- |
 | Província | Província                                       |
 | Vegueria  | Província(s) → Vegueria                         |
 | Comarca   | Província(s) → Vegueria → Comarca               |
 | Municipi  | Província(s) → Vegueria(s) → Comarca → Municipi |
 
-- Si una división pertenece a más de una unidad superior, se muestran todas (ej. Cerdanya → "Girona, Lleida")
-- Criterio de ordenación/representación cuando hay múltiples unidades superiores: _(pendiente, posiblemente por % de territorio)_
+- Si una divisió pertany a més d'una unitat superior, es mostren totes (ex. Cerdanya → "Girona, Lleida")
+- Criteri d'ordenació/representació quan hi ha múltiples unitats superiors: _(pendent, possiblement per % de territori)_
 
 ## Stack tecnològic
 
@@ -165,7 +166,7 @@ Muestra la jerarquía completa desde el nivel superior hasta el nivel activo en 
 | Base de dades | PostgreSQL + PostGIS | Relacional + suport natiu de dades geogràfiques           |
 | Mapa          | Leaflet.js           | Ja decidit                                                |
 | Temps real    | Socket.io            | Per al Trivial multijugador                               |
-| Autenticació  | JWT + bcrypt         | Control propi; migracle a servei extern si cal            |
+| Autenticació  | JWT + bcrypt         | Control propi; migrable a servei extern si cal            |
 | i18n          | i18next              | Frontend i backend comparteixen el mateix sistema         |
 
 ## Entorn de desenvolupament
@@ -175,7 +176,7 @@ Muestra la jerarquía completa desde el nivel superior hasta el nivel activo en 
 - **Contenidors:** Docker + Docker Compose — tot l'entorn definit en codi (PostgreSQL, Node, Vue). Facilita la col·laboració i l'onboarding de nous contribuïdors.
 - **Desenvolupament en local** fins a tenir una versió presentable. Migració a servidor dedicat posteriorment.
 
-## Best practices i ways of working
+## Bones pràctiques i forma de treballar
 
 | Pràctica         | Eina                     | Equivalent embedded  |
 | ---------------- | ------------------------ | -------------------- |
@@ -237,91 +238,91 @@ Un VPS (Hetzner, OVH o similar) on s'executa exactament el mateix `docker compos
 - `.env.example` al repo com a plantilla sense valors reals
 - Bones pràctiques de seguretat aplicades durant tot el desenvolupament (OWASP top 10, validació d'inputs, etc.)
 
-## Estructura de la página
+## Estructura de la pàgina
 
 ### Hero (franja superior)
 
-- Ocupa todo el ancho de la pantalla, altura de franja apaisada (no full viewport)
-- El mapa debe ser visible directamente debajo sin necesidad de hacer scroll
-- Contenido: pase de diapositivas de imágenes estáticas emblemáticas de Catalunya
-  - Paisajes: Montserrat, Pica d'Estats, Pedraforca, Montseny...
+- Ocupa tot l'ample de la pantalla, alçada de franja apaïsada (no full viewport)
+- El mapa ha de ser visible directament a sota sense necessitat de fer scroll
+- Contingut: passi de diapositives d'imatges estàtiques emblemàtiques de Catalunya
+  - Paisatges: Montserrat, Pica d'Estats, Pedraforca, Montseny...
   - Cultura popular: Castellers, Sardanes, Balls de Bastons, Trabucaires, Caga Tió, Castanyera, Correfocs, La Patum...
   - Patrimoni: Sagrada Família, Catedral de Girona, Amfiteatre de Tarragona...
-- Texto superpuesto: título del proyecto + claim ("Descobreix Catalunya" o similar)
-- Sin CTA de momento
+- Text superposat: títol del projecte + claim ("Descobreix Catalunya" o similar)
+- Sense CTA de moment
 
 ### Mapa + Cerca
 
-- Inmediatamente debajo del hero
-- Ver sección "Funcionalitats principals" y "Cerca"
+- Immediatament a sota del hero
+- Veure seccions "Funcionalitats principals" i "Cerca"
 
 ## Espai d'usuari
 
-### Registro y login
+### Registre i login
 
-Necesario para contribuir contenido y participar en el sistema de verificación.
+Necessari per contribuir contingut i participar en el sistema de verificació.
 
-### Contribución de contenido
+### Contribució de contingut
 
-Un usuario registrado puede aportar un elemento nuevo no existente en la base de datos (ej. pista de petanca, font d'aigua, pipican...). El elemento entra en estado **pendent de verificació** y no aparece en el mapa hasta alcanzar el umbral de confirmaciones.
+Un usuari registrat pot aportar un element nou no existent a la base de dades (ex. pista de petanca, font d'aigua, pipicà...). L'element entra en estat **pendent de verificació** i no apareix al mapa fins a assolir el llindar de confirmacions.
 
-### Sistema de verificación colectiva
+### Sistema de verificació col·lectiva
 
-Tres tipos de reporte que los usuarios pueden hacer sobre cualquier elemento:
+Tres tipus de reportatge que els usuaris poden fer sobre qualsevol element:
 
-- **Confirmar existència** — corroboran que el elemento existe y está activo
-- **Reportar canvi d'estat** — el elemento existe pero algo ha cambiado (la fuente no tiene agua, el parque está en obras...)
-- **Reportar que ja no existeix** — el elemento ha desaparecido (demolición, cambio de uso...)
+- **Confirmar existència** — corroboren que l'element existeix i està actiu
+- **Reportar canvi d'estat** — l'element existeix però alguna cosa ha canviat (la font no té aigua, el parc està en obres...)
+- **Reportar que ja no existeix** — l'element ha desaparegut (demolició, canvi d'ús...)
 
-Esto aplica tanto a **contenido de usuarios** como a **contenido de fuentes oficiales** (Generalitat, ajuntaments, diputacions). El contenido oficial es fiable por defecto pero puede ser refutado si un número suficiente de usuarios lo reporta.
+Això s'aplica tant al **contingut d'usuaris** com al **contingut de fonts oficials** (Generalitat, ajuntaments, diputacions). El contingut oficial és fiable per defecte però pot ser refutat si un nombre suficient d'usuaris ho reporta.
 
-**Umbral de verificación:** _(pendiente de definir — número mínimo de confirmaciones para que un elemento pase a visible o sea marcado como inactivo)_
+**Llindar de verificació:** _(pendent de definir — nombre mínim de confirmacions perquè un element passi a visible o sigui marcat com a inactiu)_
 
-### Sistema de reputación de usuarios
+### Sistema de reputació d'usuaris
 
-El peso de la verificación de un usuario no es igual para todos — depende de su historial de contribuciones correctas. Un usuario con muchas verificaciones acertadas tiene más peso que uno nuevo.
+El pes de la verificació d'un usuari no és igual per a tots — depèn del seu historial de contribucions correctes. Un usuari amb moltes verificacions encertades té més pes que un de nou.
 
-Aspectos a definir:
+Aspectes a definir:
 
-- _(Cómo se calcula la reputación)_
-- _(Si la reputación afecta al umbral necesario para verificar)_
-- _(Si hay roles diferenciados — usuario básico, verificador de confianza, moderador...)_
+- _(Com es calcula la reputació)_
+- _(Si la reputació afecta el llindar necessari per verificar)_
+- _(Si hi ha rols diferenciats — usuari bàsic, verificador de confiança, moderador...)_
 
 ## Arquitectura general
 
 **Un sol domini — `viscalaterra.cat`** amb múltiples seccions.
 
-Cerca, Jocs i Merchandising conviuen bajo el mismo dominio, comparten sistema de usuarios e identidad visual. El código es modular internamente (cada sección bien separada) aunque compartan el mismo deploy. Si en el futuro el shop crece, se puede externalizar a subdominio sin romper nada.
+Cerca, Jocs i Marxandatge conviuen sota el mateix domini, comparteixen sistema d'usuaris i identitat visual. El codi és modular internament (cada secció ben separada) tot i compartir el mateix deploy. Si en el futur la botiga creix, es pot externalitzar a subdomini sense trencar res.
 
 ### Seccions principals (barra de menú)
 
-**Cerca** — La funcionalidad principal. Mapa + filtres On?/Què?/Quan? + resultats.
+**Cerca** — La funcionalitat principal. Mapa + filtres On?/Què?/Quan? + resultats.
 
-**Jocs** — Juegos que reutilizan el mapa y el conocimiento de Catalunya. Mecánicas:
+**Jocs** — Jocs que reutilitzen el mapa i el coneixement de Catalunya. Mecàniques:
 
-- _Identificació territorial_: te dan un nombre → marcas en el mapa, o al revés. Aplicable a comarques, municipis, províncies, veguerías. El usuario puede acotar el territorio antes de jugar (ej. "solo municipis del Maresme").
-- _Localització de punts d'interès_: rius, muntanyes (100 cims), castells, parcs naturals... → los ubicas en el mapa, o al revés.
-- _Trivial de Catalunya_: preguntas de todo tipo sobre Catalunya. Modalidad multijugador online (jugar contra otros usuarios en tiempo real). _(Requiere infraestructura de tiempo real — WebSockets o similar)_
-- Modo invitado: se puede jugar sin registrarse, sin persistencia.
-- Usuario registrado: puntuaciones, progreso y rankings guardados.
+- _Identificació territorial_: et donen un nom → marques al mapa, o al revés. Aplicable a comarques, municipis, províncies, vegueries. L'usuari pot acotar el territori abans de jugar (ex. "només municipis del Maresme").
+- _Localització de punts d'interès_: rius, muntanyes (100 cims), castells, parcs naturals... → els ubiques al mapa, o al revés.
+- _Trivial de Catalunya_: preguntes de tot tipus sobre Catalunya. Modalitat multijugador online (jugar contra altres usuaris en temps real). _(Requereix infraestructura de temps real — WebSockets o similar)_
+- Mode convidat: es pot jugar sense registrar-se, sense persistència.
+- Usuari registrat: puntuacions, progrés i rànquings desats.
 
-**Agenda Cultural** — Vista especializada de Cerca, no sección independiente. Acceso rápido desde el menú, pero comparte base de datos y lógica con Cerca. Esencialmente es Cerca pre-filtrada por Què? → Cultura + Quan? → Puntual, con presentación orientada a calendario/eventos. Cualquier persona o colectivo puede anunciar un evento sin distinción entre profesional y amateur. Los municipis con eventos activos aparecen destacados en el mapa.
+**Agenda Cultural** — Vista especialitzada de Cerca, no secció independent. Accés ràpid des del menú, però comparteix base de dades i lògica amb Cerca. Essencialment és Cerca pre-filtrada per Què? → Cultura + Quan? → Puntual, amb presentació orientada a calendari/esdeveniments. Qualsevol persona o col·lectiu pot anunciar un esdeveniment sense distinció entre professional i amateur. Els municipis amb esdeveniments actius apareixen destacats al mapa.
 
-**Merchandising** — Venta de artículos de la marca. Integrado en el mismo dominio; si crece, candidato a externalizar (ej. Shopify en subdominio).
+**Marxandatge** — Venda d'articles de la marca. Integrat al mateix domini; si creix, candidat a externalitzar (ex. Shopify en subdomini).
 
-**Espai d'usuari** — Registro, login, perfil, contribuciones, reputación.
+**Espai d'usuari** — Registre, login, perfil, contribucions, reputació.
 
 ## Requisits de disseny
 
 ### Responsive (prioritat alta)
 
-La plataforma debe funcionar correctamente en:
+La plataforma ha de funcionar correctament en:
 
-- **Laptop** — experiencia completa
-- **Tablet** — adaptación del layout
-- **Smartphone** — prioritat màxima, el mapa és el element més complex d'adaptar
+- **Laptop** — experiència completa
+- **Tablet** — adaptació del layout
+- **Smartphone** — prioritat màxima, el mapa és l'element més complex d'adaptar
 
-El diseño debe pensarse mobile-first. La interacción con el mapa en táctil (pinch, tap, selección de municipis) requiere atención especial.
+El disseny s'ha de pensar mobile-first. La interacció amb el mapa en tàctil (pinch, tap, selecció de municipis) requereix atenció especial.
 
 ## Plans de futur
 
@@ -335,7 +336,7 @@ Un assistent d'intel·ligència artificial integrat a la plataforma per ajudar l
 - **Casos d'ús previstos:**
   - Cerca en llenguatge natural que es tradueix automàticament als filtres On?/Què?/Quan? ("vull anar a una piscina natural prop de Vic")
   - Assistent contextual del mapa ("quines fires hi ha a la Selva aquest mes?")
-  - Descubriment aleatori ("sorprèn-me amb alguna cosa a prop meu", amb geolocalització)
+  - Descobriment aleatori ("sorprèn-me amb alguna cosa a prop meu", amb geolocalització)
   - Possible presentadora del mòdul Jocs (trivial geogràfic amb personalitat pròpia)
 - **Integració tècnica:** Socket.io (ja al stack) + API de Claude amb streaming de respostes
 
@@ -379,7 +380,7 @@ Seleccionar la comarca des del mapa (nivell comarca) selecciona **tots** els seu
 independentment de la província. Seleccionar des del panell On? afecta només els municipis
 de la columna de la província on es fa clic.
 
-## Notas y decisiones
+## Notes i decisions
 
 ### Geodades (maig 2026)
 
@@ -398,3 +399,4 @@ de la columna de la província on es fa clic.
 
 - **Plataforma:** GitHub, repositori públic.
 - **Branques:** `main` (estable) → `develop` (integració) → `feature/*` / `fix/*`. PRs sempre cap a `develop`.
+- **Commits:** format Conventional Commits en català.

@@ -34,7 +34,7 @@ docker compose up
 - **Llenguatge:** TypeScript estricte, sense `any`
 - **Linting:** ESLint + Prettier (s'executa automàticament al pre-commit)
 - **Tests:** Tot el codi nou ha d'anar acompanyat de tests
-- **Commits:** Missatges en anglès, format [Conventional Commits](https://www.conventionalcommits.org/)
+- **Commits:** Missatges en català, format [Conventional Commits](https://www.conventionalcommits.org/)
 
 ## Reportar bugs
 
