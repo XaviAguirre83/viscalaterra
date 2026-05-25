@@ -114,6 +114,7 @@ function toggleMunicipi(m: Municipi) {
                   'estat--total': territoris.municipisSeleccionats.has(municipi.codi),
                   primer: idx === 0,
                   darrer: idx === comarca.municipis.length - 1,
+                  'cap-comarca': municipi.es_cap_comarca,
                 }"
                 @click="toggleMunicipi(municipi)"
               >
@@ -270,6 +271,10 @@ button:focus-visible {
   color: #444;
   padding: 4px 12px 4px 28px;
   border-radius: 0;
+}
+
+.municipi__btn.cap-comarca {
+  font-weight: 600;
 }
 
 .municipi__btn.primer {
