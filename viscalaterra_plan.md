@@ -142,6 +142,14 @@ La divisió seleccionada al selector pren sempre el Nivell 1. La resta es distri
 | Comarca   | Comarca   | Província | Vegueria | Municipi |
 | Municipi  | Municipi  | Província | Vegueria | Comarca  |
 
+### Selector de nivell territorial actiu (al mapa)
+
+El mapa mostra **sempre les 4 capes de divisió territorial visibles** (Província, Vegueria, Comarca, Municipi). Un control de radio buttons a la cantonada superior dreta permet triar quin nivell és el "Nivell 1":
+
+- El nivell actiu té el gruix de línia màxim, opacitat plena i és l'únic interactiu (hover, clic, selecció).
+- Els altres nivells reben gruix i opacitat decreixents (veure "Sistema de nivells de línies delimitants" més avall).
+- Clic sobre un polígon del nivell actiu selecciona/deselecciona tots els seus municipis (cascada cap a la unitat mínima). Per a Vegueries i Comarques transfrontereres, la selecció afecta tots els municipis del territori (independentment de la província).
+
 ### Restriccions de navegació del mapa
 
 - **Zoom mínim**: el nivell de zoom inicial (Catalunya sencera visible) és el límit màxim de zoom out — no es pot allunyar més.

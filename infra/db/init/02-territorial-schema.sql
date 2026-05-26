@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS municipis (
   es_cap_comarca BOOLEAN DEFAULT false,
   area_m2        NUMERIC,
   comarca_codi   CHAR(2) REFERENCES comarques(codi),
-  veguerla_codi  CHAR(2) REFERENCES vegueries(codi),
+  vegueria_codi  CHAR(2) REFERENCES vegueries(codi),
   provincia_codi CHAR(2) REFERENCES provincies(codi),
   geom           GEOMETRY(MULTIPOLYGON, 4326)
 );

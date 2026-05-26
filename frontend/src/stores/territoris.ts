@@ -1,9 +1,10 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import type { Provincia, Comarca, Municipi } from '@/types/territori'
+import type { ArbreTerritorial, Provincia, Comarca, Municipi, Vegueria } from '@/types/territori'
 
 export const useTerritorisStore = defineStore('territoris', () => {
   const arbre = ref<Provincia[] | null>(null)
+  const vegueries = ref<Vegueria[]>([])
   const carregant = ref(false)
   const error = ref<string | null>(null)
   const municipisSeleccionats = ref(new Set<string>())
@@ -15,7 +16,9 @@ export const useTerritorisStore = defineStore('territoris', () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/territoris/arbre`)
       if (!res.ok) throw new Error(`Error ${res.status}`)
-      arbre.value = await res.json()
+      const data = (await res.json()) as ArbreTerritorial
+      arbre.value = data.provincies
+      vegueries.value = data.vegueries
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Error desconegut'
     } finally {
@@ -61,6 +64,26 @@ export const useTerritorisStore = defineStore('territoris', () => {
     return provincia?.comarques.flatMap((c) => c.municipis) ?? []
   }
 
+  // Vegueries: agrupació territorial ortogonal a la divisió per províncies.
+  // Una vegueria pot abastar municipis de més d'una província (ex. Penedès).
+  const municipisPerVegueria = computed<Map<string, Municipi[]>>(() => {
+    const m = new Map<string, Municipi[]>()
+    arbre.value?.forEach((p) =>
+      p.comarques.forEach((c) =>
+        c.municipis.forEach((mu) => {
+          const llista = m.get(mu.vegueria_codi) ?? []
+          llista.push(mu)
+          m.set(mu.vegueria_codi, llista)
+        })
+      )
+    )
+    return m
+  })
+
+  function municipisDeVegueria(codiVegueria: string): Municipi[] {
+    return municipisPerVegueria.value.get(codiVegueria) ?? []
+  }
+
   function seleccionaMunicipi(codi: string, seleccionat: boolean) {
     seleccionat ? municipisSeleccionats.value.add(codi) : municipisSeleccionats.value.delete(codi)
   }
@@ -85,6 +108,10 @@ export const useTerritorisStore = defineStore('territoris', () => {
 
   function seleccionaProvincia(codiProvincia: string, seleccionat: boolean) {
     municipisDeProvincia(codiProvincia).forEach((m) => seleccionaMunicipi(m.codi, seleccionat))
+  }
+
+  function seleccionaVegueria(codiVegueria: string, seleccionat: boolean) {
+    municipisDeVegueria(codiVegueria).forEach((m) => seleccionaMunicipi(m.codi, seleccionat))
   }
 
   function netejaSeleccio() {
@@ -114,8 +141,13 @@ export const useTerritorisStore = defineStore('territoris', () => {
     return estatPerMunicipis(municipisDeProvincia(codiProvincia))
   }
 
+  function estatSeleccioVegueria(codiVegueria: string): 'cap' | 'parcial' | 'total' {
+    return estatPerMunicipis(municipisDeVegueria(codiVegueria))
+  }
+
   return {
     arbre,
+    vegueries,
     carregant,
     error,
     municipisSeleccionats,
@@ -125,9 +157,11 @@ export const useTerritorisStore = defineStore('territoris', () => {
     seleccionaComarca,
     seleccionaComarcaEnProvincia,
     seleccionaProvincia,
+    seleccionaVegueria,
     netejaSeleccio,
     estatSeleccioComarca,
     estatSeleccioComarcaEnProvincia,
     estatSeleccioProvincia,
+    estatSeleccioVegueria,
   }
 })

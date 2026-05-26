@@ -106,7 +106,7 @@ async function seedMunicipis(client: PoolClient) {
     const p = f.properties
     const esCapComarca = (p.NOMMUNI as string) === (p.CAPCOMAR as string)
     await client.query(
-      `INSERT INTO municipis (codi, nom, es_cap_comarca, area_m2, comarca_codi, veguerla_codi, provincia_codi, geom)
+      `INSERT INTO municipis (codi, nom, es_cap_comarca, area_m2, comarca_codi, vegueria_codi, provincia_codi, geom)
        VALUES ($1, $2, $3, $4, $5, $6, $7, ST_SetSRID(ST_GeomFromGeoJSON($8), 4326))
        ON CONFLICT (codi) DO NOTHING`,
       [

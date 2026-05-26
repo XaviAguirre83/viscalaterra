@@ -15,8 +15,9 @@ const router = Router()
 router.get('/arbre', async (_req, res) => {
   const client = await pool.connect()
   try {
-    const [provResult, comResult, munResult] = await Promise.all([
+    const [provResult, vegResult, comResult, munResult] = await Promise.all([
       client.query<{ codi: string; nom: string }>('SELECT codi, nom FROM provincies ORDER BY nom'),
+      client.query<{ codi: string; nom: string }>('SELECT codi, nom FROM vegueries ORDER BY nom'),
       client.query<{ codi: string; nom: string; cap: string }>(
         'SELECT codi, nom, cap FROM comarques ORDER BY nom'
       ),
@@ -25,9 +26,10 @@ router.get('/arbre', async (_req, res) => {
         nom: string
         es_cap_comarca: boolean
         comarca_codi: string
+        vegueria_codi: string
         provincia_codi: string
       }>(
-        'SELECT codi, nom, es_cap_comarca, comarca_codi, provincia_codi FROM municipis ORDER BY nom'
+        'SELECT codi, nom, es_cap_comarca, comarca_codi, vegueria_codi, provincia_codi FROM municipis ORDER BY nom'
       ),
     ])
 
@@ -67,7 +69,9 @@ router.get('/arbre', async (_req, res) => {
       return { codi: p.codi, nom: p.nom, comarques }
     })
 
-    res.json(arbre)
+    const vegueries = vegResult.rows.map((v) => ({ codi: v.codi, nom: v.nom }))
+
+    res.json({ provincies: arbre, vegueries })
   } finally {
     client.release()
   }

@@ -3,25 +3,195 @@ import { onMounted, onUnmounted, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useTerritorisStore } from '@/stores/territoris'
-import { useMapaStore } from '@/stores/mapa'
+import { useMapaStore, type NivellTerritorial } from '@/stores/mapa'
 import { temaPerProvincia, TEMA_NEUTRE } from '@/theme/provincies'
 
 const territoris = useTerritorisStore()
 const mapaStore = useMapaStore()
 
 let mapa: L.Map | null = null
-const capesGeoJSON: Record<string, L.GeoJSON> = {}
 let mascaraCatalunya: L.Polygon | null = null
 
-// Extensió geogràfica real de Catalunya (SW → NE)
+// Capes actualment visibles per nivell (al màxim, una per nivell).
+const capesActives: Record<NivellTerritorial, L.GeoJSON | null> = {
+  provincies: null,
+  vegueries: null,
+  comarques: null,
+  municipis: null,
+}
+// Cache de capes carregades per (nivell, resolució) — evita re-fetch en canviar zoom.
+const cacheLayers: Record<string, L.GeoJSON> = {}
+
+// ── Sistema de nivells ─────────────────────────────────────────────────────
+// El selector del mapa determina el "Nivell 1" (capa activa, interactiva, més
+// prominent). La resta de nivells es distribueixen segons la matriu del pla:
+//   Selector → ordre de prominència [Nivell 1, 2, 3, 4]
+const NIVELLS_ORDRE: Record<NivellTerritorial, NivellTerritorial[]> = {
+  provincies: ['provincies', 'vegueries', 'comarques', 'municipis'],
+  vegueries: ['vegueries', 'provincies', 'comarques', 'municipis'],
+  comarques: ['comarques', 'provincies', 'vegueries', 'municipis'],
+  municipis: ['municipis', 'provincies', 'vegueries', 'comarques'],
+}
+
+const ESTIL_NIVELL: Record<number, { weight: number; opacity: number }> = {
+  1: { weight: 2, opacity: 1.0 },
+  2: { weight: 1.5, opacity: 0.75 },
+  3: { weight: 1, opacity: 0.5 },
+  4: { weight: 0.5, opacity: 0.25 },
+}
+
+function nivellNumero(capa: NivellTerritorial): number {
+  return NIVELLS_ORDRE[mapaStore.nivellActiu].indexOf(capa) + 1
+}
+
+// ── Extracció de codis ─────────────────────────────────────────────────────
+
+interface InfoFeature {
+  codi: string
+  codiProvincia?: string
+}
+
+function codiDeFeature(
+  feature: GeoJSON.Feature | undefined,
+  nivell: NivellTerritorial
+): InfoFeature | null {
+  const props = feature?.properties
+  if (!props) return null
+  switch (nivell) {
+    case 'municipis':
+      return {
+        codi: String(props.CODIMUNI),
+        codiProvincia: props.CODIPROV ? String(props.CODIPROV) : undefined,
+      }
+    case 'comarques':
+      return { codi: String(props.CODICOMAR) }
+    case 'vegueries':
+      return { codi: String(props.CODIVEGUE) }
+    case 'provincies':
+      return { codi: String(props.CODIPROV), codiProvincia: String(props.CODIPROV) }
+  }
+}
+
+function estatSeleccioFeature(
+  info: InfoFeature,
+  nivell: NivellTerritorial
+): 'cap' | 'parcial' | 'total' {
+  switch (nivell) {
+    case 'municipis':
+      return territoris.municipisSeleccionats.has(info.codi) ? 'total' : 'cap'
+    case 'comarques':
+      return territoris.estatSeleccioComarca(info.codi)
+    case 'vegueries':
+      return territoris.estatSeleccioVegueria(info.codi)
+    case 'provincies':
+      return territoris.estatSeleccioProvincia(info.codi)
+  }
+}
+
+// ── Estils ─────────────────────────────────────────────────────────────────
+
+function estilPerFeature(
+  feature: GeoJSON.Feature | undefined,
+  nivell: NivellTerritorial
+): L.PathOptions {
+  const info = codiDeFeature(feature, nivell)
+  const num = nivellNumero(nivell)
+  const { weight, opacity } = ESTIL_NIVELL[num]!
+
+  // Estil base: vora gris segons nivell, sense farcit, no interactiu si no és la capa activa.
+  const esCapaActiva = nivell === mapaStore.nivellActiu
+  const baseEstil: L.PathOptions = {
+    color: '#555',
+    weight,
+    opacity,
+    fillOpacity: 0,
+    interactive: esCapaActiva,
+  }
+
+  if (!info || !esCapaActiva) return baseEstil
+
+  // Capa activa: pinta amb el color de selecció segons l'estat.
+  const estat = estatSeleccioFeature(info, nivell)
+  if (estat === 'cap') return baseEstil
+
+  const tema = info.codiProvincia ? temaPerProvincia(info.codiProvincia) : TEMA_NEUTRE
+  const total = estat === 'total'
+  return {
+    color: tema.vora,
+    weight,
+    opacity,
+    fillColor: total ? tema.base : tema.parcial,
+    fillOpacity: total ? 0.7 : 0.55,
+    interactive: true,
+  }
+}
+
+function estilHoverPerFeature(
+  feature: GeoJSON.Feature | undefined,
+  nivell: NivellTerritorial
+): L.PathOptions {
+  const info = codiDeFeature(feature, nivell)
+  if (!info) return {}
+
+  const num = nivellNumero(nivell)
+  const { opacity } = ESTIL_NIVELL[num]!
+  const tema = info.codiProvincia ? temaPerProvincia(info.codiProvincia) : TEMA_NEUTRE
+  const estaSeleccionat = estatSeleccioFeature(info, nivell) !== 'cap'
+
+  if (estaSeleccionat) {
+    return {
+      color: tema.vora,
+      weight: 3,
+      opacity,
+      fillOpacity: 0.85,
+    }
+  }
+
+  return {
+    color: tema.vora,
+    weight: 2.5,
+    opacity,
+    fillColor: tema.parcial,
+    fillOpacity: 0.55,
+  }
+}
+
+// ── Gestió de clic ─────────────────────────────────────────────────────────
+
+function gestionaClicFeature(feature: GeoJSON.Feature, nivell: NivellTerritorial) {
+  const info = codiDeFeature(feature, nivell)
+  if (!info) return
+  switch (nivell) {
+    case 'municipis': {
+      const ja = territoris.municipisSeleccionats.has(info.codi)
+      territoris.seleccionaMunicipi(info.codi, !ja)
+      break
+    }
+    case 'comarques': {
+      const total = territoris.estatSeleccioComarca(info.codi) === 'total'
+      territoris.seleccionaComarca(info.codi, !total)
+      break
+    }
+    case 'vegueries': {
+      const total = territoris.estatSeleccioVegueria(info.codi) === 'total'
+      territoris.seleccionaVegueria(info.codi, !total)
+      break
+    }
+    case 'provincies': {
+      const total = territoris.estatSeleccioProvincia(info.codi) === 'total'
+      territoris.seleccionaProvincia(info.codi, !total)
+      break
+    }
+  }
+}
+
+// ── Límits geogràfics del mapa ─────────────────────────────────────────────
+
 const LIMITS_CATALUNYA: [[number, number], [number, number]] = [
   [40.51, 0.15],
   [42.86, 3.33],
 ]
 
-// Calcula els maxBounds dinàmicament afegint mig viewport als límits reals de Catalunya,
-// de manera que el centre del mapa sempre pugui arribar a qualsevol cantonada del territori
-// independentment de la mida de la finestra o el nivell de zoom.
 function actualitzaMaxBounds() {
   if (!mapa) return
   const b = mapa.getBounds()
@@ -31,105 +201,6 @@ function actualitzaMaxBounds() {
     [LIMITS_CATALUNYA[0][0] - halfLat, LIMITS_CATALUNYA[0][1] - halfLng],
     [LIMITS_CATALUNYA[1][0] + halfLat, LIMITS_CATALUNYA[1][1] + halfLng],
   ])
-}
-
-// ── Estils ─────────────────────────────────────────────────────────────────
-
-const ESTIL_BASE: L.PathOptions = {
-  color: '#555',
-  weight: 1,
-  fillColor: '#c8d8a0',
-  fillOpacity: 0.4,
-}
-
-type CodiFeature = {
-  tipus: 'municipi' | 'comarca' | 'provincia'
-  codi: string
-  codiProvincia?: string
-}
-
-function codiDeFeature(feature: GeoJSON.Feature | undefined): CodiFeature | null {
-  const props = feature?.properties
-  if (!props) return null
-  if (props.CODIMUNI) {
-    return {
-      tipus: 'municipi',
-      codi: String(props.CODIMUNI),
-      codiProvincia: props.CODIPROV ? String(props.CODIPROV) : undefined,
-    }
-  }
-  if (props.CODICOMAR) return { tipus: 'comarca', codi: String(props.CODICOMAR) }
-  if (props.CODIPROV) {
-    return {
-      tipus: 'provincia',
-      codi: String(props.CODIPROV),
-      codiProvincia: String(props.CODIPROV),
-    }
-  }
-  return null
-}
-
-function estilSelecciotat(codiProvincia: string | undefined, total: boolean): L.PathOptions {
-  const t = codiProvincia ? temaPerProvincia(codiProvincia) : TEMA_NEUTRE
-  return {
-    color: t.vora,
-    weight: total ? 2 : 1.5,
-    fillColor: total ? t.base : t.parcial,
-    fillOpacity: total ? 0.7 : 0.55,
-  }
-}
-
-function esSeleccionatFeature(info: CodiFeature): boolean {
-  if (info.tipus === 'municipi') return territoris.municipisSeleccionats.has(info.codi)
-  if (info.tipus === 'comarca') return territoris.estatSeleccioComarca(info.codi) !== 'cap'
-  return territoris.estatSeleccioProvincia(info.codi) !== 'cap'
-}
-
-function estilPerFeature(feature: GeoJSON.Feature | undefined): L.PathOptions {
-  const info = codiDeFeature(feature)
-  if (!info) return ESTIL_BASE
-
-  if (info.tipus === 'municipi') {
-    if (!territoris.municipisSeleccionats.has(info.codi)) return ESTIL_BASE
-    return estilSelecciotat(info.codiProvincia, true)
-  }
-
-  if (info.tipus === 'provincia') {
-    const estat = territoris.estatSeleccioProvincia(info.codi)
-    if (estat === 'cap') return ESTIL_BASE
-    return estilSelecciotat(info.codiProvincia, estat === 'total')
-  }
-
-  // Comarca: a aquest nivell de zoom no sabem la provincia (les transfrontereres
-  // tindrien dues). Usem el color neutre verd.
-  const estat = territoris.estatSeleccioComarca(info.codi)
-  if (estat === 'cap') return ESTIL_BASE
-  return estilSelecciotat(undefined, estat === 'total')
-}
-
-function estilHoverPerFeature(feature: GeoJSON.Feature | undefined): L.PathOptions {
-  const info = codiDeFeature(feature)
-  if (!info) return { weight: 2, fillOpacity: 0.7 }
-
-  const tema = info.codiProvincia ? temaPerProvincia(info.codiProvincia) : TEMA_NEUTRE
-
-  // Si ja està seleccionat, mantenim el fillColor actual i només subratllem
-  // la vora i augmentem l'opacitat per donar èmfasi.
-  if (esSeleccionatFeature(info)) {
-    return {
-      color: tema.vora,
-      weight: 2.5,
-      fillOpacity: 0.85,
-    }
-  }
-
-  // Si no està seleccionat, mostrem una previsualització amb el to suau de la provincia.
-  return {
-    color: tema.vora,
-    weight: 2,
-    fillColor: tema.parcial,
-    fillOpacity: 0.6,
-  }
 }
 
 // ── Màscara: destaca Catalunya, atenua la resta del món ───────────────────
@@ -143,17 +214,12 @@ async function carregaMascaraCatalunya() {
 
   const dades = (await res.json()) as GeoJSON.FeatureCollection
 
-  // Construïm un polígon: anell exterior = món sencer, anell interior = Catalunya.
-  // L'anell interior es renderitza com a forat → tot el que queda fora de Catalunya
-  // queda cobert per la màscara semitransparent.
-  // Leaflet vol coordenades [lat, lng], mentre que GeoJSON les guarda com [lng, lat].
   const anellMon: L.LatLngExpression[] = [
     [-90, -180],
     [-90, 180],
     [90, 180],
     [90, -180],
   ]
-
   const forats: L.LatLngExpression[][] = []
   const aLatLng = (pos: GeoJSON.Position): L.LatLngTuple => [pos[1]!, pos[0]!]
   for (const feature of dades.features) {
@@ -175,9 +241,24 @@ async function carregaMascaraCatalunya() {
   }).addTo(mapa)
 }
 
-// ── Resolució per zoom (ha de coincidir amb el backend) ────────────────────
+// ── Resolució per nivell i zoom ────────────────────────────────────────────
+// Cada nivell territorial té un rang sensat de resolucions:
+// - Provincies/Vegueries: territoris grans, no cal màxim detall mai.
+// - Comarques: detall mitjà.
+// - Municipis: rang complet, fins a màxim detall a zoom alts.
 
-function resolucioPerZoom(zoom: number): number {
+function resolucioPerCapa(nivell: NivellTerritorial, zoom: number): number {
+  if (nivell === 'provincies' || nivell === 'vegueries') {
+    if (zoom >= 11) return 250000
+    return 1000000
+  }
+  if (nivell === 'comarques') {
+    if (zoom >= 13) return 100000
+    if (zoom >= 11) return 250000
+    if (zoom >= 9) return 500000
+    return 1000000
+  }
+  // municipis
   if (zoom >= 15) return 5000
   if (zoom >= 13) return 100000
   if (zoom >= 11) return 250000
@@ -185,83 +266,118 @@ function resolucioPerZoom(zoom: number): number {
   return 1000000
 }
 
-function nivellPerZoom(zoom: number): string {
-  if (zoom >= 11) return 'municipis'
-  if (zoom >= 9) return 'comarques'
-  return 'provincies'
-}
+// ── Càrrega de capes ───────────────────────────────────────────────────────
 
-// ── Càrrega de GeoJSON ─────────────────────────────────────────────────────
-
-async function carregaCapa(zoom: number) {
+async function carregaCapa(nivell: NivellTerritorial, zoom: number) {
   if (!mapa) return
 
-  const nivell = nivellPerZoom(zoom)
-  const resolucio = resolucioPerZoom(zoom)
+  const resolucio = resolucioPerCapa(nivell, zoom)
   const clau = `${nivell}-${resolucio}`
 
-  if (capesGeoJSON[clau]) {
-    // Ja carregada: assegurem que és visible i la resta oculta
-    Object.entries(capesGeoJSON).forEach(([k, capa]) => {
-      if (k === clau) mapa!.addLayer(capa)
-      else mapa!.removeLayer(capa)
+  let capa = cacheLayers[clau]
+  if (!capa) {
+    const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+    const res = await fetch(`${apiUrl}/api/geojson/${nivell}?zoom=${zoom}`)
+    if (!res.ok) return
+    const dades = await res.json()
+
+    capa = L.geoJSON(dades, {
+      style: (feature) => estilPerFeature(feature, nivell),
+      onEachFeature(feature, layer) {
+        const pathLayer = layer as L.Path
+        layer.on({
+          mouseover() {
+            if (nivell !== mapaStore.nivellActiu) return
+            pathLayer.setStyle(estilHoverPerFeature(feature, nivell))
+          },
+          mouseout() {
+            if (nivell !== mapaStore.nivellActiu) return
+            pathLayer.setStyle(estilPerFeature(feature, nivell))
+          },
+          click() {
+            if (nivell !== mapaStore.nivellActiu) return
+            gestionaClicFeature(feature, nivell)
+          },
+        })
+      },
     })
-    return
+    cacheLayers[clau] = capa
   }
 
-  const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
-  const res = await fetch(`${apiUrl}/api/geojson/${nivell}?zoom=${zoom}`)
-  if (!res.ok) return
-
-  const dades = await res.json()
-
-  // Oculta les capes anteriors
-  Object.values(capesGeoJSON).forEach((capa) => mapa!.removeLayer(capa))
-
-  const capa = L.geoJSON(dades, {
-    style: (feature) => estilPerFeature(feature),
-    onEachFeature(feature, layer) {
-      const pathLayer = layer as L.Path
-      layer.on({
-        mouseover() {
-          pathLayer.setStyle(estilHoverPerFeature(feature))
-        },
-        mouseout() {
-          pathLayer.setStyle(estilPerFeature(feature))
-        },
-        click() {
-          gestionaClicFeature(feature)
-        },
-      })
-    },
-  }).addTo(mapa!)
-
-  capesGeoJSON[clau] = capa
+  const anterior = capesActives[nivell]
+  if (anterior && anterior !== capa) {
+    mapa.removeLayer(anterior)
+  }
+  if (!mapa.hasLayer(capa)) {
+    capa.addTo(mapa)
+  }
+  capesActives[nivell] = capa
 }
 
-function gestionaClicFeature(feature: GeoJSON.Feature) {
-  const info = codiDeFeature(feature)
-  if (!info) return
+async function carregaTotesCapes(zoom: number) {
+  const nivells: NivellTerritorial[] = ['provincies', 'vegueries', 'comarques', 'municipis']
+  await Promise.all(nivells.map((n) => carregaCapa(n, zoom)))
+  ordenaZIndexCapes()
+}
 
-  if (info.tipus === 'municipi') {
-    const ja = territoris.municipisSeleccionats.has(info.codi)
-    territoris.seleccionaMunicipi(info.codi, !ja)
-  } else if (info.tipus === 'comarca') {
-    const total = territoris.estatSeleccioComarca(info.codi) === 'total'
-    territoris.seleccionaComarca(info.codi, !total)
-  } else {
-    const total = territoris.estatSeleccioProvincia(info.codi) === 'total'
-    territoris.seleccionaProvincia(info.codi, !total)
-  }
+// Z-order: de més gran (fons) a més petit (front), perquè les vores dels
+// territoris més petits siguin visibles per sobre dels farcits dels més grans.
+function ordenaZIndexCapes() {
+  capesActives.provincies?.bringToBack()
+  capesActives.vegueries?.bringToFront()
+  capesActives.comarques?.bringToFront()
+  capesActives.municipis?.bringToFront()
 }
 
 function actualitzaEstilsTotes() {
-  Object.values(capesGeoJSON).forEach((capa) => {
-    capa.eachLayer((layer) => {
-      const geoLayer = layer as L.Path & { feature?: GeoJSON.Feature }
-      if (geoLayer.feature) geoLayer.setStyle(estilPerFeature(geoLayer.feature))
+  ;(Object.entries(capesActives) as Array<[NivellTerritorial, L.GeoJSON | null]>).forEach(
+    ([nivell, capa]) => {
+      capa?.eachLayer((layer) => {
+        const geoLayer = layer as L.Path & { feature?: GeoJSON.Feature }
+        if (geoLayer.feature) geoLayer.setStyle(estilPerFeature(geoLayer.feature, nivell))
+      })
+    }
+  )
+}
+
+// ── Selector de nivell (control Leaflet) ───────────────────────────────────
+
+const ETIQUETES_NIVELL: Record<NivellTerritorial, string> = {
+  provincies: 'Província',
+  vegueries: 'Vegueria',
+  comarques: 'Comarca',
+  municipis: 'Municipi',
+}
+
+function creaSelectorNivell(): L.Control {
+  const control = new L.Control({ position: 'topright' })
+  control.onAdd = () => {
+    const div = L.DomUtil.create('div', 'leaflet-bar selector-nivell')
+    div.innerHTML = `
+      <div class="selector-nivell__titol">Nivell territorial</div>
+      ${(['provincies', 'vegueries', 'comarques', 'municipis'] as NivellTerritorial[])
+        .map(
+          (n) => `
+        <label class="selector-nivell__opcio">
+          <input type="radio" name="nivell-territorial" value="${n}" ${
+            n === mapaStore.nivellActiu ? 'checked' : ''
+          } />
+          <span>${ETIQUETES_NIVELL[n]}</span>
+        </label>`
+        )
+        .join('')}
+    `
+    L.DomEvent.disableClickPropagation(div)
+    L.DomEvent.disableScrollPropagation(div)
+    div.addEventListener('change', (e) => {
+      const target = e.target as HTMLInputElement
+      if (target.name === 'nivell-territorial') {
+        mapaStore.defineixNivellActiu(target.value as NivellTerritorial)
+      }
     })
-  })
+    return div
+  }
+  return control
 }
 
 // ── Lifecycle ──────────────────────────────────────────────────────────────
@@ -284,8 +400,8 @@ onMounted(() => {
     maxZoom: 19,
   }).addTo(mapa)
 
-  // Si el viewport cobreix tot Catalunya, el mapa és immòbil (no cal desplaçar-se).
-  // Si no ho cobreix (finestra petita), permet el desplaçament per accedir a tot el territori.
+  creaSelectorNivell().addTo(mapa)
+
   function actualitzaDragging() {
     if (!mapa) return
     if (mapa.getZoom() > zoomInicial) {
@@ -306,7 +422,7 @@ onMounted(() => {
   mapa.on('zoomend', () => {
     const zoom = mapa!.getZoom()
     mapaStore.actualitzaZoom(zoom)
-    carregaCapa(zoom)
+    carregaTotesCapes(zoom)
     actualitzaMaxBounds()
     if (zoom <= zoomInicial) {
       mapa!.setView(centreInicial, zoomInicial, { animate: true })
@@ -327,7 +443,7 @@ onMounted(() => {
   })
 
   carregaMascaraCatalunya()
-  carregaCapa(mapaStore.zoom)
+  carregaTotesCapes(mapaStore.zoom)
   actualitzaMaxBounds()
   actualitzaDragging()
 })
@@ -337,10 +453,19 @@ onUnmounted(() => {
   mapa = null
 })
 
-// Quan la selecció canvia des del selector On?, actualitza els colors del mapa
+// Quan la selecció canvia des del panell On?, re-aplica colors a totes les capes.
 watch(
   () => territoris.municipisSeleccionats.size,
   () => actualitzaEstilsTotes()
+)
+
+// Quan el nivell actiu canvia, re-aplica estils i recoloca el z-order.
+watch(
+  () => mapaStore.nivellActiu,
+  () => {
+    actualitzaEstilsTotes()
+    ordenaZIndexCapes()
+  }
 )
 </script>
 
@@ -353,5 +478,45 @@ watch(
   flex: 1;
   min-height: 0;
   width: 100%;
+}
+</style>
+
+<style>
+/* Estils del control selector de nivell — sense scope perquè L.DomUtil
+   crea l'element fora de l'àmbit del component Vue. */
+.selector-nivell {
+  background: white;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
+}
+
+.selector-nivell__titol {
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #555;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+.selector-nivell__opcio {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  cursor: pointer;
+  color: #2c2c2c;
+}
+
+.selector-nivell__opcio:hover {
+  color: #000;
+}
+
+.selector-nivell__opcio input[type='radio'] {
+  margin: 0;
+  cursor: pointer;
 }
 </style>

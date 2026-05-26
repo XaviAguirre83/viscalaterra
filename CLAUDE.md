@@ -105,6 +105,18 @@ npm workspaces: `frontend` y `backend` son paquetes independientes. Las dependen
 - **Routing**: Vue Router con `createWebHistory`. Las rutas se definen en `frontend/src/router/index.ts`.
 - **Componentes**: `frontend/src/components/` para reutilizables, `frontend/src/views/` para páginas completas (una por ruta).
 
+### Sistema de 4 nivells territorials al mapa
+
+`MapaLeaflet.vue` carrega **simultàniament** les 4 capes territorials (provincies, vegueries, comarques, municipis). El `mapaStore.nivellActiu` determina quina és la "Nivell 1" (la més prominent i l'única interactiva).
+
+- **Matriu de prioritat** (`NIVELLS_ORDRE`): segons el nivell actiu, la resta de capes ocupen els nivells 2-4 amb gruix i opacitat de bordes decreixents (`ESTIL_NIVELL`): 2px/100% → 1.5px/75% → 1px/50% → 0.5px/25%.
+- **Interactivitat només al nivell actiu**: mouseover/mouseout/click només responen si `nivell === mapaStore.nivellActiu`. La resta de capes són purament visuals (referència). Es controla amb `interactive: false` a l'estil i amb una comprovació dins dels handlers (els listeners es vinculen sempre).
+- **Z-order**: provincies al fons, després vegueries, comarques i municipis al davant — així les vores dels territoris més petits són visibles per sobre dels farcits dels més grans.
+- **Resolució per capa** (`resolucioPerCapa`): provincies/vegueries mai van més enllà de 250000 (territoris grans, no cal màxim detall); comarques fins a 100000; municipis fins a 5000.
+- **Caché**: capes carregades reutilitzades en canviar de zoom (key `${nivell}-${resolucio}`).
+- **Selector**: control Leaflet `topright` amb 4 radio buttons que actualitzen `mapaStore.nivellActiu`. Un `watch` sobre aquest valor reaplica estils i reordena el z-order.
+- **Vegueries selectables**: el store té `seleccionaVegueria`/`estatSeleccioVegueria`. Una vegueria pot abastar diverses províncies (Penedès n'és exemple), així que la selecció visual usa colors neutres (no temàtics per província).
+
 ### Navegació del mapa (restriccions i límits)
 
 `MapaLeaflet.vue` implementa una lògica de navegació adaptativa:

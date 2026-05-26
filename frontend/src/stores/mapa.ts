@@ -5,9 +5,12 @@ import { defineStore } from 'pinia'
 const ZOOM_INICIAL = 8
 const CENTRE_INICIAL: [number, number] = [41.708, 1.738]
 
+export type NivellTerritorial = 'provincies' | 'vegueries' | 'comarques' | 'municipis'
+
 export const useMapaStore = defineStore('mapa', () => {
   const zoom = ref(ZOOM_INICIAL)
   const centre = ref<[number, number]>(CENTRE_INICIAL)
+  const nivellActiu = ref<NivellTerritorial>('provincies')
 
   function actualitzaZoom(nouZoom: number) {
     zoom.value = nouZoom
@@ -22,5 +25,17 @@ export const useMapaStore = defineStore('mapa', () => {
     if (nouZoom !== undefined) zoom.value = nouZoom
   }
 
-  return { zoom, centre, actualitzaZoom, actualitzaCentre, volaA }
+  function defineixNivellActiu(nivell: NivellTerritorial) {
+    nivellActiu.value = nivell
+  }
+
+  return {
+    zoom,
+    centre,
+    nivellActiu,
+    actualitzaZoom,
+    actualitzaCentre,
+    volaA,
+    defineixNivellActiu,
+  }
 })
