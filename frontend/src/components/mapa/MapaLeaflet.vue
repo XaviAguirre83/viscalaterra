@@ -4,7 +4,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useTerritorisStore } from '@/stores/territoris'
 import { useMapaStore, type NivellTerritorial } from '@/stores/mapa'
-import { temaPerProvincia, TEMA_NEUTRE } from '@/theme/provincies'
+import { temaPerProvincia, temaPerVegueria, TEMA_NEUTRE } from '@/theme/provincies'
 
 const territoris = useTerritorisStore()
 const mapaStore = useMapaStore()
@@ -49,6 +49,7 @@ function nivellNumero(capa: NivellTerritorial): number {
 interface InfoFeature {
   codi: string
   codiProvincia?: string
+  codiVegueria?: string
 }
 
 function codiDeFeature(
@@ -66,10 +67,22 @@ function codiDeFeature(
     case 'comarques':
       return { codi: String(props.CODICOMAR) }
     case 'vegueries':
-      return { codi: String(props.CODIVEGUE) }
+      return {
+        codi: String(props.CODIVEGUE),
+        codiVegueria: String(props.CODIVEGUE),
+      }
     case 'provincies':
       return { codi: String(props.CODIPROV), codiProvincia: String(props.CODIPROV) }
   }
+}
+
+// Retorna el tema cromàtic adequat per a una feature, respectant la jerarquia:
+// província > vegueria > neutre. Les comarques restaran neutres fins que
+// implementem la seva taula de provincies dominants.
+function temaDeInfo(info: InfoFeature): ReturnType<typeof temaPerProvincia> {
+  if (info.codiProvincia) return temaPerProvincia(info.codiProvincia)
+  if (info.codiVegueria) return temaPerVegueria(info.codiVegueria)
+  return TEMA_NEUTRE
 }
 
 function estatSeleccioFeature(
@@ -175,7 +188,7 @@ function estilPerFeature(
   if (nivell === 'municipis') {
     const estat = estatSeleccioFeature(info, 'municipis')
     if (estat === 'cap') return baseEstil
-    const tema = info.codiProvincia ? temaPerProvincia(info.codiProvincia) : TEMA_NEUTRE
+    const tema = temaDeInfo(info)
     const total = estat === 'total'
     return {
       color: tema.vora,
@@ -191,7 +204,7 @@ function estilPerFeature(
   if (esCapaActiva) {
     const estat = estatSeleccioFeature(info, nivell)
     if (estat !== 'cap') {
-      const tema = info.codiProvincia ? temaPerProvincia(info.codiProvincia) : TEMA_NEUTRE
+      const tema = temaDeInfo(info)
       return {
         ...baseEstil,
         color: tema.vora,
@@ -213,7 +226,7 @@ function estilHoverPerFeature(
 
   const num = nivellNumero(nivell)
   const { opacity } = ESTIL_NIVELL[num]!
-  const tema = info.codiProvincia ? temaPerProvincia(info.codiProvincia) : TEMA_NEUTRE
+  const tema = temaDeInfo(info)
 
   // Municipis: farcit intens en hover (única capa amb farcit persistent a selecció).
   if (nivell === 'municipis') {
@@ -238,7 +251,7 @@ function estilHoverPerFeature(
     weight: 2.5,
     opacity: 1,
     fillColor: tema.parcial,
-    fillOpacity: 0.25,
+    fillOpacity: 0.55,
   }
 }
 

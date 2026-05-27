@@ -101,7 +101,7 @@ npm workspaces: `frontend` y `backend` son paquetes independientes. Las dependen
   - `territoris` — árbol provincial completo (província → comarca → municipi), municipis seleccionats, helpers de selección global y per-provincia (distinción necesaria por las comarques transfrontereres)
   - `mapa` — zoom y centro del mapa Leaflet
   - `filtres` — pestaña activa del panel On?/Què?/Quan?
-- **Temàtica de colors**: `frontend/src/theme/provincies.ts` — paleta central por provincia (Barcelona=rojo, Girona=verde, Lleida=oro, Tarragona=azul). Usada tanto por Leaflet (L.PathOptions) como por el panel On? (CSS custom properties `--prov-base`, `--prov-parcial`, etc.).
+- **Temàtica de colors**: `frontend/src/theme/provincies.ts` — paleta central per província i per vegueria, usada tant per Leaflet (`L.PathOptions`) com pel panell On? (CSS custom properties `--prov-base`, `--prov-parcial`, etc.). Vegeu la secció "Temàtica de colors" més avall.
 - **Routing**: Vue Router con `createWebHistory`. Las rutas se definen en `frontend/src/router/index.ts`.
 - **Componentes**: `frontend/src/components/` para reutilizables, `frontend/src/views/` para páginas completas (una por ruta).
 
@@ -110,12 +110,34 @@ npm workspaces: `frontend` y `backend` son paquetes independientes. Las dependen
 `MapaLeaflet.vue` carrega **simultàniament** les 4 capes territorials (provincies, vegueries, comarques, municipis). El `mapaStore.nivellActiu` determina quina és la "Nivell 1" (la més prominent i l'única interactiva).
 
 - **Matriu de prioritat** (`NIVELLS_ORDRE`): segons el nivell actiu, la resta de capes ocupen els nivells 2-4 amb gruix i opacitat de bordes decreixents (`ESTIL_NIVELL`): 2px/100% → 1.5px/75% → 1px/50% → 0.5px/25%.
-- **Interactivitat només al nivell actiu**: mouseover/mouseout/click només responen si `nivell === mapaStore.nivellActiu`. La resta de capes són purament visuals (referència). Es controla amb `interactive: false` a l'estil i amb una comprovació dins dels handlers (els listeners es vinculen sempre).
-- **Z-order**: provincies al fons, després vegueries, comarques i municipis al davant — així les vores dels territoris més petits són visibles per sobre dels farcits dels més grans.
-- **Resolució per capa** (`resolucioPerCapa`): provincies/vegueries mai van més enllà de 250000 (territoris grans, no cal màxim detall); comarques fins a 100000; municipis fins a 5000.
+- **Resolució per capa** (`resolucioPerCapa`): provincies/vegueries mai van més enllà de 250000; comarques fins a 100000; municipis fins a 5000.
 - **Caché**: capes carregades reutilitzades en canviar de zoom (key `${nivell}-${resolucio}`).
-- **Selector**: control Leaflet `topright` amb 4 radio buttons que actualitzen `mapaStore.nivellActiu`. Un `watch` sobre aquest valor reaplica estils i reordena el z-order.
-- **Vegueries selectables**: el store té `seleccionaVegueria`/`estatSeleccioVegueria`. Una vegueria pot abastar diverses províncies (Penedès n'és exemple), així que la selecció visual usa colors neutres (no temàtics per província).
+- **Selector**: control Leaflet `topright` amb 4 radio buttons que actualitzen `mapaStore.nivellActiu`.
+
+#### Sistema de panes i interactivitat
+
+Cada capa territorial viu en el seu propi **pane Leaflet** (`PANE_NOMS`), amb z-index fix (`PANE_Z_INDEX`: 410 provincies → 440 municipis). Els panes garanteixen el z-order sense `bringToFront/Back`.
+
+La interactivitat es gestiona exclusivament via CSS, **no** via l'opció `interactive` de Leaflet (que en la v1.9.4 no es pot canviar amb `setStyle` un cop creat el layer):
+
+- El pane actiu rep la classe CSS `.territori-actiu`.
+- CSS: `.leaflet-pane[class*='leaflet-territori-'] path.leaflet-interactive { pointer-events: none }` — tots els paths inactius ignoren events.
+- CSS: `.territori-actiu path.leaflet-interactive { pointer-events: fill }` — el pane actiu respon a tota l'àrea interior del polígon, fins i tot amb `fillOpacity: 0` (amb `visiblePainted` l'interior no respondria).
+- L'especificitat de les regles és (0,3,1) i (0,4,1), superiors a la regla de Leaflet `.leaflet-pane > svg path.leaflet-interactive` (0,2,2) que posa `pointer-events: auto`.
+- Els handlers `mouseover/mouseout/click` comproven igualment `if (nivell !== mapaStore.nivellActiu) return` com a seguretat addicional.
+
+#### Selecció visual al mapa
+
+**Únicament la capa de municipis mostra farcit de color.** Les capes superiors (comarca, vegueria, província) mantenen sempre `fillOpacity: 0` — les seves línies delimitadores es veuen, però l'àrea interior mai es pinta. La selecció es visualitza exclusivament als municipis individuals que formen part del territori seleccionat, independentment del nivell selector actiu. Així, fent zoom out des d'una selecció de 3 municipis del Maresme, es veuen exactament aquells 3 municipis pintats.
+
+Opacitats:
+
+| Estat                                   | `fillOpacity`                              |
+| --------------------------------------- | ------------------------------------------ |
+| Municipi seleccionat                    | 0.70                                       |
+| Municipi en hover                       | 0.55 (no seleccionat) / 0.85 (seleccionat) |
+| Comarca/Vegueria/Província en hover     | 0.55 (feedback visual, no persisteix)      |
+| Qualsevol capa no seleccionada en repòs | 0                                          |
 
 ### Navegació del mapa (restriccions i límits)
 
@@ -150,6 +172,39 @@ fix/*         ← correcciones de bugs (sale de develop o main)
 
 El CI corre en push a `main` y `develop`, y en PRs hacia ambas. Para contribuir: rama desde `develop` → PR hacia `develop` → merge cuando CI pase.
 
+### Temàtica de colors
+
+`frontend/src/theme/provincies.ts` exporta tres elements principals:
+
+**`TEMA_PROVINCIA`** — paleta per província (usada per municipis i per la capa de provincies):
+
+| Província | Codi | Color             |
+| --------- | ---- | ----------------- |
+| Barcelona | `08` | Vermell `#c4382e` |
+| Girona    | `17` | Verd `#2d6a2d`    |
+| Lleida    | `25` | Or `#b8860b`      |
+| Tarragona | `43` | Blau `#2b6cb0`    |
+
+**`TEMA_VEGUERIA`** — paleta pròpia per a cada vegueria. Les vegueries no segueixen els límits provincials, per tant cada una té un color derivat del seu territori:
+
+| Codi | Vegueria                   | Color                   | Criteri                                |
+| ---- | -------------------------- | ----------------------- | -------------------------------------- |
+| `01` | Metropolitana de Barcelona | Vermell                 | = província Barcelona                  |
+| `02` | Comarques de Girona        | Verd                    | = província Girona                     |
+| `03` | Comarques de Lleida        | Or                      | = província Lleida                     |
+| `04` | Camp de Tarragona          | Blau                    | = província Tarragona                  |
+| `05` | Terres de l'Ebre           | Verd-blau `#1a7a7a`     | delta i costa sud                      |
+| `06` | Alt Pirineu i Aran         | Verd oliva `#6a7a2a`    | alta muntanya pirinenca                |
+| `07` | Catalunya Central          | Ambre `#c07020`         | entre Barcelona i Lleida               |
+| `08` | Penedès                    | Vi/magenta `#8b3a6e`    | vinyes, entre Barcelona i Tarragona    |
+| `00` | Val d'Aran                 | Blau lacustre `#2d7a8a` | entitat territorial singular pirinenca |
+
+**`TEMA_NEUTRE`** — color verd neutre. Usat per comarques (pendent de resoldre la taula de província dominant per comarca).
+
+Cada tema té els camps: `base` (selecció total), `parcial` (selecció parcial), `hover`, `contrast` (text sobre base) i `vora` (línia de delimitació).
+
+La funció `temaDeInfo(info)` a `MapaLeaflet.vue` centralitza la resolució del tema: `codiProvincia` → `temaPerProvincia`, `codiVegueria` → `temaPerVegueria`, cap dels dos → `TEMA_NEUTRE`.
+
 ## Decisiones de producto tomadas
 
 - La unidad mínima de selección es siempre el **municipi**
@@ -159,9 +214,11 @@ El CI corre en push a `main` y `develop`, y en PRs hacia ambas. Para contribuir:
 - Cuatro niveles de líneas delimitantes según opacidad/grosor (ver `viscalaterra_plan.md`)
 - Inspiración visual: meteo.cat (Catalunya destacada, resto de España en tenue)
 - Idioma principal de la interfaz: català
+- **Selecció visual al mapa**: únicament la capa de municipis mostra farcit de color; comarques, vegueries i províncies mantenen àrea transparent (sols es pinten les línies delimitadores)
 
 ## Pendiente de decidir
 
 - Público objetivo
 - Interfaz del Quan? (calendario, selector de días, rango de fechas…)
 - Criterio de ordenación cuando una división pertenece a múltiples unidades superiores
+- **Colors de comarques al mapa**: pendent de crear la taula estàtica `CODICOMAR → CODIPROV_DOMINANT` per a les 39 comarques d'una sola província i assignar la província dominant a les 4 transfrontereres (Berguedà→BCN, Cerdanya→GI, Osona→BCN, Selva→GI)
