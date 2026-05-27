@@ -35,9 +35,9 @@ const NIVELLS_ORDRE: Record<NivellTerritorial, NivellTerritorial[]> = {
 
 const ESTIL_NIVELL: Record<number, { weight: number; opacity: number }> = {
   1: { weight: 2, opacity: 1.0 },
-  2: { weight: 1.5, opacity: 0.75 },
-  3: { weight: 1, opacity: 0.5 },
-  4: { weight: 0.5, opacity: 0.25 },
+  2: { weight: 1.5, opacity: 0.6 },
+  3: { weight: 1, opacity: 0.4 },
+  4: { weight: 0.5, opacity: 0.4 },
 }
 
 function nivellNumero(capa: NivellTerritorial): number {
@@ -88,6 +88,64 @@ function estatSeleccioFeature(
   }
 }
 
+// ── Sistema de panes territorials ──────────────────────────────────────────
+//
+// Per què panes? Leaflet 1.9.4 NO actualitza `pointer-events` via `setStyle`.
+// I amb `fillOpacity:0`, el CSS per defecte fa que NOMÉS la vora del polígon
+// sigui clicable — l'interior no respon.
+//
+// Cada capa territorial té el seu propi pane (un `<div>` contenidor amb
+// z-index). El pane actiu rep la classe `.territori-actiu`, i el CSS d'aquest
+// fitxer aplica `pointer-events: fill` només als paths d'aquest pane (interior
+// del polígon clicable) i `pointer-events: none` als de la resta — els events
+// travessen cap al pane actiu encara que aquest estigui per sota en z-order.
+//
+// Important: NO usem `pane.style.pointerEvents = 'none'` al pare div, perquè
+// un fill amb `pointer-events != none` el sobreescriu, i els municipis (al
+// front) capturarien tots els events.
+
+const PANE_NOMS: Record<NivellTerritorial, string> = {
+  provincies: 'territori-provincies',
+  vegueries: 'territori-vegueries',
+  comarques: 'territori-comarques',
+  municipis: 'territori-municipis',
+}
+
+// Z-order: de més gran (fons) a més petit (front). Així les vores dels
+// territoris més petits queden visibles per sobre dels farcits dels més grans.
+// Leaflet reserva 200 (tiles), 400 (overlay), 500+ (markers/popups).
+// Anem entre 410 i 440 — per sobre del overlayPane (màscara) i sota markers.
+const PANE_Z_INDEX: Record<NivellTerritorial, number> = {
+  provincies: 410,
+  vegueries: 420,
+  comarques: 430,
+  municipis: 440,
+}
+
+function creaPanesTerritorials() {
+  if (!mapa) return
+  ;(Object.keys(PANE_NOMS) as NivellTerritorial[]).forEach((nivell) => {
+    const nom = PANE_NOMS[nivell]
+    if (!mapa!.getPane(nom)) {
+      const pane = mapa!.createPane(nom)
+      pane.style.zIndex = String(PANE_Z_INDEX[nivell])
+    }
+  })
+}
+
+function actualitzaInteractivitatPanes() {
+  if (!mapa) return
+  const actiu = mapaStore.nivellActiu
+  ;(Object.keys(PANE_NOMS) as NivellTerritorial[]).forEach((nivell) => {
+    const pane = mapa!.getPane(PANE_NOMS[nivell])
+    if (!pane) return
+    // Una classe CSS marca el pane actiu. El CSS només aplica pointer-events:fill
+    // als paths d'aquesta classe — els paths dels altres panes reben none i deixen
+    // que els events travessin fins al pane actiu (encara que estiguin per davant).
+    pane.classList.toggle('territori-actiu', nivell === actiu)
+  })
+}
+
 // ── Estils ─────────────────────────────────────────────────────────────────
 
 function estilPerFeature(
@@ -98,32 +156,52 @@ function estilPerFeature(
   const num = nivellNumero(nivell)
   const { weight, opacity } = ESTIL_NIVELL[num]!
 
-  // Estil base: vora gris segons nivell, sense farcit, no interactiu si no és la capa activa.
-  const esCapaActiva = nivell === mapaStore.nivellActiu
+  // Estil base: vora gris, sense farcit. La interactivitat la gestiona el pane.
   const baseEstil: L.PathOptions = {
     color: '#555',
     weight,
     opacity,
     fillOpacity: 0,
-    interactive: esCapaActiva,
   }
 
-  if (!info || !esCapaActiva) return baseEstil
+  if (!info) return baseEstil
 
-  // Capa activa: pinta amb el color de selecció segons l'estat.
-  const estat = estatSeleccioFeature(info, nivell)
-  if (estat === 'cap') return baseEstil
+  const esCapaActiva = nivell === mapaStore.nivellActiu
 
-  const tema = info.codiProvincia ? temaPerProvincia(info.codiProvincia) : TEMA_NEUTRE
-  const total = estat === 'total'
-  return {
-    color: tema.vora,
-    weight,
-    opacity,
-    fillColor: total ? tema.base : tema.parcial,
-    fillOpacity: total ? 0.7 : 0.55,
-    interactive: true,
+  // ── Únicament la capa de municipis mostra farcit de color ──────────────────
+  // Les capes superiors (comarca, vegueria, província) mantenen fillOpacity:0
+  // sempre. La selecció es veu pintada als municipis individuals, independentment
+  // del nivell que s'hagi usat per seleccionar-los.
+  if (nivell === 'municipis') {
+    const estat = estatSeleccioFeature(info, 'municipis')
+    if (estat === 'cap') return baseEstil
+    const tema = info.codiProvincia ? temaPerProvincia(info.codiProvincia) : TEMA_NEUTRE
+    const total = estat === 'total'
+    return {
+      color: tema.vora,
+      weight,
+      opacity,
+      fillColor: total ? tema.base : tema.parcial,
+      fillOpacity: total ? 0.7 : 0.55,
+    }
   }
+
+  // Capes superiors: sense farcit. Si és la capa activa i té selecció, destaca
+  // la vora amb el color temàtic per indicar que conté territori seleccionat.
+  if (esCapaActiva) {
+    const estat = estatSeleccioFeature(info, nivell)
+    if (estat !== 'cap') {
+      const tema = info.codiProvincia ? temaPerProvincia(info.codiProvincia) : TEMA_NEUTRE
+      return {
+        ...baseEstil,
+        color: tema.vora,
+        weight: weight + 0.5,
+        opacity: 1,
+      }
+    }
+  }
+
+  return baseEstil
 }
 
 function estilHoverPerFeature(
@@ -136,23 +214,31 @@ function estilHoverPerFeature(
   const num = nivellNumero(nivell)
   const { opacity } = ESTIL_NIVELL[num]!
   const tema = info.codiProvincia ? temaPerProvincia(info.codiProvincia) : TEMA_NEUTRE
-  const estaSeleccionat = estatSeleccioFeature(info, nivell) !== 'cap'
 
-  if (estaSeleccionat) {
+  // Municipis: farcit intens en hover (única capa amb farcit persistent a selecció).
+  if (nivell === 'municipis') {
+    const estaSeleccionat = estatSeleccioFeature(info, nivell) !== 'cap'
+    if (estaSeleccionat) {
+      return { color: tema.vora, weight: 3, opacity, fillOpacity: 0.85 }
+    }
     return {
       color: tema.vora,
-      weight: 3,
+      weight: 2.5,
       opacity,
-      fillOpacity: 0.85,
+      fillColor: tema.parcial,
+      fillOpacity: 0.55,
     }
   }
 
+  // Capes superiors (comarca, vegueria, província):
+  // Farcit subtil en hover per feedback visual; en mouseout estilPerFeature
+  // restaura fillOpacity:0. pointer-events no canvia (gestionat per separat).
   return {
     color: tema.vora,
     weight: 2.5,
-    opacity,
+    opacity: 1,
     fillColor: tema.parcial,
-    fillOpacity: 0.55,
+    fillOpacity: 0.25,
   }
 }
 
@@ -282,6 +368,7 @@ async function carregaCapa(nivell: NivellTerritorial, zoom: number) {
     const dades = await res.json()
 
     capa = L.geoJSON(dades, {
+      pane: PANE_NOMS[nivell],
       style: (feature) => estilPerFeature(feature, nivell),
       onEachFeature(feature, layer) {
         const pathLayer = layer as L.Path
@@ -312,21 +399,22 @@ async function carregaCapa(nivell: NivellTerritorial, zoom: number) {
     capa.addTo(mapa)
   }
   capesActives[nivell] = capa
+
+  // Refresca els estils: en cache hit o en canviar de resolució, els estils
+  // poden haver-se desfasat si nivellActiu o la selecció van canviar mentre
+  // aquesta capa no era visible.
+  capa.eachLayer((layer) => {
+    const geoLayer = layer as L.Path & { feature?: GeoJSON.Feature }
+    if (geoLayer.feature) geoLayer.setStyle(estilPerFeature(geoLayer.feature, nivell))
+  })
 }
 
 async function carregaTotesCapes(zoom: number) {
   const nivells: NivellTerritorial[] = ['provincies', 'vegueries', 'comarques', 'municipis']
   await Promise.all(nivells.map((n) => carregaCapa(n, zoom)))
-  ordenaZIndexCapes()
-}
-
-// Z-order: de més gran (fons) a més petit (front), perquè les vores dels
-// territoris més petits siguin visibles per sobre dels farcits dels més grans.
-function ordenaZIndexCapes() {
-  capesActives.provincies?.bringToBack()
-  capesActives.vegueries?.bringToFront()
-  capesActives.comarques?.bringToFront()
-  capesActives.municipis?.bringToFront()
+  // El z-order el determinen els panes (PANE_Z_INDEX); no cal bringToFront/Back.
+  // Apliquem la interactivitat al pane segons quin nivell és l'actiu.
+  actualitzaInteractivitatPanes()
 }
 
 function actualitzaEstilsTotes() {
@@ -401,6 +489,7 @@ onMounted(() => {
   }).addTo(mapa)
 
   creaSelectorNivell().addTo(mapa)
+  creaPanesTerritorials()
 
   function actualitzaDragging() {
     if (!mapa) return
@@ -459,12 +548,12 @@ watch(
   () => actualitzaEstilsTotes()
 )
 
-// Quan el nivell actiu canvia, re-aplica estils i recoloca el z-order.
+// Quan el nivell actiu canvia, re-aplica estils i la interactivitat dels panes.
 watch(
   () => mapaStore.nivellActiu,
   () => {
     actualitzaEstilsTotes()
-    ordenaZIndexCapes()
+    actualitzaInteractivitatPanes()
   }
 )
 </script>
@@ -482,6 +571,27 @@ watch(
 </style>
 
 <style>
+/* Interactivitat dels paths territorials.
+
+   IMPORTANT — guerra d'especificitat amb el CSS de Leaflet:
+   Leaflet defineix `.leaflet-pane > svg path.leaflet-interactive { pointer-events: auto }`
+   amb especificitat (0,2,2). Per sobreescriure-ho necessitem una regla amb
+   especificitat superior. Afegir `.leaflet-interactive` (que Leaflet posa a
+   tots els paths interactius) al nostre selector és el truc.
+
+   - Per defecte (panes no actius): pointer-events:none — els events travessen
+     cap al pane actiu, encara que la capa estigui al davant per z-order.
+   - Pane actiu (.territori-actiu): pointer-events:fill — tota l'àrea interior
+     del polígon és clicable, no només la vora (necessari amb fillOpacity:0). */
+.leaflet-pane[class*='leaflet-territori-'] path.leaflet-interactive {
+  pointer-events: none;
+}
+
+.leaflet-pane[class*='leaflet-territori-'].territori-actiu path.leaflet-interactive {
+  pointer-events: fill;
+  cursor: pointer;
+}
+
 /* Estils del control selector de nivell — sense scope perquè L.DomUtil
    crea l'element fora de l'àmbit del component Vue. */
 .selector-nivell {
