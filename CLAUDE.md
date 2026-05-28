@@ -97,13 +97,47 @@ npm workspaces: `frontend` y `backend` son paquetes independientes. Las dependen
 ### Frontend
 
 - **Entrada**: `frontend/src/main.ts` monta la app Vue, registra Pinia y Vue Router.
+- **Layout global**: `App.vue` — flex column `height: 100vh`: `CabeceraApp` (110px, `flex-shrink: 0`) + `RouterView` (`flex: 1; min-height: 0`).
 - **Estado global**: Pinia (`frontend/src/stores/`). Stores activos:
   - `territoris` — árbol provincial completo (província → comarca → municipi), municipis seleccionats, helpers de selección global y per-provincia (distinción necesaria por las comarques transfrontereres)
   - `mapa` — zoom y centro del mapa Leaflet
   - `filtres` — pestaña activa del panel On?/Què?/Quan?
 - **Temàtica de colors**: `frontend/src/theme/provincies.ts` — paleta central per província i per vegueria, usada tant per Leaflet (`L.PathOptions`) com pel panell On? (CSS custom properties `--prov-base`, `--prov-parcial`, etc.). Vegeu la secció "Temàtica de colors" més avall.
-- **Routing**: Vue Router con `createWebHistory`. Las rutas se definen en `frontend/src/router/index.ts`.
+- **Routing**: Vue Router con `createWebHistory`. Las rutas se definen en `frontend/src/router/index.ts`. Seccions previstes: `/cerca`, `/agenda`, `/jocs`, `/merchandising`, `/sobre` (les tres últimes sense vista implementada encara).
 - **Componentes**: `frontend/src/components/` para reutilizables, `frontend/src/views/` para páginas completas (una por ruta).
+
+### Capçalera (`CabeceraApp.vue`)
+
+Component fix a la part superior de totes les pàgines (110px d'alçada):
+
+- **Fons**: element `<video autoplay muted loop>` que cobreix tota la capçalera (`object-fit: cover`). Afegir el fitxer a `frontend/public/video/highlights.mp4` i descomentar el `<source>` per activar-lo. Mentre no hi ha vídeo, fons fosc `#1a2635`.
+- **Gradient**: `::before` semi-transparent d'esquerra a dreta per garantir llegibilitat del logo sobre qualsevol vídeo.
+- **Logo**: `frontend/src/assets/logo.png` — ocupa gairebé tota l'alçada (`calc(110px - 16px)`), alineat a l'esquerra.
+- **Nom**: `viscalaterra.cat` superposat sobre la part inferior del logo (`position: absolute; bottom: 2px`).
+
+### Barra de navegació (`PanellFiltres.vue`)
+
+Barra horitzontal de 48px sota la capçalera. Estructura:
+
+```
+[☰]  CERCA  |  On?  Què?  Quan?  |  [CercaRapida]
+```
+
+- **Botó hamburger** (☰ / ✕ animat): obre/tanca el menú principal de seccions.
+- **Menú de seccions** (desplegable vertical, `position: absolute`): CERCA · AGENDA CULTURAL · JOCS · MERCHANDISING · SOBRE NOSALTRES. Clic → navega i tanca el menú. Clic fora (overlay transparent) → tanca.
+- **Nom secció activa**: detectat via `useRoute()` comparant `route.path` amb les rutes de cada secció.
+- **Ítems contextuals**: només es mostren per a la secció activa. Per a CERCA: tabs On?/Què?/Quan? + `CercaRapida`. Les altres seccions mostraran els seus ítems quan s'implementin les vistes.
+
+### Cercador ràpid (`CercaRapida.vue`)
+
+Cerca client-side sobre les dades ja carregades al store `territoris` (sense crida al backend):
+
+- **Activació**: mínim 2 caràcters.
+- **Normalització**: strips d'accents + lowercase (`normalize('NFD')`) → "maresme" troba "Maresme", "catalu" troba "Catalunya Central".
+- **Resultats agrupats** per ordre: Província → Vegueria → Comarca → Municipi (màx 8 municipis per no saturar).
+- **Context**: cada municipi mostra el nom de la comarca al costat en gris.
+- **Selecció**: clic sobre un resultat → crida al store (`seleccionaMunicipi/Comarca/Vegueria/Provincia`) equivalent a fer clic al mapa.
+- **Tanca** en seleccionar o en perdre el focus fora del component.
 
 ### Sistema de 4 nivells territorials al mapa
 
