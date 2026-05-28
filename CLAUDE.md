@@ -199,11 +199,23 @@ El CI corre en push a `main` y `develop`, y en PRs hacia ambas. Para contribuir:
 | `08` | Penedès                    | Vi/magenta `#8b3a6e`    | vinyes, entre Barcelona i Tarragona    |
 | `00` | Val d'Aran                 | Blau lacustre `#2d7a8a` | entitat territorial singular pirinenca |
 
-**`TEMA_NEUTRE`** — color verd neutre. Usat per comarques (pendent de resoldre la taula de província dominant per comarca).
+**`temaPerComarca(codi)`** — color per comarca, resolt en dos passos:
+
+1. **39 comarques d'una sola província** (`COMARCA_PROVINCIA`): taula estàtica `CODICOMAR → CODIPROV`, hereta directament la paleta provincial.
+2. **4 comarques transfrontereres** (`TEMA_COMARCA_CUSTOM`): color calculat com a mescla RGB ponderada pel percentatge de municipis de cada província (dades ICC 2024):
+
+| Codi | Comarca  | Mescla                        | Color resultant             |
+| ---- | -------- | ----------------------------- | --------------------------- |
+| `14` | Berguedà | 96.8% Barcelona + 3.2% Lleida | Vermell quasi pur           |
+| `15` | Cerdanya | 64.7% Girona + 35.3% Lleida   | Verd oliva `#5e7421`        |
+| `24` | Osona    | 92.9% Barcelona + 7.1% Girona | Vermell lleugerament apagat |
+| `34` | Selva    | 96.2% Girona + 3.8% Barcelona | Verd quasi pur              |
+
+**`TEMA_NEUTRE`** — color verd neutre de fallback. S'aplica quan no hi ha cap codi de província, vegueria ni comarca reconegut.
 
 Cada tema té els camps: `base` (selecció total), `parcial` (selecció parcial), `hover`, `contrast` (text sobre base) i `vora` (línia de delimitació).
 
-La funció `temaDeInfo(info)` a `MapaLeaflet.vue` centralitza la resolució del tema: `codiProvincia` → `temaPerProvincia`, `codiVegueria` → `temaPerVegueria`, cap dels dos → `TEMA_NEUTRE`.
+La funció `temaDeInfo(info)` a `MapaLeaflet.vue` centralitza la resolució del tema per jerarquia: `codiProvincia` → `temaPerProvincia`, `codiVegueria` → `temaPerVegueria`, `codiComarca` → `temaPerComarca`, cap → `TEMA_NEUTRE`.
 
 ## Decisiones de producto tomadas
 
@@ -215,10 +227,10 @@ La funció `temaDeInfo(info)` a `MapaLeaflet.vue` centralitza la resolució del 
 - Inspiración visual: meteo.cat (Catalunya destacada, resto de España en tenue)
 - Idioma principal de la interfaz: català
 - **Selecció visual al mapa**: únicament la capa de municipis mostra farcit de color; comarques, vegueries i províncies mantenen àrea transparent (sols es pinten les línies delimitadores)
+- **Colors de hover de comarques**: hereta el color de la seva província; les 4 transfrontereres (Berguedà, Cerdanya, Osona, Selva) usen una mescla RGB ponderada pel % de municipis per província
 
 ## Pendiente de decidir
 
 - Público objetivo
 - Interfaz del Quan? (calendario, selector de días, rango de fechas…)
 - Criterio de ordenación cuando una división pertenece a múltiples unidades superiores
-- **Colors de comarques al mapa**: pendent de crear la taula estàtica `CODICOMAR → CODIPROV_DOMINANT` per a les 39 comarques d'una sola província i assignar la província dominant a les 4 transfrontereres (Berguedà→BCN, Cerdanya→GI, Osona→BCN, Selva→GI)

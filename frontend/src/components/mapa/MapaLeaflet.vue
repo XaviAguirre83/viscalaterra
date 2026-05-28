@@ -1,10 +1,17 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch } from 'vue'
+import { onMounted, onUnmounted, watch, ref, computed } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useTerritorisStore } from '@/stores/territoris'
 import { useMapaStore, type NivellTerritorial } from '@/stores/mapa'
-import { temaPerProvincia, temaPerVegueria, TEMA_NEUTRE } from '@/theme/provincies'
+import {
+  temaPerProvincia,
+  temaPerVegueria,
+  temaPerComarca,
+  nomProvinciesPerComarca,
+  nomVeguiesPerComarca,
+  TEMA_NEUTRE,
+} from '@/theme/provincies'
 
 const territoris = useTerritorisStore()
 const mapaStore = useMapaStore()
@@ -48,9 +55,62 @@ function nivellNumero(capa: NivellTerritorial): number {
 
 interface InfoFeature {
   codi: string
+  nom?: string
   codiProvincia?: string
+  nomProvincia?: string
+  nomsProvincia?: string[]
   codiVegueria?: string
+  nomVegueria?: string
+  nomsVegueria?: string[]
+  codiComarca?: string
+  nomComarca?: string
 }
+
+interface InfoHover {
+  nivell: NivellTerritorial
+  nom: string
+  nomProvincia?: string
+  nomsProvincia?: string[]
+  nomVegueria?: string
+  nomsVegueria?: string[]
+  nomComarca?: string
+}
+
+const hoverInfo = ref<InfoHover | null>(null)
+
+const filesHover = computed(() => {
+  if (!hoverInfo.value) return null
+  const { nivell, nom, nomProvincia, nomsProvincia, nomVegueria, nomsVegueria, nomComarca } =
+    hoverInfo.value
+
+  let provincies: string[]
+  let vegueries: string[]
+  switch (nivell) {
+    case 'provincies':
+      provincies = nom ? [nom] : []
+      vegueries = []
+      break
+    case 'vegueries':
+      provincies = []
+      vegueries = nom ? [nom] : []
+      break
+    case 'comarques':
+      provincies = nomsProvincia ?? []
+      vegueries = nomsVegueria ?? []
+      break
+    case 'municipis':
+      provincies = nomProvincia ? [nomProvincia] : []
+      vegueries = nomVegueria ? [nomVegueria] : []
+      break
+  }
+
+  return {
+    provincies,
+    vegueries,
+    comarca: nivell === 'comarques' || nivell === 'municipis' ? (nomComarca ?? '—') : '—',
+    municipi: nivell === 'municipis' ? nom : '—',
+  }
+})
 
 function codiDeFeature(
   feature: GeoJSON.Feature | undefined,
@@ -62,26 +122,47 @@ function codiDeFeature(
     case 'municipis':
       return {
         codi: String(props.CODIMUNI),
+        nom: props.NOMMUNI ? String(props.NOMMUNI) : undefined,
         codiProvincia: props.CODIPROV ? String(props.CODIPROV) : undefined,
+        nomProvincia: props.NOMPROV ? String(props.NOMPROV) : undefined,
+        codiVegueria: props.CODIVEGUE ? String(props.CODIVEGUE) : undefined,
+        nomVegueria: props.NOMVEGUE ? String(props.NOMVEGUE) : undefined,
+        codiComarca: props.CODICOMAR ? String(props.CODICOMAR) : undefined,
+        nomComarca: props.NOMCOMAR ? String(props.NOMCOMAR) : undefined,
       }
-    case 'comarques':
-      return { codi: String(props.CODICOMAR) }
+    case 'comarques': {
+      const codi = String(props.CODICOMAR)
+      return {
+        codi,
+        nom: props.NOMCOMAR ? String(props.NOMCOMAR) : undefined,
+        codiComarca: codi,
+        nomComarca: props.NOMCOMAR ? String(props.NOMCOMAR) : undefined,
+        nomsProvincia: nomProvinciesPerComarca(codi),
+        nomsVegueria: nomVeguiesPerComarca(codi),
+      }
+    }
     case 'vegueries':
       return {
         codi: String(props.CODIVEGUE),
+        nom: props.NOMVEGUE ? String(props.NOMVEGUE) : undefined,
         codiVegueria: String(props.CODIVEGUE),
+        nomVegueria: props.NOMVEGUE ? String(props.NOMVEGUE) : undefined,
       }
     case 'provincies':
-      return { codi: String(props.CODIPROV), codiProvincia: String(props.CODIPROV) }
+      return {
+        codi: String(props.CODIPROV),
+        nom: props.NOMPROV ? String(props.NOMPROV) : undefined,
+        codiProvincia: String(props.CODIPROV),
+        nomProvincia: props.NOMPROV ? String(props.NOMPROV) : undefined,
+      }
   }
 }
 
-// Retorna el tema cromàtic adequat per a una feature, respectant la jerarquia:
-// província > vegueria > neutre. Les comarques restaran neutres fins que
-// implementem la seva taula de provincies dominants.
+// Retorna el tema cromàtic adequat per a una feature: província > vegueria > comarca > neutre.
 function temaDeInfo(info: InfoFeature): ReturnType<typeof temaPerProvincia> {
   if (info.codiProvincia) return temaPerProvincia(info.codiProvincia)
   if (info.codiVegueria) return temaPerVegueria(info.codiVegueria)
+  if (info.codiComarca) return temaPerComarca(info.codiComarca)
   return TEMA_NEUTRE
 }
 
@@ -389,10 +470,23 @@ async function carregaCapa(nivell: NivellTerritorial, zoom: number) {
           mouseover() {
             if (nivell !== mapaStore.nivellActiu) return
             pathLayer.setStyle(estilHoverPerFeature(feature, nivell))
+            const info = codiDeFeature(feature, nivell)
+            if (info) {
+              hoverInfo.value = {
+                nivell,
+                nom: info.nom ?? '',
+                nomProvincia: info.nomProvincia,
+                nomsProvincia: info.nomsProvincia,
+                nomVegueria: info.nomVegueria,
+                nomsVegueria: info.nomsVegueria,
+                nomComarca: info.nomComarca,
+              }
+            }
           },
           mouseout() {
             if (nivell !== mapaStore.nivellActiu) return
             pathLayer.setStyle(estilPerFeature(feature, nivell))
+            hoverInfo.value = null
           },
           click() {
             if (nivell !== mapaStore.nivellActiu) return
@@ -441,44 +535,15 @@ function actualitzaEstilsTotes() {
   )
 }
 
-// ── Selector de nivell (control Leaflet) ───────────────────────────────────
+// ── Selector de nivell (integrat al panell d'informació) ──────────────────
+
+const NIVELLS: NivellTerritorial[] = ['provincies', 'vegueries', 'comarques', 'municipis']
 
 const ETIQUETES_NIVELL: Record<NivellTerritorial, string> = {
   provincies: 'Província',
   vegueries: 'Vegueria',
   comarques: 'Comarca',
   municipis: 'Municipi',
-}
-
-function creaSelectorNivell(): L.Control {
-  const control = new L.Control({ position: 'topright' })
-  control.onAdd = () => {
-    const div = L.DomUtil.create('div', 'leaflet-bar selector-nivell')
-    div.innerHTML = `
-      <div class="selector-nivell__titol">Nivell territorial</div>
-      ${(['provincies', 'vegueries', 'comarques', 'municipis'] as NivellTerritorial[])
-        .map(
-          (n) => `
-        <label class="selector-nivell__opcio">
-          <input type="radio" name="nivell-territorial" value="${n}" ${
-            n === mapaStore.nivellActiu ? 'checked' : ''
-          } />
-          <span>${ETIQUETES_NIVELL[n]}</span>
-        </label>`
-        )
-        .join('')}
-    `
-    L.DomEvent.disableClickPropagation(div)
-    L.DomEvent.disableScrollPropagation(div)
-    div.addEventListener('change', (e) => {
-      const target = e.target as HTMLInputElement
-      if (target.name === 'nivell-territorial') {
-        mapaStore.defineixNivellActiu(target.value as NivellTerritorial)
-      }
-    })
-    return div
-  }
-  return control
 }
 
 // ── Lifecycle ──────────────────────────────────────────────────────────────
@@ -501,7 +566,6 @@ onMounted(() => {
     maxZoom: 19,
   }).addTo(mapa)
 
-  creaSelectorNivell().addTo(mapa)
   creaPanesTerritorials()
 
   function actualitzaDragging() {
@@ -567,12 +631,57 @@ watch(
   () => {
     actualitzaEstilsTotes()
     actualitzaInteractivitatPanes()
+    hoverInfo.value = null
   }
 )
 </script>
 
 <template>
-  <div id="mapa-contenidor" class="mapa-contenidor" />
+  <div id="mapa-contenidor" class="mapa-contenidor">
+    <div class="info-territori">
+      <div class="info-territori__caps">
+        <button
+          v-for="nivell in NIVELLS"
+          :key="nivell"
+          class="info-territori__cap"
+          :class="{ 'info-territori__cap--actiu': mapaStore.nivellActiu === nivell }"
+          @click="mapaStore.defineixNivellActiu(nivell)"
+        >
+          {{ ETIQUETES_NIVELL[nivell] }}
+        </button>
+      </div>
+      <div class="info-territori__vals">
+        <div class="info-territori__val-cel">
+          <template v-if="filesHover?.provincies.length">
+            <span
+              v-for="(p, i) in filesHover.provincies"
+              :key="p"
+              :class="{ 'info-territori__val--secundari': i > 0 }"
+              >{{ p }}</span
+            >
+          </template>
+          <span v-else class="info-territori__val--buit">—</span>
+        </div>
+        <div class="info-territori__val-cel">
+          <template v-if="filesHover?.vegueries.length">
+            <span
+              v-for="(v, i) in filesHover.vegueries"
+              :key="v"
+              :class="{ 'info-territori__val--secundari': i > 0 }"
+              >{{ v }}</span
+            >
+          </template>
+          <span v-else class="info-territori__val--buit">—</span>
+        </div>
+        <span :class="{ 'info-territori__val--buit': !filesHover || filesHover.comarca === '—' }">
+          {{ filesHover?.comarca ?? '—' }}
+        </span>
+        <span :class="{ 'info-territori__val--buit': !filesHover || filesHover.municipi === '—' }">
+          {{ filesHover?.municipi ?? '—' }}
+        </span>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
@@ -580,6 +689,85 @@ watch(
   flex: 1;
   min-height: 0;
   width: 100%;
+  position: relative;
+}
+
+.info-territori {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  background: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+
+.info-territori__caps,
+.info-territori__vals {
+  display: grid;
+  grid-template-columns: 100px 160px 150px 240px;
+  column-gap: 16px;
+}
+
+.info-territori__caps {
+  margin-bottom: 5px;
+  pointer-events: auto;
+}
+
+.info-territori__cap {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0 0 3px;
+  margin: 0;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #999;
+  cursor: pointer;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+
+.info-territori__cap:hover {
+  color: #444;
+}
+
+.info-territori__cap--actiu {
+  color: #1a1a1a;
+  border-bottom-color: #1a1a1a;
+}
+
+.info-territori__vals span {
+  color: #1a1a1a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.info-territori__val-cel {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.info-territori__val--buit {
+  color: #bbb;
+}
+
+.info-territori__val--secundari {
+  color: #888;
+  font-size: 0.8rem;
 }
 </style>
 
@@ -602,44 +790,6 @@ watch(
 
 .leaflet-pane[class*='leaflet-territori-'].territori-actiu path.leaflet-interactive {
   pointer-events: fill;
-  cursor: pointer;
-}
-
-/* Estils del control selector de nivell — sense scope perquè L.DomUtil
-   crea l'element fora de l'àmbit del component Vue. */
-.selector-nivell {
-  background: white;
-  padding: 8px 10px;
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 0.85rem;
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
-}
-
-.selector-nivell__titol {
-  font-weight: 700;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  color: #555;
-  margin-bottom: 6px;
-  letter-spacing: 0.5px;
-}
-
-.selector-nivell__opcio {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 0;
-  cursor: pointer;
-  color: #2c2c2c;
-}
-
-.selector-nivell__opcio:hover {
-  color: #000;
-}
-
-.selector-nivell__opcio input[type='radio'] {
-  margin: 0;
   cursor: pointer;
 }
 </style>
