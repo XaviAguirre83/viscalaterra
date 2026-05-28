@@ -112,7 +112,7 @@ npm workspaces: `frontend` y `backend` son paquetes independientes. Las dependen
 - **Matriu de prioritat** (`NIVELLS_ORDRE`): segons el nivell actiu, la resta de capes ocupen els nivells 2-4 amb gruix i opacitat de bordes decreixents (`ESTIL_NIVELL`): 2px/100% → 1.5px/75% → 1px/50% → 0.5px/25%.
 - **Resolució per capa** (`resolucioPerCapa`): provincies/vegueries mai van més enllà de 250000; comarques fins a 100000; municipis fins a 5000.
 - **Caché**: capes carregades reutilitzades en canviar de zoom (key `${nivell}-${resolucio}`).
-- **Selector**: control Leaflet `topright` amb 4 radio buttons que actualitzen `mapaStore.nivellActiu`.
+- **Selector**: integrat al panell `info-territori` (vegeu secció següent); ja no és un control Leaflet independent.
 
 #### Sistema de panes i interactivitat
 
@@ -125,6 +125,24 @@ La interactivitat es gestiona exclusivament via CSS, **no** via l'opció `intera
 - CSS: `.territori-actiu path.leaflet-interactive { pointer-events: fill }` — el pane actiu respon a tota l'àrea interior del polígon, fins i tot amb `fillOpacity: 0` (amb `visiblePainted` l'interior no respondria).
 - L'especificitat de les regles és (0,3,1) i (0,4,1), superiors a la regla de Leaflet `.leaflet-pane > svg path.leaflet-interactive` (0,2,2) que posa `pointer-events: auto`.
 - Els handlers `mouseover/mouseout/click` comproven igualment `if (nivell !== mapaStore.nivellActiu) return` com a seguretat addicional.
+
+#### Panell d'informació i selector de nivell (`info-territori`)
+
+Panell Vue posicionat `absolute` a la part superior centrada del mapa (`top: 10px; left: 50%; transform: translateX(-50%)`). Té dues files:
+
+- **Fila de capçaleres** — 4 botons (`<button>`) amb `pointer-events: auto`: Província · Vegueria · Comarca · Municipi. El nivell actiu es marca amb subratllat i text fosc; la resta en gris. Clic → `mapaStore.defineixNivellActiu(nivell)`.
+- **Fila de valors** — `pointer-events: none`, s'omple en `mouseover` sobre el territori actiu. Les cel·les de Província i Vegueria suporten múltiples línies (valor dominant + secundari en gris més clar) per a les comarques transfrontereres.
+
+Comportament per nivell actiu:
+
+| Selector   | Província                               | Vegueria                     | Comarca     | Municipi     |
+| ---------- | --------------------------------------- | ---------------------------- | ----------- | ------------ |
+| Provincies | nom de la província                     | —                            | —           | —            |
+| Vegueries  | —                                       | nom de la vegueria           | —           | —            |
+| Comarques  | prov. dominant (+2a si transfronterera) | veg. dominant (+2a si Anoia) | nom comarca | —            |
+| Municipis  | nom província                           | nom vegueria                 | nom comarca | nom municipi |
+
+La lògica de resolució viu a `filesHover` (computed reactiu sobre `hoverInfo` ref).
 
 #### Selecció visual al mapa
 
@@ -150,7 +168,9 @@ Opacitats:
 
 ### Comarques transfrontereres
 
-Berguedà, Cerdanya, Osona i Selva tenen municipis a dues províncies. El model les gestiona correctament: la BD no guarda `provincia_codi` a la taula `comarques` — cada municipi porta la seva pròpia província. L'API agrupa per `(provincia_codi, comarca_codi)`, de manera que la mateixa comarca apareix a dues columnes del panell On?, cadascuna amb els seus municipis. El store té mètodes duals: `estatSeleccioComarca` (global, per al mapa) i `estatSeleccioComarcaEnProvincia` (per columna, per al panell).
+Berguedà, Cerdanya, Osona i Selva tenen municipis a dues províncies. A més, l'**Anoia** té municipis a dues vegueries (Penedès i Catalunya Central). El model les gestiona correctament: la BD no guarda `provincia_codi` a la taula `comarques` — cada municipi porta la seva pròpia província. L'API agrupa per `(provincia_codi, comarca_codi)`, de manera que la mateixa comarca apareix a dues columnes del panell On?, cadascuna amb els seus municipis. El store té mètodes duals: `estatSeleccioComarca` (global, per al mapa) i `estatSeleccioComarcaEnProvincia` (per columna, per al panell).
+
+Les taules `COMARCA_NOMPROVINCIES` i `COMARCA_NOMVEGUERIES` a `provincies.ts` mapegen els 43 codis de comarca als seus noms de província/vegueria en ordre de dominància; les comarques transfrontereres porten dos elements a l'array.
 
 ### Backend
 
