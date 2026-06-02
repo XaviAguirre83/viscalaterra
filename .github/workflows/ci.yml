@@ -1,11 +1,14 @@
+# This is a GitHub Actions workflow file that defines a continuous integration (CI) pipeline for a project.
 name: CI
 
+# The workflow is triggered on pushes and pull requests to the main and develop branches.
 on:
   push:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
 
+# It consists of three jobs:
 jobs:
   quality:
     name: Format check

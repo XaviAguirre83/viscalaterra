@@ -271,6 +271,13 @@ Cada tema té els camps: `base` (selecció total), `parcial` (selecció parcial)
 
 La funció `temaDeInfo(info)` a `MapaLeaflet.vue` centralitza la resolució del tema per jerarquia: `codiProvincia` → `temaPerProvincia`, `codiVegueria` → `temaPerVegueria`, `codiComarca` → `temaPerComarca`, cap → `TEMA_NEUTRE`.
 
+### Secció Jocs (`/jocs`)
+
+- **`/jocs`** — `JocsView.vue`: menú de jocs disponibles (targetes).
+- **`/jocs/geomaster`** — `GeoMasterView.vue`: primer joc implementat. Spec completa a `viscalaterra_plan.md` § GeoMaster.
+- **Store**: `stores/geomaster.ts` — estat del joc (nivell, modalitat, demarcacions pendents/encertades, comptadors, cronòmetre). Independent dels stores de cerca.
+- **Mapa en mode joc**: `MapaLeaflet.vue` s'usa en mode "joc" on el clic no fa selecció sinó que dispara la lògica de resposta del GeoMaster. La prop `modeJoc` (o similar) desactiva els handlers normals i n'activa els del joc.
+
 ## Decisiones de producto tomadas
 
 - La unidad mínima de selección es siempre el **municipi**

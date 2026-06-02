@@ -218,6 +218,9 @@ Docker garanteix que l'entorn de producció sigui idèntic al de desenvolupament
 **Fase 1 — Desenvolupament (ara, cost 0€)**
 Tot corre en local amb `docker compose up`. No cal cap servidor extern.
 
+**Fase 1.5 — Preview privat per a feedback (cost 0€)**
+Abans d'obrir al públic, desplegar a Vercel per compartir el prototip amb amics i coneguts i recollir feedback en un entorn real de producció. La URL de preview de Vercel (`viscalaterra-xxxx.vercel.app`) és aleatòria i no indexada per Google — accés controlat de facto sense cap configuració addicional. Quan es vulgui obrir al públic, simplement s'apunta `viscalaterra.cat` al deploy de producció.
+
 **Fase 2 — MVP / primers col·laboradors (cost 0€)**
 | Peça | Servei | Notes |
 |---|---|---|
@@ -323,6 +326,138 @@ Cerca, Jocs i Marxandatge conviuen sota el mateix domini, comparteixen sistema d
 - Mode convidat: es pot jugar sense registrar-se, sense persistència.
 - Usuari registrat: puntuacions, progrés i rànquings desats.
 
+### GeoMaster (primer joc a implementar)
+
+Joc d'identificació territorial. Ruta: `/jocs/geomaster`. La pàgina `/jocs` actua com a menú de tots els jocs.
+
+**Dues modalitats** (seleccionables per separat):
+
+- **Nom → Mapa**: apareix el nom d'una demarcació i l'usuari ha de clicar-la al mapa.
+- **Mapa → Nom**: apareix una demarcació marcada al mapa i l'usuari ha d'escriure el nom correcte. Requereix autocomplete (imprescindible als nivells alts).
+
+**Mecànica**:
+
+- Rondes infinites fins que s'encerten totes les demarcacions del nivell o l'usuari surt.
+- Comptador d'encerts i errors (sense penalització, purament informatiu).
+- Cronòmetre de temps total.
+- Una demarcació encertada queda marcada permanentment al mapa i no torna a sortir.
+- El joc no corregeix ni pista — simplement compta encerts i errors.
+- El zoom és lliure en qualsevol modalitat i nivell.
+- **El panell d'informació territorial (hover amb el nom) està ocult durant el joc.** Si es mostrés el nom en passar el cursor, la modalitat nom→mapa seria trivial (busques amb el cursor fins trobar el nom demanat). El mapa en mode GeoMaster desactiva el panell hover.
+
+**9 nivells de dificultat**:
+
+| Nivell | Demarcacions                        | Quantitat |
+| ------ | ----------------------------------- | --------- |
+| 0      | Províncies                          | 4         |
+| 1      | Vegueries                           | 8         |
+| 2      | Comarques d'una vegueria (a triar)  | ~5–8      |
+| 3      | Comarques d'una província (a triar) | ~8–15     |
+| 4      | Totes les comarques de Catalunya    | 43        |
+| 5      | Municipis d'una comarca (a triar)   | variable  |
+| 6      | Municipis d'una vegueria (a triar)  | variable  |
+| 7      | Municipis d'una província (a triar) | variable  |
+| 8      | Tots els municipis de Catalunya     | ~947      |
+
+**Accés i rànking**:
+
+- **Mode convidat**: es pot jugar sense registrar-se. Sense persistència de puntuacions.
+- **Usuari registrat**: les partides completades es desen i computen al rànking global.
+- **Rànking unificat** (un sol rànking per joc, no per nivell): concentra la competència i evita taules buides als nivells poc jugats. Es pot filtrar per nivell com a vista secundària. Incentiva jugar nivells difícils perquè puntuen més.
+- **Fórmula de puntuació** _(a afinar, idea base)_:
+
+  ```
+  punts = multiplicador_nivell × (encerts / total) × bonus_temps
+  ```
+
+  - `multiplicador_nivell` = `nivell + 1` (×1 per Províncies → ×9 per tots els municipis)
+  - `encerts / total` = ràtio d'èxit (els errors penalitzen implícitament)
+  - `bonus_temps` = decreix com més temps es triga (a definir la corba exacta)
+
+- El rànking **distingeix entre modalitats**: rànking nom→mapa i rànking mapa→nom per separat.
+
+### EscutMaster i BanderaMaster (segon i tercer joc previstos)
+
+**BanderaMaster funciona exactament amb la mateixa mecànica que EscutMaster** — l'única diferència és que les imatges són banderes en lloc d'escuts. Tot el que es descriu a continuació s'aplica a ambdós jocs.
+
+Jocs d'identificació d'escuts heràldics i banderes de les demarcacions catalanes. Mecànica general idèntica al GeoMaster (rondes infinites, comptadors encerts/errors, cronòmetre, rànking per modalitat, mode convidat i registrat).
+
+**Diferències respecte al GeoMaster:**
+
+- Les **vegueries queden excloses** — no disposen d'escut ni bandera pròpies.
+- **Dues modalitats** (rànking separat per a cadascuna):
+
+- **Imatge → Mapa**: es mostra l'escut/bandera i l'usuari clica la demarcació correcta al mapa. El hover mostra el nom de cada element en passar el cursor — és l'ajuda legítima, ja que el repte és reconèixer la imatge, no trobar el nom. Exemple: "sé que aquest és l'escut d'Alella però no sé on és — faig hover pels municipis del Maresme fins trobar-la."
+- **Mapa → Imatge** (selecció múltiple): es mostra la demarcació marcada al mapa amb el nom visible, i apareixen diverses opcions d'escuts/banderes en pantalla. L'usuari ha de triar el correcte. Té **dos eixos de dificultat independents i configurables**:
+  - **Àmbit dels distractors** (d'on s'extreuen les opcions incorrectes):
+    - Mateixa comarca ← més fàcil geogràficament, possiblement més difícil visualment (escuts similars)
+    - Mateixa província
+    - Tota Catalunya ← més difícil geogràficament
+  - **Nombre de distractors**: de 1 a 6 (és a dir, entre 2 i 7 opcions totals en pantalla). Amb 1 distractor és gairebé cara o creu; amb 6 cal coneixement molt sòlid.
+  - Excepció: als nivells amb poques demarcacions (ex. Províncies = 4), el nombre màxim de distractors queda limitat pel total disponible.
+  - Ambdós eixos han d'entrar a la fórmula de puntuació.
+
+- Combina dues habilitats en una sola interacció: **reconeixement visual** de l'escut/bandera + **localització geogràfica** al mapa.
+- **Principi de disseny**: el joc educa passivament. A la modalitat Imatge→Mapa, el hover força l'usuari a explorar el mapa fins trobar la demarcació — aprèn on és sense que sigui l'objectiu explícit. A la modalitat Mapa→Imatge, veure el territori marcat al mapa mentre tries l'escut reforça l'associació visual. L'aprenentatge és un efecte secundari deliberat, no accidental — la UI ha de potenciar-lo.
+
+**6 nivells de dificultat** (sense vegueries):
+
+| Nivell | Demarcacions                        | Quantitat |
+| ------ | ----------------------------------- | --------- |
+| 0      | Províncies                          | 4         |
+| 1      | Comarques d'una província (a triar) | ~8–15     |
+| 2      | Totes les comarques de Catalunya    | 43        |
+| 3      | Municipis d'una comarca (a triar)   | variable  |
+| 4      | Municipis d'una província (a triar) | variable  |
+| 5      | Tots els municipis de Catalunya     | ~947      |
+
+**Requisit previ d'assets**: cal disposar de les imatges (SVG preferiblement) de tots els escuts i banderes de províncies, comarques i municipis. És feina de recollida de dades independent del desenvolupament del joc.
+
+### Capitals de Comarca (quart joc previst)
+
+Joc d'associació entre comarques i les seves capitals. Sempre les 43 comarques — **no hi ha nivells de dificultat**, ja que no hi ha marge on variar-la significativament. La dificultat ve donada únicament per la modalitat. Rànking separat per modalitat; la fórmula de puntuació no necessita multiplicador de nivell, només temps i ràtio encerts/errors.
+
+**Modalitat 1 — Comarca → Capital**:
+
+1. El mapa mostra únicament la capa de comarques.
+2. El joc enuncia: "Capital del Maresme".
+3. El joc il·lumina automàticament la comarca del Maresme (com un hover programàtic, sense intervenció de l'usuari) i fa zoom in centrant-la en pantalla.
+4. Apareix ara la capa de municipis, però únicament els de la comarca seleccionada són interactius.
+5. L'usuari fa hover sobre els municipis per veure els noms i clica el que creu que és la capital.
+6. Encert o error, següent pregunta.
+
+**Modalitat 2 — Capital → Comarca**:
+
+1. El mapa mostra únicament la capa de comarques.
+2. El joc enuncia: "Mataró és la capital de...".
+3. L'usuari fa hover sobre les comarques per veure els noms i clica la que creu correcta.
+
+**Mecànica nova respecte als altres jocs**: a la modalitat 1, el joc pren el control del mapa (zoom automàtic + highlight programàtic d'una comarca). És una funcionalitat nova a implementar: el component de joc ha de poder ordenar al mapa que faci zoom i il·lumini un polígon concret sense intervenció de l'usuari.
+
+**Aprenentatge passiu**: igual que als jocs d'escuts i banderes, l'ús del mapa força l'usuari a explorar el territori. A la modalitat 1, fer hover pels municipis d'una comarca per trobar-ne la capital ensenya de retruc on és cada municipi. A la modalitat 2, explorar les comarques per trobar-ne una reforça la seva localització geogràfica. És un patró deliberat i transversal a tots els jocs de la secció Jocs: **el mapa com a eina d'aprenentatge geogràfic implícit**.
+
+### Modalitats socials dels jocs (visió futura)
+
+Tots els jocs de la secció Jocs podrien suportar tres modalitats de joc:
+
+**A implementar (roadmap actiu):**
+
+- **Sol** — un jugador, rànking individual. Ja dissenyat, és el punt de partida.
+- **Local (mateix dispositiu)** — diversos jugadors per torns a la mateixa pantalla, sense xarxa. Ideal per jugar en família o amb amics reunits. Senzill d'implementar: gestió de torns i puntuació acumulada per jugador, sense infraestructura addicional.
+
+**Visió futura (fora del roadmap actiu):**
+
+- **Online (temps real)** — partida en xarxa contra altres usuaris via Socket.io (ja al stack). Implica: creació de sales, codi d'invitació, sincronització d'estat entre clients, gestió de desconnexions i timeouts. Es deixa per quan hi hagi base d'usuaris suficient. Podria integrar-se amb **JulIA** (l'assistent IA del projecte) com a presentadora o moderadora de partides online — vegeu secció "Plans de futur".
+
+**Jocs futurs previstos** (idees, sense especificar encara):
+
+- Rius de Catalunya → localitzar al mapa
+- Els 100 Cims → localitzar al mapa
+- Parcs naturals → localitzar al mapa
+- Llocs emblemàtics (Museu Dalí, Pedraforca, Montserrat, Sagrada Família...) → localitzar al mapa
+- Trivial de Catalunya (multijugador en temps real via Socket.io)
+- Risk de Catalunya
+
 **Agenda Cultural** — Vista especialitzada de Cerca, no secció independent. Accés ràpid des del menú, però comparteix base de dades i lògica amb Cerca. Essencialment és Cerca pre-filtrada per Què? → Cultura + Quan? → Puntual, amb presentació orientada a calendari/esdeveniments. Qualsevol persona o col·lectiu pot anunciar un esdeveniment sense distinció entre professional i amateur. Els municipis amb esdeveniments actius apareixen destacats al mapa.
 
 **Marxandatge** — Venda d'articles de la marca. Integrat al mateix domini; si creix, candidat a externalitzar (ex. Shopify en subdomini).
@@ -396,6 +531,17 @@ a les dues columnes corresponents, cadascuna amb només els seus municipis d'aqu
 Seleccionar la comarca des del mapa (nivell comarca) selecciona **tots** els seus municipis
 independentment de la província. Seleccionar des del panell On? afecta només els municipis
 de la columna de la província on es fa clic.
+
+## Funcionalitats futures del mapa (secció Cerca)
+
+### Capa d'escuts i banderes al mapa
+
+Un cop disponibles els assets d'imatge (escuts i banderes de províncies, comarques i municipis), afegir al mapa de la secció On? una capa opcional de superposició visual:
+
+- **Toggle independent** per a escuts i per a banderes (mostrar/amagar cadascun per separat).
+- Es mostra centrat al polígon de cada demarcació al nivell territorial actiu.
+- Purament informatiu — no afecta la selecció ni els filtres.
+- Activar els dos alhora pot saturar visualment; la UI ha de gestionar-ho (avisar o limitar).
 
 ## Notes i decisions
 

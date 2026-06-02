@@ -9,6 +9,10 @@ CREATE TABLE IF NOT EXISTS provincies (
   geom  GEOMETRY(MULTIPOLYGON, 4326)
 );
 
+-- Nota: les vegueries NO tenen una provincia única.
+-- Catalunya Central (Barcelona+Lleida+Girona), Penedès (Barcelona+Tarragona),
+-- Alt Pirineu (Lleida+Girona) i d'altres reparteixen els seus municipis
+-- entre dues o més provincies. La pertinença a provincia es defineix només a nivell de municipi.
 CREATE TABLE IF NOT EXISTS vegueries (
   id    SERIAL PRIMARY KEY,
   codi  CHAR(2) UNIQUE NOT NULL,

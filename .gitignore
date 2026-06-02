@@ -69,3 +69,5 @@ backend/data/geojson/
 # Documentació privada
 # ================================
 docs/ownership_document_viscalaterra.cat.pdf
+docs/developer_notes.md
+docs/Monetitzacio.md

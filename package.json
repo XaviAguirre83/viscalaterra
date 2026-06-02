@@ -17,7 +17,7 @@
     "**/*.{js,ts,vue,json,md}": "prettier --write --ignore-unknown"
   },
   "keywords": [],
-  "author": "Xavier Tecnic",
+  "author": "Xavier Aguirre Torres",
   "license": "AGPL-3.0-only",
   "devDependencies": {
     "@commitlint/cli": "^20.5.3",
