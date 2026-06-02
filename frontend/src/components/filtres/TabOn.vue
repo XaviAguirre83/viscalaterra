@@ -12,6 +12,19 @@ const provinciesOrdenades = computed(() =>
 )
 
 const comarquesExpandides = ref(new Set<string>())
+const provinciesExpandides = ref(new Set<string>())
+
+function estaExpandidaProvincia(codi: string): boolean {
+  return provinciesExpandides.value.has(codi)
+}
+
+function toggleExpansioProvincia(codi: string) {
+  if (provinciesExpandides.value.has(codi)) {
+    provinciesExpandides.value.delete(codi)
+  } else {
+    provinciesExpandides.value.add(codi)
+  }
+}
 
 function clauComarca(codiProvincia: string, codiComarca: string): string {
   return `${codiProvincia}-${codiComarca}`
@@ -84,21 +97,33 @@ function comptadorProvincia(provincia: Provincia): { sel: number; total: number 
         class="columna-provincia"
         :style="estilTemaColumna(provincia.codi)"
       >
-        <button
-          type="button"
-          class="provincia__btn"
+        <div
+          class="provincia__fila"
           :class="`estat--${territoris.estatSeleccioProvincia(provincia.codi)}`"
-          @click="toggleProvincia(provincia)"
         >
-          <span>{{ provincia.nom }}</span>
-          <span v-if="comptadorProvincia(provincia).sel > 0" class="comptador"
-            >[{{ comptadorProvincia(provincia).sel }}/{{
-              comptadorProvincia(provincia).total
-            }}]</span
+          <button
+            type="button"
+            class="provincia__toggle"
+            :aria-label="estaExpandidaProvincia(provincia.codi) ? 'Replegar' : 'Expandir'"
+            @click="toggleExpansioProvincia(provincia.codi)"
           >
-        </button>
+            <span
+              class="triangle"
+              :class="{ 'triangle--obert': estaExpandidaProvincia(provincia.codi) }"
+              >▶</span
+            >
+          </button>
+          <button type="button" class="provincia__btn" @click="toggleProvincia(provincia)">
+            <span>{{ provincia.nom }}</span>
+            <span v-if="comptadorProvincia(provincia).sel > 0" class="comptador"
+              >[{{ comptadorProvincia(provincia).sel }}/{{
+                comptadorProvincia(provincia).total
+              }}]</span
+            >
+          </button>
+        </div>
 
-        <div class="comarques">
+        <div v-show="estaExpandidaProvincia(provincia.codi)" class="comarques comarques--plegable">
           <div v-for="comarca in provincia.comarques" :key="comarca.codi" class="comarca">
             <div
               class="comarca__fila"
@@ -175,6 +200,24 @@ function comptadorProvincia(provincia: Provincia): { sel: number; total: number 
   border-right: none;
 }
 
+@media (max-width: 768px) {
+  .tab-on {
+    width: 100%;
+  }
+
+  .grid-provincies {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .columna-provincia {
+    max-height: none;
+    overflow-y: visible;
+    padding-right: 0;
+    border-right: none;
+  }
+}
+
 button {
   display: block;
   width: 100%;
@@ -196,7 +239,42 @@ button:focus-visible {
 }
 
 /* ── Provincia ─────────────────────────────────────────── */
+.provincia__fila {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  border-bottom: 2px solid var(--prov-base);
+  border-radius: 6px 6px 0 0;
+  transition: background 0.12s;
+}
+
+.provincia__fila:hover {
+  background: var(--prov-hover);
+}
+
+.provincia__fila.estat--parcial {
+  background: var(--prov-parcial);
+}
+
+.provincia__fila.estat--total {
+  background: var(--prov-base);
+  color: var(--prov-contrast);
+  border-bottom-color: var(--prov-vora);
+}
+
+.provincia__toggle {
+  display: none;
+  flex: 0 0 auto;
+  width: 28px;
+  padding: 8px 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px 0 0 0;
+  color: inherit;
+}
+
 .provincia__btn {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -205,23 +283,24 @@ button:focus-visible {
   font-weight: 700;
   color: var(--prov-vora);
   padding: 8px 12px;
-  margin-bottom: 8px;
-  border-bottom: 2px solid var(--prov-base);
   border-radius: 6px 6px 0 0;
 }
 
-.provincia__btn:hover {
-  background: var(--prov-hover);
-}
-
-.provincia__btn.estat--parcial {
-  background: var(--prov-parcial);
-}
-
-.provincia__btn.estat--total {
-  background: var(--prov-base);
+.provincia__fila.estat--total .provincia__btn {
   color: var(--prov-contrast);
-  border-bottom-color: var(--prov-vora);
+}
+
+@media (max-width: 768px) {
+  .provincia__toggle {
+    display: flex;
+  }
+}
+
+@media (min-width: 769px) {
+  /* En desktop, les comarques sempre visibles independentment del v-show */
+  .comarques--plegable {
+    display: flex !important;
+  }
 }
 
 /* ── Comarca ───────────────────────────────────────────── */

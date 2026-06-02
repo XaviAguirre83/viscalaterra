@@ -171,12 +171,14 @@ function tancaEnBlur(e: FocusEvent) {
   position: relative;
   display: flex;
   align-items: center;
+  width: 100%;
 }
 
 .cerca-rapida__camp {
   display: flex;
   align-items: center;
   gap: 6px;
+  width: 100%;
 }
 
 .cerca-input {
@@ -192,6 +194,13 @@ function tancaEnBlur(e: FocusEvent) {
   transition:
     border-color 0.15s,
     box-shadow 0.15s;
+}
+
+@media (max-width: 768px) {
+  .cerca-input {
+    flex: 1;
+    width: auto;
+  }
 }
 
 .cerca-input:focus {

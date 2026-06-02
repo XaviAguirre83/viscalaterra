@@ -547,8 +547,6 @@ function actualitzaEstilsTotes() {
 
 // ── Selector de nivell (integrat al panell d'informació) ──────────────────
 
-const NIVELLS: NivellTerritorial[] = ['provincies', 'vegueries', 'comarques', 'municipis']
-
 const ETIQUETES_NIVELL: Record<NivellTerritorial, string> = {
   provincies: 'Província',
   vegueries: 'Vegueria',
@@ -649,46 +647,73 @@ watch(
 <template>
   <div id="mapa-contenidor" class="mapa-contenidor">
     <div class="info-territori">
-      <div class="info-territori__caps">
-        <button
-          v-for="nivell in NIVELLS"
-          :key="nivell"
-          class="info-territori__cap"
-          :class="{ 'info-territori__cap--actiu': mapaStore.nivellActiu === nivell }"
-          @click="mapaStore.defineixNivellActiu(nivell)"
-        >
-          {{ ETIQUETES_NIVELL[nivell] }}
-        </button>
-      </div>
-      <div class="info-territori__vals">
-        <div class="info-territori__val-cel">
-          <template v-if="filesHover?.provincies.length">
-            <span
-              v-for="(p, i) in filesHover.provincies"
-              :key="p"
-              :class="{ 'info-territori__val--secundari': i > 0 }"
-              >{{ p }}</span
-            >
-          </template>
-          <span v-else class="info-territori__val--buit">—</span>
+      <div class="info-territori__grid">
+        <div class="info-territori__cel">
+          <button
+            class="info-territori__cap"
+            :class="{ 'info-territori__cap--actiu': mapaStore.nivellActiu === 'provincies' }"
+            @click="mapaStore.defineixNivellActiu('provincies')"
+          >
+            {{ ETIQUETES_NIVELL.provincies }}
+          </button>
+          <div class="info-territori__val-cel">
+            <template v-if="filesHover?.provincies.length">
+              <span
+                v-for="(p, i) in filesHover.provincies"
+                :key="p"
+                :class="{ 'info-territori__val--secundari': i > 0 }"
+                >{{ p }}</span
+              >
+            </template>
+            <span v-else class="info-territori__val--buit">—</span>
+          </div>
         </div>
-        <div class="info-territori__val-cel">
-          <template v-if="filesHover?.vegueries.length">
-            <span
-              v-for="(v, i) in filesHover.vegueries"
-              :key="v"
-              :class="{ 'info-territori__val--secundari': i > 0 }"
-              >{{ v }}</span
-            >
-          </template>
-          <span v-else class="info-territori__val--buit">—</span>
+        <div class="info-territori__cel">
+          <button
+            class="info-territori__cap"
+            :class="{ 'info-territori__cap--actiu': mapaStore.nivellActiu === 'vegueries' }"
+            @click="mapaStore.defineixNivellActiu('vegueries')"
+          >
+            {{ ETIQUETES_NIVELL.vegueries }}
+          </button>
+          <div class="info-territori__val-cel">
+            <template v-if="filesHover?.vegueries.length">
+              <span
+                v-for="(v, i) in filesHover.vegueries"
+                :key="v"
+                :class="{ 'info-territori__val--secundari': i > 0 }"
+                >{{ v }}</span
+              >
+            </template>
+            <span v-else class="info-territori__val--buit">—</span>
+          </div>
         </div>
-        <span :class="{ 'info-territori__val--buit': !filesHover || filesHover.comarca === '—' }">
-          {{ filesHover?.comarca ?? '—' }}
-        </span>
-        <span :class="{ 'info-territori__val--buit': !filesHover || filesHover.municipi === '—' }">
-          {{ filesHover?.municipi ?? '—' }}
-        </span>
+        <div class="info-territori__cel">
+          <button
+            class="info-territori__cap"
+            :class="{ 'info-territori__cap--actiu': mapaStore.nivellActiu === 'comarques' }"
+            @click="mapaStore.defineixNivellActiu('comarques')"
+          >
+            {{ ETIQUETES_NIVELL.comarques }}
+          </button>
+          <span
+            :class="{ 'info-territori__val--buit': !filesHover || filesHover.comarca === '—' }"
+            >{{ filesHover?.comarca ?? '—' }}</span
+          >
+        </div>
+        <div class="info-territori__cel">
+          <button
+            class="info-territori__cap"
+            :class="{ 'info-territori__cap--actiu': mapaStore.nivellActiu === 'municipis' }"
+            @click="mapaStore.defineixNivellActiu('municipis')"
+          >
+            {{ ETIQUETES_NIVELL.municipis }}
+          </button>
+          <span
+            :class="{ 'info-territori__val--buit': !filesHover || filesHover.municipi === '—' }"
+            >{{ filesHover?.municipi ?? '—' }}</span
+          >
+        </div>
       </div>
     </div>
   </div>
@@ -717,16 +742,18 @@ watch(
   pointer-events: none;
 }
 
-.info-territori__caps,
-.info-territori__vals {
+.info-territori__grid {
   display: grid;
   grid-template-columns: 100px 160px 150px 240px;
   column-gap: 16px;
+  pointer-events: auto;
 }
 
-.info-territori__caps {
-  margin-bottom: 5px;
-  pointer-events: auto;
+.info-territori__cel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 
 .info-territori__cap {
@@ -758,7 +785,8 @@ watch(
   border-bottom-color: #1a1a1a;
 }
 
-.info-territori__vals span {
+.info-territori__cel > span,
+.info-territori__val-cel span {
   color: #1a1a1a;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -769,6 +797,19 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 1px;
+}
+
+@media (max-width: 768px) {
+  .info-territori {
+    width: calc(100vw - 80px);
+    max-width: 340px;
+  }
+
+  .info-territori__grid {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 12px;
+    row-gap: 8px;
+  }
 }
 
 .info-territori__val--buit {
@@ -799,5 +840,11 @@ watch(
 .leaflet-pane[class*='leaflet-territori-'].territori-actiu canvas {
   pointer-events: auto;
   cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .leaflet-control-zoom {
+    display: none;
+  }
 }
 </style>

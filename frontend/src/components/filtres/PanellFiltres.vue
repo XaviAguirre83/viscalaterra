@@ -46,29 +46,34 @@ watch(
   <div class="panell-filtres">
     <!-- ── Barra horitzontal ──────────────────────────────────────────── -->
     <nav class="barra">
-      <button
-        class="btn-menu"
-        :class="{ 'btn-menu--obert': menuObert }"
-        aria-label="Menú principal"
-        @click="menuObert = !menuObert"
-      >
-        <span /><span /><span />
-      </button>
+      <div class="barra__fila-1">
+        <button
+          class="btn-menu"
+          :class="{ 'btn-menu--obert': menuObert }"
+          aria-label="Menú principal"
+          @click="menuObert = !menuObert"
+        >
+          <span /><span /><span />
+        </button>
 
-      <span v-if="seccioActiva" class="seccio-nom">{{ seccioActiva.nom }}</span>
+        <span v-if="seccioActiva" class="seccio-nom">{{ seccioActiva.nom }}</span>
 
-      <template v-if="esCerca">
-        <div class="separador-v" />
-        <div class="tabs">
-          <button :class="{ activa: tabActiva === 'on' }" @click="toggleTab('on')">On?</button>
-          <button :class="{ activa: tabActiva === 'que' }" @click="toggleTab('que')">Què?</button>
-          <button :class="{ activa: tabActiva === 'quan' }" @click="toggleTab('quan')">
-            Quan?
-          </button>
-        </div>
-        <div class="separador-v" />
+        <template v-if="esCerca">
+          <div class="separador-v" />
+          <div class="tabs">
+            <button :class="{ activa: tabActiva === 'on' }" @click="toggleTab('on')">On?</button>
+            <button :class="{ activa: tabActiva === 'que' }" @click="toggleTab('que')">Què?</button>
+            <button :class="{ activa: tabActiva === 'quan' }" @click="toggleTab('quan')">
+              Quan?
+            </button>
+          </div>
+          <div class="separador-v separador-v--cerca" />
+        </template>
+      </div>
+
+      <div v-if="esCerca" class="barra__cerca-wrap">
         <CercaRapida />
-      </template>
+      </div>
     </nav>
 
     <!-- ── Menú principal desplegable ───────────────────────────────── -->
@@ -105,12 +110,33 @@ watch(
 
 .barra {
   display: flex;
-  align-items: center;
-  padding: 0 12px;
-  height: 48px;
+  flex-direction: column;
   background: #ffffff;
   border-bottom: 1px solid #e8e8e4;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.barra__fila-1 {
+  display: flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 12px;
+}
+
+.barra__cerca-wrap {
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .separador-v--cerca {
+    display: none;
+  }
+
+  .barra__cerca-wrap {
+    width: 100%;
+    padding: 0 4px 8px 50px;
+  }
 }
 
 /* ── Botó hamburger ─────────────────────────────────────────────────────── */
@@ -182,6 +208,14 @@ watch(
 .tabs {
   display: flex;
   gap: 2px;
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .tabs button {
+    flex: 1;
+    text-align: center;
+  }
 }
 
 .tabs button {
@@ -223,6 +257,16 @@ watch(
   min-width: 200px;
   z-index: 100;
   overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .menu-principal {
+    left: 0;
+    right: 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
 }
 
 .menu-principal__item {
@@ -267,6 +311,18 @@ watch(
   padding: 16px;
   color: #222;
   z-index: 99;
+}
+
+@media (max-width: 768px) {
+  .desplegable {
+    right: 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    max-height: calc(100dvh - 160px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 /* ── Overlay per tancar el menú ─────────────────────────────────────────── */

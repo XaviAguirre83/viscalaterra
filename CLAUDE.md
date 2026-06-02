@@ -278,6 +278,55 @@ La funció `temaDeInfo(info)` a `MapaLeaflet.vue` centralitza la resolució del 
 - **Store**: `stores/geomaster.ts` — estat del joc (nivell, modalitat, demarcacions pendents/encertades, comptadors, cronòmetre). Independent dels stores de cerca.
 - **Mapa en mode joc**: `MapaLeaflet.vue` s'usa en mode "joc" on el clic no fa selecció sinó que dispara la lògica de resposta del GeoMaster. La prop `modeJoc` (o similar) desactiva els handlers normals i n'activa els del joc.
 
+## Disseny responsive (mòbil)
+
+Breakpoint mòbil: `max-width: 768px`. Desktop no canvia res.
+
+### Proxy Vite i URLs de l'API
+
+El frontend usa **URLs relatives** (`/api/...`) en totes les crides fetch. Vite les redirigeix al backend via proxy configurat a `vite.config.ts`:
+
+```ts
+proxy: { '/api': 'http://backend:3000' }
+```
+
+Aixó permet accedir a la web des de qualsevol dispositiu a la mateixa xarxa (mòbil, tauleta) sense que `localhost` apunti al propi dispositiu.
+
+### Orientació del dispositiu
+
+En mòbils en horitzontal (`orientation: landscape AND max-height: 600px`) apareix un overlay fosc amb un icone giratori i el missatge _"Gira el dispositiu"_. La pàgina no és usable en landscape en mòbil.
+
+### Barra de navegació (`PanellFiltres`)
+
+En mòbil la barra passa a **dues files**:
+
+- **Fila 1** (48px fixos): `[☰]` + nom secció + `[On?][Què?][Quan?]` (repartits equitativament)
+- **Fila 2**: cercador a ample complet, alineat amb el text de la secció
+
+El menú principal desplegable ocupa tot l'ample de pantalla (`right: 0`). Els desplegables On?/Què?/Quan? tenen `max-height: calc(100dvh - 160px)` i `overflow-y: auto` per ser scrollables.
+
+### Panell On? (`TabOn`)
+
+En mòbil: **1 columna** amb 4 files (una per província). Les províncies son col·lapsables (triangle ▶ igual que les comarques) — per defecte tancades. En desktop: 4 columnes sense canvis.
+
+### Panell d'informació territorial (`info-territori`)
+
+En mòbil: graella **2×2** — cada cel·la té el selector a dalt i el valor just a sota:
+
+```
+Província  │ Vegueria
+val-prov   │ val-veg
+───────────────────────
+Comarca    │ Municipi
+val-comarca│ val-muni
+```
+
+Les cel·les tenen `min-width: 0` per evitar que text llarg eixampli les columnes (trunca amb `…`).
+
+### Controls de zoom del mapa
+
+Els botons `+`/`−` de Leaflet s'oculten en mòbil (`display: none`). El zoom es fa amb pinch gesture natiu.
+
 ## Decisiones de producto tomadas
 
 - La unidad mínima de selección es siempre el **municipi**
