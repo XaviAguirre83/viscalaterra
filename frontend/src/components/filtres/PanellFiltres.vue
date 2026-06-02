@@ -68,11 +68,10 @@ watch(
             </button>
           </div>
           <div class="separador-v separador-v--cerca" />
+          <div class="barra__cerca-wrap">
+            <CercaRapida />
+          </div>
         </template>
-      </div>
-
-      <div v-if="esCerca" class="barra__cerca-wrap">
-        <CercaRapida />
       </div>
     </nav>
 
@@ -109,8 +108,6 @@ watch(
 }
 
 .barra {
-  display: flex;
-  flex-direction: column;
   background: #ffffff;
   border-bottom: 1px solid #e8e8e4;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -129,12 +126,19 @@ watch(
 }
 
 @media (max-width: 768px) {
+  .barra__fila-1 {
+    height: auto;
+    min-height: 48px;
+    flex-wrap: wrap;
+    padding: 6px 12px;
+  }
+
   .separador-v--cerca {
     display: none;
   }
 
   .barra__cerca-wrap {
-    width: 100%;
+    flex-basis: 100%;
     padding: 0 4px 8px 50px;
   }
 }
@@ -208,10 +212,13 @@ watch(
 .tabs {
   display: flex;
   gap: 2px;
-  flex: 1;
 }
 
 @media (max-width: 768px) {
+  .tabs {
+    flex: 1;
+  }
+
   .tabs button {
     flex: 1;
     text-align: center;
