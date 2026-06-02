@@ -398,8 +398,7 @@ function actualitzaMaxBounds() {
 async function carregaMascaraCatalunya() {
   if (!mapa || mascaraCatalunya) return
 
-  const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
-  const res = await fetch(`${apiUrl}/api/geojson/comunitat?zoom=8`)
+  const res = await fetch('/api/geojson/comunitat?zoom=8')
   if (!res.ok) return
 
   const dades = (await res.json()) as GeoJSON.FeatureCollection
@@ -466,8 +465,7 @@ async function carregaCapa(nivell: NivellTerritorial, zoom: number) {
 
   let capa = cacheLayers[clau]
   if (!capa) {
-    const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
-    const res = await fetch(`${apiUrl}/api/geojson/${nivell}?zoom=${zoom}`)
+    const res = await fetch(`/api/geojson/${nivell}?zoom=${zoom}`)
     if (!res.ok) return
     const dades = await res.json()
 

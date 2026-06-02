@@ -14,7 +14,7 @@ export const useTerritorisStore = defineStore('territoris', () => {
     carregant.value = true
     error.value = null
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/territoris/arbre`)
+      const res = await fetch('/api/territoris/arbre')
       if (!res.ok) throw new Error(`Error ${res.status}`)
       const data = (await res.json()) as ArbreTerritorial
       arbre.value = data.provincies
