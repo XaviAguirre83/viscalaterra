@@ -88,34 +88,47 @@ export const useTerritorisStore = defineStore('territoris', () => {
     seleccionat ? municipisSeleccionats.value.add(codi) : municipisSeleccionats.value.delete(codi)
   }
 
-  // Selecció a nivell comarca: TOTS els municipis (les dues provincies si és
-  // transfronterera). Usat pel clic al polígon del mapa.
+  // Les funcions bulk treballen sobre un Set pla (no reactiu) i assignen el
+  // resultat al ref en una sola operació. Mutar el Set reactiu N vegades
+  // dispara el sistema reactiu de Vue N vegades (~9ms cadascuna); assignar
+  // un nou Set al ref dispara Vue exactament 1 cop independentment de N.
+
   function seleccionaComarca(codiComarca: string, seleccionat: boolean) {
-    municipisDeComarca(codiComarca).forEach((m) => seleccionaMunicipi(m.codi, seleccionat))
+    const s = new Set(municipisSeleccionats.value)
+    municipisDeComarca(codiComarca).forEach((m) => (seleccionat ? s.add(m.codi) : s.delete(m.codi)))
+    municipisSeleccionats.value = s
   }
 
-  // Selecció comarcal restringida a una provincia. Usat pel checkbox d'una columna
-  // del desplegable On? — només afecta els municipis d'aquella provincia.
   function seleccionaComarcaEnProvincia(
     codiComarca: string,
     codiProvincia: string,
     seleccionat: boolean
   ) {
+    const s = new Set(municipisSeleccionats.value)
     municipisDeComarcaEnProvincia(codiComarca, codiProvincia).forEach((m) =>
-      seleccionaMunicipi(m.codi, seleccionat)
+      seleccionat ? s.add(m.codi) : s.delete(m.codi)
     )
+    municipisSeleccionats.value = s
   }
 
   function seleccionaProvincia(codiProvincia: string, seleccionat: boolean) {
-    municipisDeProvincia(codiProvincia).forEach((m) => seleccionaMunicipi(m.codi, seleccionat))
+    const s = new Set(municipisSeleccionats.value)
+    municipisDeProvincia(codiProvincia).forEach((m) =>
+      seleccionat ? s.add(m.codi) : s.delete(m.codi)
+    )
+    municipisSeleccionats.value = s
   }
 
   function seleccionaVegueria(codiVegueria: string, seleccionat: boolean) {
-    municipisDeVegueria(codiVegueria).forEach((m) => seleccionaMunicipi(m.codi, seleccionat))
+    const s = new Set(municipisSeleccionats.value)
+    municipisDeVegueria(codiVegueria).forEach((m) =>
+      seleccionat ? s.add(m.codi) : s.delete(m.codi)
+    )
+    municipisSeleccionats.value = s
   }
 
   function netejaSeleccio() {
-    municipisSeleccionats.value.clear()
+    municipisSeleccionats.value = new Set()
   }
 
   function estatPerMunicipis(municipis: Municipi[]): 'cap' | 'parcial' | 'total' {

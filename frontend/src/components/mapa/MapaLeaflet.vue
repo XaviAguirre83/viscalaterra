@@ -216,6 +216,16 @@ const PANE_Z_INDEX: Record<NivellTerritorial, number> = {
   municipis: 440,
 }
 
+// Un renderer Canvas per nivell (un <canvas> per pane). Leaflet agrupa totes
+// les features del nivell en un sol canvas i coalesça les crides a setStyle()
+// en un únic requestAnimationFrame — molt més ràpid que 947 operacions SVG DOM.
+const canvasRenderers: Record<NivellTerritorial, L.Canvas> = {
+  provincies: L.canvas({ pane: PANE_NOMS.provincies }),
+  vegueries: L.canvas({ pane: PANE_NOMS.vegueries }),
+  comarques: L.canvas({ pane: PANE_NOMS.comarques }),
+  municipis: L.canvas({ pane: PANE_NOMS.municipis }),
+}
+
 function creaPanesTerritorials() {
   if (!mapa) return
   ;(Object.keys(PANE_NOMS) as NivellTerritorial[]).forEach((nivell) => {
@@ -462,6 +472,8 @@ async function carregaCapa(nivell: NivellTerritorial, zoom: number) {
     const dades = await res.json()
 
     capa = L.geoJSON(dades, {
+      // renderer és vàlid en runtime però @types/leaflet no el declara a GeoJSONOptions
+      ...({ renderer: canvasRenderers[nivell] } as L.GeoJSONOptions),
       pane: PANE_NOMS[nivell],
       style: (feature) => estilPerFeature(feature, nivell),
       onEachFeature(feature, layer) {
@@ -772,24 +784,22 @@ watch(
 </style>
 
 <style>
-/* Interactivitat dels paths territorials.
+/* Interactivitat dels canvases territorials (Canvas renderer).
 
-   IMPORTANT — guerra d'especificitat amb el CSS de Leaflet:
-   Leaflet defineix `.leaflet-pane > svg path.leaflet-interactive { pointer-events: auto }`
-   amb especificitat (0,2,2). Per sobreescriure-ho necessitem una regla amb
-   especificitat superior. Afegir `.leaflet-interactive` (que Leaflet posa a
-   tots els paths interactius) al nostre selector és el truc.
+   Amb Canvas renderer, Leaflet dibuixa totes les features d'un nivell en un
+   sol <canvas> i fa el hit-testing internament (point-in-polygon en JS). No hi
+   ha elements <path> individuals al DOM — el CSS controla el <canvas> del pane.
 
-   - Per defecte (panes no actius): pointer-events:none — els events travessen
-     cap al pane actiu, encara que la capa estigui al davant per z-order.
-   - Pane actiu (.territori-actiu): pointer-events:fill — tota l'àrea interior
-     del polígon és clicable, no només la vora (necessari amb fillOpacity:0). */
-.leaflet-pane[class*='leaflet-territori-'] path.leaflet-interactive {
+   - Panes no actius: pointer-events:none — el canvas és transparent als events,
+     que travessen cap al pane actiu per z-order.
+   - Pane actiu (.territori-actiu): pointer-events:auto — el canvas rep els
+     events; Leaflet resol quin polígon s'ha tocat, fins i tot amb fillOpacity:0. */
+.leaflet-pane[class*='leaflet-territori-'] canvas {
   pointer-events: none;
 }
 
-.leaflet-pane[class*='leaflet-territori-'].territori-actiu path.leaflet-interactive {
-  pointer-events: fill;
+.leaflet-pane[class*='leaflet-territori-'].territori-actiu canvas {
+  pointer-events: auto;
   cursor: pointer;
 }
 </style>
