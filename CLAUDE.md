@@ -24,7 +24,7 @@ Spec de producto detallada: `viscalaterra_plan.md`
 | Mapa          | Leaflet.js                                     |
 | Tiempo real   | Socket.io (Trivial multijugador)               |
 | Auth          | JWT + bcrypt                                   |
-| i18n          | i18next                                        |
+| i18n          | Vue I18n (vue-i18n)                            |
 | Contenedores  | Docker + Docker Compose                        |
 | Testing       | Vitest (unit) + Playwright (E2E)               |
 | Linting       | ESLint (oxlint + eslint-plugin-vue) + Prettier |
@@ -49,7 +49,8 @@ cd frontend
 npm run dev                # servidor de desarrollo Vite
 npm run build              # compilación de producción
 npm run type-check         # verificación de tipos TypeScript
-npm run lint               # oxlint + eslint con autofix
+npm run lint               # oxlint + eslint (verificación, no modifica — usado por el CI)
+npm run lint:fix           # oxlint + eslint con autofix (uso local)
 npm run test:unit          # Vitest (tests unitarios)
 npm run test:unit -- --reporter=verbose   # un solo fichero: vitest run src/foo.spec.ts
 npm run test:e2e           # Playwright
@@ -104,6 +105,7 @@ npm workspaces: `frontend` y `backend` son paquetes independientes. Las dependen
   - `filtres` — pestaña activa del panel On?/Què?/Quan?
 - **Temàtica de colors**: `frontend/src/theme/provincies.ts` — paleta central per província i per vegueria, usada tant per Leaflet (`L.PathOptions`) com pel panell On? (CSS custom properties `--prov-base`, `--prov-parcial`, etc.). Vegeu la secció "Temàtica de colors" més avall.
 - **Routing**: Vue Router con `createWebHistory`. Las rutas se definen en `frontend/src/router/index.ts`. Seccions previstes: `/cerca`, `/agenda`, `/jocs`, `/merchandising`, `/sobre` (les tres últimes sense vista implementada encara).
+- **i18n**: Vue I18n (`frontend/src/i18n/`). Tres idiomes (`ca`/`es`/`en`) amb diccionaris JSON a `i18n/locales/`. L'idioma actiu es desa a `localStorage` (clau `viscalaterra-idioma`); a la primera visita (sense res desat) sempre s'arrenca en **català**, l'idioma principal de la plataforma (no es té en compte l'idioma del navegador). `canviaIdioma()` actualitza també l'atribut `<html lang>`. Els components tradueixen amb `$t('clau')` al template (o `useI18n().t()` a la lògica). **Important**: això tradueix només el text d'**interfície**; el contingut de **dades** (llocs, esdeveniments) es traduirà a nivell de base de dades, no amb i18n. Per afegir un idioma: nou codi a `IDIOMES` + nou JSON a `locales/`.
 - **Componentes**: `frontend/src/components/` para reutilizables, `frontend/src/views/` para páginas completas (una por ruta).
 
 ### Capçalera (`CabeceraApp.vue`)
