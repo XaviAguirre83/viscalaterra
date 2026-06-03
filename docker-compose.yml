@@ -8,7 +8,8 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
-      - '${DB_PORT:-5432}:5432'
+      # Lligat a loopback: la BD només és accessible des del propi host, mai des de la LAN.
+      - '127.0.0.1:${DB_PORT:-5432}:5432'
     volumes:
       - db_data:/var/lib/postgresql/data
       - ./infra/db/init:/docker-entrypoint-initdb.d
@@ -27,7 +28,9 @@ services:
     env_file: .env
     command: sh -c "npm install && npm run dev"
     ports:
-      - '${PORT:-3000}:3000'
+      # Lligat a loopback: el frontend hi accedeix per la xarxa interna de Docker
+      # (proxy de Vite → backend:3000), no cal exposar-lo a la LAN.
+      - '127.0.0.1:${PORT:-3000}:3000'
     volumes:
       - ./backend:/app
     depends_on:

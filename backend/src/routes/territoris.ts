@@ -12,7 +12,16 @@ const router = Router()
  * El frontend el carrega una vegada a l'inici i navega localment.
  * ~1000 registres de text = payload lleuger (~150KB).
  */
-router.get('/arbre', async (_req, res) => {
+// Caché en memòria: les dades territorials són estàtiques (no canvien en runtime).
+let arbreCache: { provincies: unknown; vegueries: unknown } | null = null
+
+router.get('/arbre', async (_req, res, next) => {
+  if (arbreCache) {
+    res.setHeader('Cache-Control', 'public, max-age=3600')
+    res.json(arbreCache)
+    return
+  }
+
   const client = await pool.connect()
   try {
     const [provResult, vegResult, comResult, munResult] = await Promise.all([
@@ -71,7 +80,11 @@ router.get('/arbre', async (_req, res) => {
 
     const vegueries = vegResult.rows.map((v) => ({ codi: v.codi, nom: v.nom }))
 
-    res.json({ provincies: arbre, vegueries })
+    arbreCache = { provincies: arbre, vegueries }
+    res.setHeader('Cache-Control', 'public, max-age=3600')
+    res.json(arbreCache)
+  } catch (err) {
+    next(err)
   } finally {
     client.release()
   }

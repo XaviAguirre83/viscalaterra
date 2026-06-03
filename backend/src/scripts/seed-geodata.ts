@@ -52,7 +52,7 @@ async function seedProvincies(client: PoolClient) {
     const p = f.properties
     await client.query(
       `INSERT INTO provincies (codi, nom, geom)
-       VALUES ($1, $2, ST_SetSRID(ST_GeomFromGeoJSON($3), 4326))
+       VALUES ($1, $2, ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON($3), 4326)))
        ON CONFLICT (codi) DO NOTHING`,
       [p.CODIPROV, p.NOMPROV, JSON.stringify(f.geometry)]
     )
@@ -70,7 +70,7 @@ async function seedVegueries(client: PoolClient) {
     const p = f.properties
     await client.query(
       `INSERT INTO vegueries (codi, nom, geom)
-       VALUES ($1, $2, ST_SetSRID(ST_GeomFromGeoJSON($3), 4326))
+       VALUES ($1, $2, ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON($3), 4326)))
        ON CONFLICT (codi) DO NOTHING`,
       [p.CODIVEGUE, p.NOMVEGUE, JSON.stringify(f.geometry)]
     )
@@ -88,7 +88,7 @@ async function seedComarques(client: PoolClient) {
     const p = f.properties
     await client.query(
       `INSERT INTO comarques (codi, nom, cap, geom)
-       VALUES ($1, $2, $3, ST_SetSRID(ST_GeomFromGeoJSON($4), 4326))
+       VALUES ($1, $2, $3, ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON($4), 4326)))
        ON CONFLICT (codi) DO NOTHING`,
       [p.CODICOMAR, p.NOMCOMAR, p.CAPCOMAR, JSON.stringify(f.geometry)]
     )
@@ -109,7 +109,7 @@ async function seedMunicipis(client: PoolClient) {
     const esCapComarca = nomMuni === capComar || nomMuni.startsWith(capComar + ' ')
     await client.query(
       `INSERT INTO municipis (codi, nom, es_cap_comarca, area_m2, comarca_codi, vegueria_codi, provincia_codi, geom)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, ST_SetSRID(ST_GeomFromGeoJSON($8), 4326))
+       VALUES ($1, $2, $3, $4, $5, $6, $7, ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON($8), 4326)))
        ON CONFLICT (codi) DO NOTHING`,
       [
         p.CODIMUNI,
