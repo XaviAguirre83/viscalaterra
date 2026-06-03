@@ -1,0 +1,110 @@
+{
+  "comu": {
+    "reintenta": "Retry",
+    "proximament": "coming soon"
+  },
+  "capcalera": {
+    "registra": "Sign up",
+    "entra": "Log in",
+    "idioma": "Change language"
+  },
+  "nav": {
+    "menuPrincipal": "Main menu",
+    "seccions": {
+      "cerca": "Search",
+      "agenda": "Cultural Agenda",
+      "jocs": "Games",
+      "merchandising": "Merchandising",
+      "sobre": "About us"
+    },
+    "tabs": {
+      "on": "Where?",
+      "que": "What?",
+      "quan": "When?"
+    }
+  },
+  "nivells": {
+    "provincia": "Province",
+    "vegueria": "Vegueria",
+    "comarca": "Comarca",
+    "municipi": "Municipality"
+  },
+  "cerca": {
+    "placeholder": "Search by name…",
+    "boto": "Search",
+    "aria": "Search a territory by name",
+    "capResultat": "No results for «{q}»",
+    "mesMunicipis": "There are {n} more municipalities. Refine your search to see them."
+  },
+  "on": {
+    "carregant": "Loading the map of Catalonia…",
+    "seleccionats": "{n} municipality selected | {n} municipalities selected",
+    "neteja": "Clear selection",
+    "expandir": "Expand",
+    "replegar": "Collapse"
+  },
+  "que": {
+    "esports": {
+      "titol": "Sports",
+      "pingPong": "Table tennis",
+      "calistenia": "Calisthenics park",
+      "skatepark": "Skatepark",
+      "futbol": "Football pitch",
+      "basquet": "Basketball court",
+      "tennis": "Tennis court",
+      "patinatge": "Skating rink"
+    },
+    "nens": {
+      "titol": "Kids",
+      "parcInfantil": "Playground",
+      "tobogans": "Slides",
+      "gronxadors": "Swings",
+      "sorral": "Sandpit"
+    },
+    "culinari": {
+      "titol": "Food",
+      "mercatSetmanal": "Weekly market",
+      "firaGastronomica": "Food fair",
+      "foodTrucks": "Food trucks area"
+    },
+    "aireLliure": {
+      "titol": "Outdoors",
+      "picnic": "Picnic area",
+      "barbacoa": "Barbecue area",
+      "font": "Spring / fountain",
+      "mirador": "Viewpoint"
+    },
+    "patrimoni": {
+      "titol": "Heritage",
+      "castell": "Castle",
+      "monument": "Monument",
+      "esglesia": "Church / hermitage",
+      "jaciment": "Archaeological site"
+    },
+    "natura": {
+      "titol": "Nature & adventure",
+      "senderisme": "Hiking trail",
+      "btt": "MTB trail",
+      "cim": "Peak (100 peaks)",
+      "banyNatural": "Natural bathing area"
+    }
+  },
+  "quan": {
+    "permanent": "Permanent",
+    "permanentDesc": "Always available",
+    "recurrent": "Recurring",
+    "recurrentDesc": "Repeats periodically",
+    "puntual": "One-off",
+    "puntualDesc": "Specific dates",
+    "qualsevol": "Any time"
+  },
+  "mapa": {
+    "carregant": "Loading the map…",
+    "error": "Could not load the map data.",
+    "nivellAria": "Active territorial level"
+  },
+  "orientacio": {
+    "gira": "Rotate your device",
+    "subtitol": "This page can only be viewed in portrait orientation"
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "comu": {
+    "reintenta": "Reintentar",
+    "proximament": "próximamente"
+  },
+  "capcalera": {
+    "registra": "Crear cuenta",
+    "entra": "Entrar",
+    "idioma": "Cambiar idioma"
+  },
+  "nav": {
+    "menuPrincipal": "Menú principal",
+    "seccions": {
+      "cerca": "Buscar",
+      "agenda": "Agenda Cultural",
+      "jocs": "Juegos",
+      "merchandising": "Merchandising",
+      "sobre": "Sobre nosotros"
+    },
+    "tabs": {
+      "on": "¿Dónde?",
+      "que": "¿Qué?",
+      "quan": "¿Cuándo?"
+    }
+  },
+  "nivells": {
+    "provincia": "Provincia",
+    "vegueria": "Veguería",
+    "comarca": "Comarca",
+    "municipi": "Municipio"
+  },
+  "cerca": {
+    "placeholder": "Busca por nombre…",
+    "boto": "Buscar",
+    "aria": "Busca un territorio por nombre",
+    "capResultat": "Sin resultados para «{q}»",
+    "mesMunicipis": "Hay {n} municipios más. Afina la búsqueda para verlos."
+  },
+  "on": {
+    "carregant": "Cargando el mapa de Catalunya…",
+    "seleccionats": "{n} municipio seleccionado | {n} municipios seleccionados",
+    "neteja": "Limpiar la selección",
+    "expandir": "Expandir",
+    "replegar": "Plegar"
+  },
+  "que": {
+    "esports": {
+      "titol": "Deportes",
+      "pingPong": "Mesa de ping-pong",
+      "calistenia": "Parque de calistenia",
+      "skatepark": "Skatepark",
+      "futbol": "Pista de fútbol",
+      "basquet": "Pista de baloncesto",
+      "tennis": "Pista de tenis",
+      "patinatge": "Pista de patinaje"
+    },
+    "nens": {
+      "titol": "Niños",
+      "parcInfantil": "Parque infantil",
+      "tobogans": "Toboganes",
+      "gronxadors": "Columpios",
+      "sorral": "Arenero"
+    },
+    "culinari": {
+      "titol": "Culinario",
+      "mercatSetmanal": "Mercado semanal",
+      "firaGastronomica": "Feria gastronómica",
+      "foodTrucks": "Zona de food trucks"
+    },
+    "aireLliure": {
+      "titol": "Aire libre",
+      "picnic": "Zona de pícnic",
+      "barbacoa": "Área de barbacoa",
+      "font": "Fuente / manantial",
+      "mirador": "Mirador"
+    },
+    "patrimoni": {
+      "titol": "Patrimonio",
+      "castell": "Castillo",
+      "monument": "Monumento",
+      "esglesia": "Iglesia / ermita",
+      "jaciment": "Yacimiento"
+    },
+    "natura": {
+      "titol": "Naturaleza y aventura",
+      "senderisme": "Ruta de senderismo",
+      "btt": "Ruta de BTT",
+      "cim": "Cima (100 cimas)",
+      "banyNatural": "Zona de baño natural"
+    }
+  },
+  "quan": {
+    "permanent": "Permanente",
+    "permanentDesc": "Siempre disponible",
+    "recurrent": "Recurrente",
+    "recurrentDesc": "Se repite periódicamente",
+    "puntual": "Puntual",
+    "puntualDesc": "Fechas concretas",
+    "qualsevol": "Cualquier momento"
+  },
+  "mapa": {
+    "carregant": "Cargando el mapa…",
+    "error": "No se han podido cargar los datos del mapa.",
+    "nivellAria": "Nivel territorial activo"
+  },
+  "orientacio": {
+    "gira": "Gira el dispositivo",
+    "subtitol": "Esta página solo se visualiza en posición vertical"
+  }
+}
