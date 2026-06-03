@@ -8,13 +8,11 @@ import CabeceraApp from '@/components/CabeceraApp.vue'
     <RouterView class="app-layout__contingut" />
   </div>
 
-  <div class="overlay-orientacio" aria-live="polite">
+  <div class="overlay-orientacio" role="alert" aria-live="assertive">
     <div class="overlay-orientacio__contingut">
       <span class="overlay-orientacio__icona">⟳</span>
-      <p class="overlay-orientacio__text">Gira el dispositiu</p>
-      <p class="overlay-orientacio__subtitol">
-        Aquesta pàgina només es visualitza en posició vertical
-      </p>
+      <p class="overlay-orientacio__text">{{ $t('orientacio.gira') }}</p>
+      <p class="overlay-orientacio__subtitol">{{ $t('orientacio.subtitol') }}</p>
     </div>
   </div>
 </template>

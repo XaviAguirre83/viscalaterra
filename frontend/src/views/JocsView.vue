@@ -1,3 +1,3 @@
 <template>
-  <div>Jocs — pròximament</div>
+  <div>{{ $t('nav.seccions.jocs') }} — {{ $t('comu.proximament') }}</div>
 </template>

@@ -1,21 +1,38 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useTerritorisStore } from '@/stores/territoris'
 
 const territoris = useTerritorisStore()
+const { t } = useI18n()
 
-const query = ref('')
+const queryBruta = ref('') // lligat a l'input (s'actualitza a cada tecla)
+const query = ref('') // valor amb debounce (dispara la cerca)
 const obert = ref(false)
 const inputRef = ref<HTMLInputElement | null>(null)
 
-// Normalitza text per cercar sense accents ni majúscules
+const MAX_MUNICIPIS = 8
+
+// Debounce de 150ms: evita recórrer l'arbre sencer a cada pulsació de tecla.
+let debounceTimer: ReturnType<typeof setTimeout> | undefined
+watch(queryBruta, (val) => {
+  clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => {
+    query.value = val
+  }, 150)
+})
+
+// Normalitza text per cercar sense accents ni majúscules.
 function normalitza(s: string): string {
   return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 }
 
-function coincideix(nom: string, q: string): boolean {
-  return normalitza(nom).includes(normalitza(q))
-}
+// Mapa codi comarca → nom, calculat una sola vegada (evita el bucle imbricat O(n×m)).
+const nomComarcaPerCodi = computed<Map<string, string>>(() => {
+  const m = new Map<string, string>()
+  territoris.arbre?.forEach((p) => p.comarques.forEach((c) => m.set(c.codi, c.nom)))
+  return m
+})
 
 interface Resultat {
   tipus: 'municipis' | 'comarques' | 'vegueries' | 'provincies'
@@ -24,22 +41,25 @@ interface Resultat {
   context: string // comarca/província per a municipis, etc.
 }
 
-const resultats = computed<Resultat[]>(() => {
+// Una sola passada: calcula els resultats i el total de municipis coincidents
+// (per poder mostrar "8 de N"). normalitza(q) es calcula una vegada, no per ítem.
+const cerca = computed<{ res: Resultat[]; totalMunicipis: number }>(() => {
   const q = query.value.trim()
-  if (q.length < 2 || !territoris.arbre) return []
+  if (q.length < 2 || !territoris.arbre) return { res: [], totalMunicipis: 0 }
+  const qN = normalitza(q)
 
   const res: Resultat[] = []
 
   // Províncies (4)
   for (const prov of territoris.arbre) {
-    if (coincideix(prov.nom, q)) {
+    if (normalitza(prov.nom).includes(qN)) {
       res.push({ tipus: 'provincies', codi: prov.codi, nom: prov.nom, context: '' })
     }
   }
 
   // Vegueries (9)
   for (const veg of territoris.vegueries) {
-    if (coincideix(veg.nom, q)) {
+    if (normalitza(veg.nom).includes(qN)) {
       res.push({ tipus: 'vegueries', codi: veg.codi, nom: veg.nom, context: '' })
     }
   }
@@ -48,43 +68,45 @@ const resultats = computed<Resultat[]>(() => {
   const codesVistes = new Set<string>()
   for (const prov of territoris.arbre) {
     for (const com of prov.comarques) {
-      if (!codesVistes.has(com.codi) && coincideix(com.nom, q)) {
+      if (!codesVistes.has(com.codi) && normalitza(com.nom).includes(qN)) {
         codesVistes.add(com.codi)
         res.push({ tipus: 'comarques', codi: com.codi, nom: com.nom, context: '' })
       }
     }
   }
 
-  // Municipis (màx 8 per no saturar)
-  let comptMunicipis = 0
+  // Municipis: compta tots els coincidents però només en mostra fins a MAX_MUNICIPIS.
+  let totalMunicipis = 0
+  let mostrats = 0
   for (const [, mu] of territoris.municipiPerCodi) {
-    if (comptMunicipis >= 8) break
-    if (coincideix(mu.nom, q)) {
-      // Troba el nom de la comarca
-      let nomComarca = ''
-      for (const prov of territoris.arbre!) {
-        const com = prov.comarques.find((c) => c.codi === mu.comarca_codi)
-        if (com) {
-          nomComarca = com.nom
-          break
-        }
+    if (normalitza(mu.nom).includes(qN)) {
+      totalMunicipis++
+      if (mostrats < MAX_MUNICIPIS) {
+        res.push({
+          tipus: 'municipis',
+          codi: mu.codi,
+          nom: mu.nom,
+          context: nomComarcaPerCodi.value.get(mu.comarca_codi) ?? '',
+        })
+        mostrats++
       }
-      res.push({ tipus: 'municipis', codi: mu.codi, nom: mu.nom, context: nomComarca })
-      comptMunicipis++
     }
   }
 
-  return res
+  return { res, totalMunicipis }
 })
+
+const resultats = computed(() => cerca.value.res)
+const municipisOcults = computed(() => Math.max(0, cerca.value.totalMunicipis - MAX_MUNICIPIS))
 
 // Agrupa resultats per tipus mantenint l'ordre: prov → veg → com → mun
 const grups = computed(() => {
   const ordre: Resultat['tipus'][] = ['provincies', 'vegueries', 'comarques', 'municipis']
   const etiquetes: Record<Resultat['tipus'], string> = {
-    provincies: 'Província',
-    vegueries: 'Vegueria',
-    comarques: 'Comarca',
-    municipis: 'Municipi',
+    provincies: t('nivells.provincia'),
+    vegueries: t('nivells.vegueria'),
+    comarques: t('nivells.comarca'),
+    municipis: t('nivells.municipi'),
   }
   return ordre
     .map((tipus) => ({
@@ -110,6 +132,7 @@ function selecciona(r: Resultat) {
       territoris.seleccionaProvincia(r.codi, true)
       break
   }
+  queryBruta.value = ''
   query.value = ''
   obert.value = false
 }
@@ -128,16 +151,17 @@ function tancaEnBlur(e: FocusEvent) {
     <div class="cerca-rapida__camp">
       <input
         ref="inputRef"
-        v-model="query"
+        v-model="queryBruta"
         type="text"
-        placeholder="Cerca per nom…"
+        :placeholder="$t('cerca.placeholder')"
         class="cerca-input"
         autocomplete="off"
+        :aria-label="$t('cerca.aria')"
         @focus="obert = true"
         @blur="tancaEnBlur"
       />
       <button class="cerca-btn" tabindex="-1" @mousedown.prevent @click="inputRef?.focus()">
-        Cerca
+        {{ $t('cerca.boto') }}
       </button>
     </div>
 
@@ -147,6 +171,7 @@ function tancaEnBlur(e: FocusEvent) {
         <button
           v-for="r in grup.items"
           :key="r.codi"
+          type="button"
           class="cerca-resultat"
           @mousedown.prevent
           @click="selecciona(r)"
@@ -155,13 +180,16 @@ function tancaEnBlur(e: FocusEvent) {
           <span v-if="r.context" class="cerca-resultat__context">{{ r.context }}</span>
         </button>
       </div>
+      <div v-if="municipisOcults > 0" class="cerca-rapida__mes">
+        {{ $t('cerca.mesMunicipis', { n: municipisOcults }) }}
+      </div>
     </div>
 
     <div
       v-if="obert && query.trim().length >= 2 && grups.length === 0"
       class="cerca-rapida__dropdown cerca-rapida__buit"
     >
-      Cap resultat per «{{ query.trim() }}»
+      {{ $t('cerca.capResultat', { q: query.trim() }) }}
     </div>
   </div>
 </template>
@@ -182,11 +210,11 @@ function tancaEnBlur(e: FocusEvent) {
 }
 
 .cerca-input {
-  height: 30px;
+  height: 36px;
   padding: 0 12px;
   border: 1px solid #d8d8d4;
-  border-radius: 15px;
-  font-size: 0.85rem;
+  border-radius: 18px;
+  font-size: var(--text-sm);
   color: #333;
   background: #fafaf8;
   outline: none;
@@ -200,31 +228,38 @@ function tancaEnBlur(e: FocusEvent) {
   .cerca-input {
     flex: 1;
     width: auto;
+    height: 44px;
   }
 }
 
 .cerca-input:focus {
-  border-color: #2d6a2d;
+  border-color: var(--color-marca, #2d6a2d);
   background: #fff;
   box-shadow: 0 0 0 2px rgba(45, 106, 45, 0.12);
 }
 
 .cerca-btn {
-  height: 30px;
+  height: 36px;
   padding: 0 16px;
   border: none;
-  border-radius: 15px;
-  background: #2d6a2d;
+  border-radius: 18px;
+  background: var(--color-marca, #2d6a2d);
   color: #fff;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
   white-space: nowrap;
 }
 
+@media (max-width: 768px) {
+  .cerca-btn {
+    height: 44px;
+  }
+}
+
 .cerca-btn:hover {
-  background: #1e4e1e;
+  background: var(--color-marca-fosc, #1e4e1e);
 }
 
 /* ── Dropdown ───────────────────────────────────────────────────────────── */
@@ -244,8 +279,16 @@ function tancaEnBlur(e: FocusEvent) {
 
 .cerca-rapida__buit {
   padding: 12px 16px;
-  font-size: 0.85rem;
-  color: #999;
+  font-size: var(--text-sm);
+  color: var(--color-text-secundari, #737373);
+}
+
+.cerca-rapida__mes {
+  padding: 8px 14px;
+  font-size: var(--text-xs);
+  color: var(--color-text-secundari, #737373);
+  background: #fafaf8;
+  border-top: 1px solid #f0f0ec;
 }
 
 /* ── Grup de resultats ──────────────────────────────────────────────────── */
@@ -256,11 +299,11 @@ function tancaEnBlur(e: FocusEvent) {
 
 .cerca-grup__titol {
   padding: 6px 14px 3px;
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  color: #aaa;
+  color: var(--color-text-secundari, #737373);
 }
 
 .cerca-resultat {
@@ -268,7 +311,7 @@ function tancaEnBlur(e: FocusEvent) {
   align-items: baseline;
   gap: 8px;
   width: 100%;
-  padding: 7px 14px;
+  padding: 9px 14px;
   background: none;
   border: none;
   text-align: left;
@@ -281,13 +324,13 @@ function tancaEnBlur(e: FocusEvent) {
 }
 
 .cerca-resultat__nom {
-  font-size: 0.88rem;
+  font-size: var(--text-base);
   color: #222;
   font-weight: 500;
 }
 
 .cerca-resultat__context {
-  font-size: 0.78rem;
-  color: #999;
+  font-size: var(--text-sm);
+  color: var(--color-text-secundari, #737373);
 }
 </style>

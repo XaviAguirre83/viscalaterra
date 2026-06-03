@@ -34,6 +34,21 @@
   --color-text: var(--vt-c-text-light-1);
 
   --section-gap: 160px;
+
+  /* Color de marca (verd viscalaterra) — abans repetit literalment a 4+ components */
+  --color-marca: #2d6a2d;
+  --color-marca-fosc: #1e4e1e;
+  --color-marca-clar: #f0f4f0;
+
+  /* Gris de text secundari que compleix WCAG AA (≥4.5:1 sobre blanc) */
+  --color-text-secundari: #737373;
+
+  /* Escala tipogràfica — substitueix les mides ad-hoc disperses */
+  --text-xs: 0.75rem;
+  --text-sm: 0.85rem;
+  --text-base: 0.9rem;
+  --text-md: 1rem;
+  --text-lg: 1.2rem;
 }
 
 @media (prefers-color-scheme: dark) {

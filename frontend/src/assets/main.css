@@ -10,3 +10,11 @@
   min-height: 100vh;
   font-family: Inter, system-ui, sans-serif;
 }
+
+/* Focus visible global (WCAG 2.4.7). Components com TabOn poden afinar-lo amb
+   una regla scoped més específica (p. ex. amb el color de la província). */
+:focus-visible {
+  outline: 2px solid var(--color-marca, #2d6a2d);
+  outline-offset: 2px;
+  border-radius: 2px;
+}

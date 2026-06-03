@@ -78,6 +78,11 @@ interface InfoHover {
 
 const hoverInfo = ref<InfoHover | null>(null)
 
+// Indicador de càrrega: actiu mentre es descarreguen els GeoJSON de les capes.
+const carregant = ref(false)
+// Estat d'error: actiu si falla la descàrrega de capes (xarxa intermitent al mòbil).
+const errorMapa = ref(false)
+
 const filesHover = computed(() => {
   if (!hoverInfo.value) return null
   const { nivell, nom, nomProvincia, nomsProvincia, nomVegueria, nomsVegueria, nomComarca } =
@@ -398,36 +403,40 @@ function actualitzaMaxBounds() {
 async function carregaMascaraCatalunya() {
   if (!mapa || mascaraCatalunya) return
 
-  const res = await fetch('/api/geojson/comunitat?zoom=8')
-  if (!res.ok) return
+  try {
+    const res = await fetch('/api/geojson/comunitat?resolucio=1000000')
+    if (!res.ok) return
 
-  const dades = (await res.json()) as GeoJSON.FeatureCollection
+    const dades = (await res.json()) as GeoJSON.FeatureCollection
 
-  const anellMon: L.LatLngExpression[] = [
-    [-90, -180],
-    [-90, 180],
-    [90, 180],
-    [90, -180],
-  ]
-  const forats: L.LatLngExpression[][] = []
-  const aLatLng = (pos: GeoJSON.Position): L.LatLngTuple => [pos[1]!, pos[0]!]
-  for (const feature of dades.features) {
-    const geom = feature.geometry
-    if (geom.type === 'Polygon') {
-      forats.push(geom.coordinates[0]!.map(aLatLng))
-    } else if (geom.type === 'MultiPolygon') {
-      for (const poligon of geom.coordinates) {
-        forats.push(poligon[0]!.map(aLatLng))
+    const anellMon: L.LatLngExpression[] = [
+      [-90, -180],
+      [-90, 180],
+      [90, 180],
+      [90, -180],
+    ]
+    const forats: L.LatLngExpression[][] = []
+    const aLatLng = (pos: GeoJSON.Position): L.LatLngTuple => [pos[1]!, pos[0]!]
+    for (const feature of dades.features) {
+      const geom = feature.geometry
+      if (geom.type === 'Polygon') {
+        forats.push(geom.coordinates[0]!.map(aLatLng))
+      } else if (geom.type === 'MultiPolygon') {
+        for (const poligon of geom.coordinates) {
+          forats.push(poligon[0]!.map(aLatLng))
+        }
       }
     }
-  }
 
-  mascaraCatalunya = L.polygon([anellMon, ...forats], {
-    color: 'transparent',
-    fillColor: '#ffffff',
-    fillOpacity: 0.55,
-    interactive: false,
-  }).addTo(mapa)
+    mascaraCatalunya = L.polygon([anellMon, ...forats], {
+      color: 'transparent',
+      fillColor: '#ffffff',
+      fillOpacity: 0.55,
+      interactive: false,
+    }).addTo(mapa)
+  } catch (err) {
+    console.error('Error carregant la màscara de Catalunya', err)
+  }
 }
 
 // ── Resolució per nivell i zoom ────────────────────────────────────────────
@@ -465,7 +474,7 @@ async function carregaCapa(nivell: NivellTerritorial, zoom: number) {
 
   let capa = cacheLayers[clau]
   if (!capa) {
-    const res = await fetch(`/api/geojson/${nivell}?zoom=${zoom}`)
+    const res = await fetch(`/api/geojson/${nivell}?resolucio=${resolucio}`)
     if (!res.ok) return
     const dades = await res.json()
 
@@ -528,10 +537,25 @@ async function carregaCapa(nivell: NivellTerritorial, zoom: number) {
 
 async function carregaTotesCapes(zoom: number) {
   const nivells: NivellTerritorial[] = ['provincies', 'vegueries', 'comarques', 'municipis']
-  await Promise.all(nivells.map((n) => carregaCapa(n, zoom)))
-  // El z-order el determinen els panes (PANE_Z_INDEX); no cal bringToFront/Back.
-  // Apliquem la interactivitat al pane segons quin nivell és l'actiu.
-  actualitzaInteractivitatPanes()
+  carregant.value = true
+  errorMapa.value = false
+  try {
+    await Promise.all(nivells.map((n) => carregaCapa(n, zoom)))
+    // El z-order el determinen els panes (PANE_Z_INDEX); no cal bringToFront/Back.
+    // Apliquem la interactivitat al pane segons quin nivell és l'actiu.
+    actualitzaInteractivitatPanes()
+  } catch (err) {
+    console.error('Error carregant les capes del mapa', err)
+    errorMapa.value = true
+  } finally {
+    carregant.value = false
+  }
+}
+
+// Reintenta la càrrega de capes (i la màscara) després d'un error de xarxa.
+function reintentaCarrega() {
+  carregaMascaraCatalunya()
+  carregaTotesCapes(mapa?.getZoom() ?? mapaStore.zoom)
 }
 
 function actualitzaEstilsTotes() {
@@ -543,15 +567,6 @@ function actualitzaEstilsTotes() {
       })
     }
   )
-}
-
-// ── Selector de nivell (integrat al panell d'informació) ──────────────────
-
-const ETIQUETES_NIVELL: Record<NivellTerritorial, string> = {
-  provincies: 'Província',
-  vegueries: 'Vegueria',
-  comarques: 'Comarca',
-  municipis: 'Municipi',
 }
 
 // ── Lifecycle ──────────────────────────────────────────────────────────────
@@ -647,14 +662,17 @@ watch(
 <template>
   <div id="mapa-contenidor" class="mapa-contenidor">
     <div class="info-territori">
-      <div class="info-territori__grid">
+      <div class="info-territori__grid" role="radiogroup" :aria-label="$t('mapa.nivellAria')">
         <div class="info-territori__cel">
           <button
+            type="button"
             class="info-territori__cap"
             :class="{ 'info-territori__cap--actiu': mapaStore.nivellActiu === 'provincies' }"
+            role="radio"
+            :aria-checked="mapaStore.nivellActiu === 'provincies'"
             @click="mapaStore.defineixNivellActiu('provincies')"
           >
-            {{ ETIQUETES_NIVELL.provincies }}
+            {{ $t('nivells.provincia') }}
           </button>
           <div class="info-territori__val-cel">
             <template v-if="filesHover?.provincies.length">
@@ -670,11 +688,14 @@ watch(
         </div>
         <div class="info-territori__cel">
           <button
+            type="button"
             class="info-territori__cap"
             :class="{ 'info-territori__cap--actiu': mapaStore.nivellActiu === 'vegueries' }"
+            role="radio"
+            :aria-checked="mapaStore.nivellActiu === 'vegueries'"
             @click="mapaStore.defineixNivellActiu('vegueries')"
           >
-            {{ ETIQUETES_NIVELL.vegueries }}
+            {{ $t('nivells.vegueria') }}
           </button>
           <div class="info-territori__val-cel">
             <template v-if="filesHover?.vegueries.length">
@@ -690,11 +711,14 @@ watch(
         </div>
         <div class="info-territori__cel">
           <button
+            type="button"
             class="info-territori__cap"
             :class="{ 'info-territori__cap--actiu': mapaStore.nivellActiu === 'comarques' }"
+            role="radio"
+            :aria-checked="mapaStore.nivellActiu === 'comarques'"
             @click="mapaStore.defineixNivellActiu('comarques')"
           >
-            {{ ETIQUETES_NIVELL.comarques }}
+            {{ $t('nivells.comarca') }}
           </button>
           <span
             :class="{ 'info-territori__val--buit': !filesHover || filesHover.comarca === '—' }"
@@ -703,11 +727,14 @@ watch(
         </div>
         <div class="info-territori__cel">
           <button
+            type="button"
             class="info-territori__cap"
             :class="{ 'info-territori__cap--actiu': mapaStore.nivellActiu === 'municipis' }"
+            role="radio"
+            :aria-checked="mapaStore.nivellActiu === 'municipis'"
             @click="mapaStore.defineixNivellActiu('municipis')"
           >
-            {{ ETIQUETES_NIVELL.municipis }}
+            {{ $t('nivells.municipi') }}
           </button>
           <span
             :class="{ 'info-territori__val--buit': !filesHover || filesHover.municipi === '—' }"
@@ -715,6 +742,15 @@ watch(
           >
         </div>
       </div>
+    </div>
+
+    <div v-if="carregant" class="mapa-carregant" role="status" aria-live="polite">
+      <span class="mapa-carregant__spinner" aria-hidden="true"></span>
+      <span class="mapa-carregant__text">{{ $t('mapa.carregant') }}</span>
+    </div>
+    <div v-else-if="errorMapa" class="mapa-error" role="alert">
+      <span class="mapa-error__text">{{ $t('mapa.error') }}</span>
+      <button class="mapa-error__boto" @click="reintentaCarrega">{{ $t('comu.reintenta') }}</button>
     </div>
   </div>
 </template>
@@ -767,7 +803,7 @@ watch(
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  color: #999;
+  color: var(--color-text-secundari, #737373);
   cursor: pointer;
   text-align: left;
   overflow: hidden;
@@ -819,6 +855,82 @@ watch(
 .info-territori__val--secundari {
   color: #888;
   font-size: 0.8rem;
+}
+
+/* ── Indicador de càrrega ──────────────────────────────────────────────── */
+.mapa-carregant {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(26, 38, 53, 0.92);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+
+.mapa-carregant__spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: mapa-carregant-gir 0.7s linear infinite;
+}
+
+@keyframes mapa-carregant-gir {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mapa-carregant__spinner {
+    animation-duration: 1.8s;
+  }
+}
+
+/* ── Estat d'error de càrrega ──────────────────────────────────────────── */
+.mapa-error {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(150, 40, 30, 0.96);
+  color: #fff;
+  padding: 8px 10px 8px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
+  max-width: calc(100vw - 32px);
+}
+
+.mapa-error__boto {
+  background: #fff;
+  color: #962820;
+  border: none;
+  border-radius: 14px;
+  padding: 4px 12px;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mapa-error__boto:hover {
+  background: #f0f0f0;
 }
 </style>
 

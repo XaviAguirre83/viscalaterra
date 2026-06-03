@@ -85,7 +85,8 @@ export const useTerritorisStore = defineStore('territoris', () => {
   }
 
   function seleccionaMunicipi(codi: string, seleccionat: boolean) {
-    seleccionat ? municipisSeleccionats.value.add(codi) : municipisSeleccionats.value.delete(codi)
+    if (seleccionat) municipisSeleccionats.value.add(codi)
+    else municipisSeleccionats.value.delete(codi)
   }
 
   // Les funcions bulk treballen sobre un Set pla (no reactiu) i assignen el

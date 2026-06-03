@@ -15,11 +15,11 @@ const tabActiva = ref<Tab | null>(null)
 const menuObert = ref(false)
 
 const SECCIONS = [
-  { id: 'cerca', nom: 'Cerca', ruta: '/cerca' },
-  { id: 'agenda', nom: 'Agenda Cultural', ruta: '/agenda' },
-  { id: 'jocs', nom: 'Jocs', ruta: '/jocs' },
-  { id: 'merchandising', nom: 'Merchandising', ruta: '/merchandising' },
-  { id: 'sobre', nom: 'Sobre nosaltres', ruta: '/sobre' },
+  { id: 'cerca', clau: 'nav.seccions.cerca', ruta: '/cerca' },
+  { id: 'agenda', clau: 'nav.seccions.agenda', ruta: '/agenda' },
+  { id: 'jocs', clau: 'nav.seccions.jocs', ruta: '/jocs' },
+  { id: 'merchandising', clau: 'nav.seccions.merchandising', ruta: '/merchandising' },
+  { id: 'sobre', clau: 'nav.seccions.sobre', ruta: '/sobre' },
 ]
 
 const seccioActiva = computed(() => SECCIONS.find((s) => route.path.startsWith(s.ruta)))
@@ -50,21 +50,40 @@ watch(
         <button
           class="btn-menu"
           :class="{ 'btn-menu--obert': menuObert }"
-          aria-label="Menú principal"
+          type="button"
+          :aria-label="$t('nav.menuPrincipal')"
+          :aria-expanded="menuObert"
           @click="menuObert = !menuObert"
         >
           <span /><span /><span />
         </button>
 
-        <span v-if="seccioActiva" class="seccio-nom">{{ seccioActiva.nom }}</span>
-
         <template v-if="esCerca">
           <div class="separador-v" />
           <div class="tabs">
-            <button :class="{ activa: tabActiva === 'on' }" @click="toggleTab('on')">On?</button>
-            <button :class="{ activa: tabActiva === 'que' }" @click="toggleTab('que')">Què?</button>
-            <button :class="{ activa: tabActiva === 'quan' }" @click="toggleTab('quan')">
-              Quan?
+            <button
+              type="button"
+              :class="{ activa: tabActiva === 'on' }"
+              :aria-expanded="tabActiva === 'on'"
+              @click="toggleTab('on')"
+            >
+              {{ $t('nav.tabs.on') }}
+            </button>
+            <button
+              type="button"
+              :class="{ activa: tabActiva === 'que' }"
+              :aria-expanded="tabActiva === 'que'"
+              @click="toggleTab('que')"
+            >
+              {{ $t('nav.tabs.que') }}
+            </button>
+            <button
+              type="button"
+              :class="{ activa: tabActiva === 'quan' }"
+              :aria-expanded="tabActiva === 'quan'"
+              @click="toggleTab('quan')"
+            >
+              {{ $t('nav.tabs.quan') }}
             </button>
           </div>
           <div class="separador-v separador-v--cerca" />
@@ -76,27 +95,33 @@ watch(
     </nav>
 
     <!-- ── Menú principal desplegable ───────────────────────────────── -->
-    <div v-if="menuObert" class="menu-principal">
-      <button
-        v-for="seccio in SECCIONS"
-        :key="seccio.id"
-        class="menu-principal__item"
-        :class="{ 'menu-principal__item--activa': seccioActiva?.id === seccio.id }"
-        @click="navegaA(seccio.ruta)"
-      >
-        {{ seccio.nom }}
-      </button>
-    </div>
+    <Transition name="desplega">
+      <div v-if="menuObert" class="menu-principal" role="menu">
+        <button
+          v-for="seccio in SECCIONS"
+          :key="seccio.id"
+          type="button"
+          role="menuitem"
+          class="menu-principal__item"
+          :class="{ 'menu-principal__item--activa': seccioActiva?.id === seccio.id }"
+          @click="navegaA(seccio.ruta)"
+        >
+          {{ $t(seccio.clau) }}
+        </button>
+      </div>
+    </Transition>
 
     <!-- ── Contingut del tab actiu ───────────────────────────────────── -->
-    <div v-if="tabActiva && esCerca" class="desplegable">
-      <TabOn v-if="tabActiva === 'on'" />
-      <TabQue v-else-if="tabActiva === 'que'" />
-      <TabQuan v-else-if="tabActiva === 'quan'" />
-    </div>
+    <Transition name="desplega">
+      <div v-if="tabActiva && esCerca" class="desplegable">
+        <TabOn v-if="tabActiva === 'on'" />
+        <TabQue v-else-if="tabActiva === 'que'" />
+        <TabQuan v-else-if="tabActiva === 'quan'" />
+      </div>
+    </Transition>
 
     <!-- Capa transparent per tancar el menú en clicar fora -->
-    <div v-if="menuObert" class="overlay-menu" @click="menuObert = false" />
+    <div v-if="menuObert" class="overlay-menu" aria-hidden="true" @click="menuObert = false" />
   </div>
 </template>
 
@@ -139,7 +164,8 @@ watch(
 
   .barra__cerca-wrap {
     flex-basis: 100%;
-    padding: 0 4px 8px 50px;
+    /* Alinea el cercador amb l'inici del tab "On?": botó menú (44px) + separador (21px) */
+    padding: 0 4px 8px 65px;
   }
 }
 
@@ -150,15 +176,22 @@ watch(
   flex-direction: column;
   justify-content: center;
   gap: 5px;
-  width: 36px;
-  height: 36px;
-  padding: 6px;
+  width: 40px;
+  height: 40px;
+  padding: 8px;
   background: none;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   flex-shrink: 0;
   transition: background 0.15s;
+}
+
+@media (max-width: 768px) {
+  .btn-menu {
+    width: 44px;
+    height: 44px;
+  }
 }
 
 .btn-menu:hover {
@@ -183,18 +216,6 @@ watch(
 }
 .btn-menu--obert span:nth-child(3) {
   transform: translateY(-7px) rotate(-45deg);
-}
-
-/* ── Nom secció ─────────────────────────────────────────────────────────── */
-
-.seccio-nom {
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: #222;
-  margin: 0 14px;
-  white-space: nowrap;
 }
 
 /* ── Separador vertical ─────────────────────────────────────────────────── */
@@ -222,6 +243,7 @@ watch(
   .tabs button {
     flex: 1;
     text-align: center;
+    min-height: 44px;
   }
 }
 
@@ -338,5 +360,26 @@ watch(
   position: fixed;
   inset: 0;
   z-index: 99;
+}
+
+/* ── Transició dels desplegables (menú principal i tabs) ────────────────── */
+.desplega-enter-active,
+.desplega-leave-active {
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.desplega-enter-from,
+.desplega-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desplega-enter-active,
+  .desplega-leave-active {
+    transition: none;
+  }
 }
 </style>

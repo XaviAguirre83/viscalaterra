@@ -88,7 +88,18 @@ function comptadorProvincia(provincia: Provincia): { sel: number; total: number 
 
 <template>
   <div class="tab-on">
-    <div v-if="territoris.carregant" class="estat-carregant">Carregant territoris…</div>
+    <div
+      v-if="territoris.arbre && territoris.municipisSeleccionats.size > 0"
+      class="tab-on__accions"
+    >
+      <span class="tab-on__resum">{{
+        $t('on.seleccionats', territoris.municipisSeleccionats.size)
+      }}</span>
+      <button type="button" class="tab-on__netejar" @click="territoris.netejaSeleccio()">
+        {{ $t('on.neteja') }}
+      </button>
+    </div>
+    <div v-if="territoris.carregant" class="estat-carregant">{{ $t('on.carregant') }}</div>
     <div v-else-if="territoris.error" class="estat-error">{{ territoris.error }}</div>
     <div v-else-if="territoris.arbre" class="grid-provincies">
       <div
@@ -104,7 +115,9 @@ function comptadorProvincia(provincia: Provincia): { sel: number; total: number 
           <button
             type="button"
             class="provincia__toggle"
-            :aria-label="estaExpandidaProvincia(provincia.codi) ? 'Replegar' : 'Expandir'"
+            :aria-label="
+              estaExpandidaProvincia(provincia.codi) ? $t('on.replegar') : $t('on.expandir')
+            "
             @click="toggleExpansioProvincia(provincia.codi)"
           >
             <span
@@ -132,7 +145,11 @@ function comptadorProvincia(provincia: Provincia): { sel: number; total: number 
               <button
                 type="button"
                 class="comarca__expand"
-                :aria-label="estaExpandida(provincia.codi, comarca.codi) ? 'Replegar' : 'Expandir'"
+                :aria-label="
+                  estaExpandida(provincia.codi, comarca.codi)
+                    ? $t('on.replegar')
+                    : $t('on.expandir')
+                "
                 @click="toggleExpansio(provincia.codi, comarca.codi)"
               >
                 <span
@@ -215,6 +232,11 @@ function comptadorProvincia(provincia: Provincia): { sel: number; total: number 
     overflow-y: visible;
     padding-right: 0;
     border-right: none;
+  }
+
+  /* En mòbil, seleccionar municipis és la interacció principal: zona tàctil ≥44px */
+  .municipi__btn {
+    padding: 11px 12px 11px 28px;
   }
 }
 
@@ -426,10 +448,55 @@ button:focus-visible {
 .estat-error {
   padding: 16px;
   color: #555;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
 }
 
 .estat-error {
   color: #b32d2d;
+}
+
+/* ── Barra d'accions (neteja de la selecció) ───────────────────────────── */
+.tab-on__accions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 0 0 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #ececec;
+}
+
+.tab-on__resum {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: #444;
+}
+
+.tab-on__netejar {
+  width: auto;
+  min-height: 36px;
+  padding: 7px 16px;
+  border: 1px solid var(--color-marca, #2d6a2d);
+  border-radius: 18px;
+  background: none;
+  color: var(--color-marca, #2d6a2d);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.tab-on__netejar:hover {
+  background: var(--color-marca, #2d6a2d);
+  color: #fff;
+}
+
+@media (max-width: 768px) {
+  .tab-on__netejar {
+    min-height: 44px;
+  }
 }
 </style>

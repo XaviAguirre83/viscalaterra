@@ -3,10 +3,10 @@ import { useFiltresStore, type Temporalitat } from '@/stores/filtres'
 
 const filtres = useFiltresStore()
 
-const OPCIONS: { valor: Temporalitat; etiqueta: string; descripcio: string }[] = [
-  { valor: 'permanent', etiqueta: 'Permanent', descripcio: 'Sempre disponible' },
-  { valor: 'recurrent', etiqueta: 'Recurrent', descripcio: 'Es repeteix periòdicament' },
-  { valor: 'puntual', etiqueta: 'Puntual', descripcio: 'Dates concretes' },
+const OPCIONS: { valor: Temporalitat; clau: string; clauDesc: string }[] = [
+  { valor: 'permanent', clau: 'quan.permanent', clauDesc: 'quan.permanentDesc' },
+  { valor: 'recurrent', clau: 'quan.recurrent', clauDesc: 'quan.recurrentDesc' },
+  { valor: 'puntual', clau: 'quan.puntual', clauDesc: 'quan.puntualDesc' },
 ]
 </script>
 
@@ -22,13 +22,18 @@ const OPCIONS: { valor: Temporalitat; etiqueta: string; descripcio: string }[] =
             :checked="filtres.temporalitat === opcio.valor"
             @change="filtres.setTemporalitat(opcio.valor)"
           />
-          <span class="opcio__etiqueta">{{ opcio.etiqueta }}</span>
-          <span class="opcio__descripcio">{{ opcio.descripcio }}</span>
+          <span class="opcio__etiqueta">{{ $t(opcio.clau) }}</span>
+          <span class="opcio__descripcio">{{ $t(opcio.clauDesc) }}</span>
         </label>
       </li>
     </ul>
-    <button v-if="filtres.temporalitat" @click="filtres.setTemporalitat(null)">
-      Qualsevol moment
+    <button
+      v-if="filtres.temporalitat"
+      type="button"
+      class="netejar-temps"
+      @click="filtres.setTemporalitat(null)"
+    >
+      {{ $t('quan.qualsevol') }}
     </button>
   </div>
 </template>
@@ -73,17 +78,17 @@ const OPCIONS: { valor: Temporalitat; etiqueta: string; descripcio: string }[] =
 }
 
 .opcio__etiqueta {
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   font-weight: 600;
   color: #333;
 }
 
 .opcio__descripcio {
-  font-size: 0.8rem;
-  color: #888;
+  font-size: var(--text-sm);
+  color: var(--color-text-secundari, #737373);
 }
 
-button {
+.netejar-temps {
   align-self: flex-start;
   padding: 6px 14px;
   border: 1px solid #ccc;
@@ -94,8 +99,8 @@ button {
   cursor: pointer;
 }
 
-button:hover {
-  border-color: #2d6a2d;
-  color: #2d6a2d;
+.netejar-temps:hover {
+  border-color: var(--color-marca, #2d6a2d);
+  color: var(--color-marca, #2d6a2d);
 }
 </style>
