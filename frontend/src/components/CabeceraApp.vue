@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import logoUrl from '@/assets/logo.png'
 import {
@@ -10,8 +11,12 @@ import {
   canviaIdioma,
   type Idioma,
 } from '@/i18n'
+import { useAuthStore } from '@/stores/auth'
+import ModalAuth from '@/components/ModalAuth.vue'
 
+const router = useRouter()
 const { locale } = useI18n()
+const auth = useAuthStore()
 
 const idiomaObert = ref(false)
 const etiquetaActual = computed(() => ETIQUETA_IDIOMA[locale.value as Idioma] ?? locale.value)
@@ -20,6 +25,20 @@ const banderaActual = computed(() => BANDERA_IDIOMA[locale.value as Idioma] ?? '
 function triaIdioma(idioma: Idioma) {
   canviaIdioma(idioma)
   idiomaObert.value = false
+}
+
+// ── Espai d'usuari ──────────────────────────────────────────────────────
+const modalAuthObert = ref(false)
+const menuUsuariObert = ref(false)
+
+function vaAlMeuEspai() {
+  menuUsuariObert.value = false
+  router.push('/espai')
+}
+
+function tancaSessio() {
+  menuUsuariObert.value = false
+  auth.surt()
 }
 </script>
 
@@ -85,16 +104,90 @@ function triaIdioma(idioma: Idioma) {
         <div v-if="idiomaObert" class="selector-idioma__overlay" @click="idiomaObert = false" />
       </div>
 
-      <div class="auth">
-        <button type="button" class="auth__btn auth__btn--secundari">
-          {{ $t('capcalera.registra') }}
+      <div class="usuari">
+        <!-- Sense sessió: el botó obre el modal d'autenticació -->
+        <button
+          v-if="!auth.autenticat"
+          type="button"
+          class="usuari-btn"
+          @click="modalAuthObert = true"
+        >
+          <svg
+            class="usuari-btn__icona"
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+          {{ $t('capcalera.connecta') }}
         </button>
-        <button type="button" class="auth__btn auth__btn--principal">
-          {{ $t('capcalera.entra') }}
-        </button>
+
+        <!-- Amb sessió: desplegable amb opcions d'usuari -->
+        <template v-else>
+          <button
+            type="button"
+            class="usuari-btn"
+            aria-haspopup="menu"
+            :aria-expanded="menuUsuariObert"
+            @click="menuUsuariObert = !menuUsuariObert"
+          >
+            <svg
+              class="usuari-btn__icona"
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            <span class="usuari-btn__nom">{{ auth.usuari?.nom }}</span>
+            <span
+              class="usuari-btn__fletxa"
+              :class="{ 'usuari-btn__fletxa--obert': menuUsuariObert }"
+              aria-hidden="true"
+              >▾</span
+            >
+          </button>
+          <ul v-if="menuUsuariObert" class="usuari-menu" role="menu">
+            <li role="none">
+              <button
+                type="button"
+                role="menuitem"
+                class="usuari-menu__opcio"
+                @click="vaAlMeuEspai"
+              >
+                {{ $t('capcalera.elMeuEspai') }}
+              </button>
+            </li>
+            <li role="none">
+              <button type="button" role="menuitem" class="usuari-menu__opcio" @click="tancaSessio">
+                {{ $t('capcalera.sortir') }}
+              </button>
+            </li>
+          </ul>
+          <div v-if="menuUsuariObert" class="usuari-overlay" @click="menuUsuariObert = false" />
+        </template>
       </div>
     </div>
   </header>
+
+  <Teleport to="body">
+    <ModalAuth v-if="modalAuthObert" @tanca="modalAuthObert = false" />
+  </Teleport>
 </template>
 
 <style scoped>
@@ -287,53 +380,98 @@ function triaIdioma(idioma: Idioma) {
   }
 }
 
-/* ── Auth ───────────────────────────────────────────────────────────────── */
+/* ── Espai d'usuari ──────────────────────────────────────────────────────── */
 
-.auth {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.usuari {
+  position: relative;
 }
 
-.auth__btn {
-  height: 32px;
-  padding: 0 16px;
-  border-radius: 16px;
+.usuari-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 17px;
+  background: #ffffff;
+  color: #1a2635;
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
-  transition:
-    background 0.15s,
-    color 0.15s,
-    border-color 0.15s;
   white-space: nowrap;
+  transition: background 0.15s;
 }
 
-.auth__btn--secundari {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  color: rgba(255, 255, 255, 0.92);
+.usuari-btn:hover {
+  background: #e8f0e8;
+}
+
+.usuari-btn__icona {
+  flex-shrink: 0;
+}
+
+.usuari-btn__nom {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.usuari-btn__fletxa {
+  font-size: 0.6rem;
+  transition: transform 0.15s;
+}
+
+.usuari-btn__fletxa--obert {
+  transform: rotate(180deg);
+}
+
+.usuari-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 3000;
+  min-width: 170px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #e0e0dc;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.usuari-menu__opcio {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  text-align: left;
+  font-size: var(--text-sm);
+  color: #222;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.usuari-menu__opcio:hover {
+  background: var(--color-marca-clar, #f0f4f0);
+}
+
+.usuari-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2900;
 }
 
 @media (max-width: 768px) {
-  .auth__btn {
+  .usuari-btn {
     height: 40px;
   }
-}
 
-.auth__btn--secundari:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.75);
-  color: #ffffff;
-}
-
-.auth__btn--principal {
-  background: #ffffff;
-  border: 1px solid transparent;
-  color: #1a2635;
-}
-
-.auth__btn--principal:hover {
-  background: #e8f0e8;
+  .usuari-menu__opcio {
+    min-height: 44px;
+  }
 }
 </style>

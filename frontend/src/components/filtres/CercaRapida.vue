@@ -2,8 +2,11 @@
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTerritorisStore } from '@/stores/territoris'
+import { useFiltresStore } from '@/stores/filtres'
+import { TEMES } from '@/data/categories'
 
 const territoris = useTerritorisStore()
+const filtres = useFiltresStore()
 const { t } = useI18n()
 
 const queryBruta = ref('') // lligat a l'input (s'actualitza a cada tecla)
@@ -35,60 +38,72 @@ const nomComarcaPerCodi = computed<Map<string, string>>(() => {
 })
 
 interface Resultat {
-  tipus: 'municipis' | 'comarques' | 'vegueries' | 'provincies'
+  tipus: 'municipis' | 'comarques' | 'vegueries' | 'provincies' | 'categoria'
   codi: string
   nom: string
-  context: string // comarca/província per a municipis, etc.
+  context: string // comarca/província per a municipis; tema (Esports…) per a categories
 }
 
 // Una sola passada: calcula els resultats i el total de municipis coincidents
 // (per poder mostrar "8 de N"). normalitza(q) es calcula una vegada, no per ítem.
 const cerca = computed<{ res: Resultat[]; totalMunicipis: number }>(() => {
   const q = query.value.trim()
-  if (q.length < 2 || !territoris.arbre) return { res: [], totalMunicipis: 0 }
+  if (q.length < 2) return { res: [], totalMunicipis: 0 }
   const qN = normalitza(q)
 
   const res: Resultat[] = []
+  let totalMunicipis = 0
 
-  // Províncies (4)
-  for (const prov of territoris.arbre) {
-    if (normalitza(prov.nom).includes(qN)) {
-      res.push({ tipus: 'provincies', codi: prov.codi, nom: prov.nom, context: '' })
+  if (territoris.arbre) {
+    // Províncies (4)
+    for (const prov of territoris.arbre) {
+      if (normalitza(prov.nom).includes(qN)) {
+        res.push({ tipus: 'provincies', codi: prov.codi, nom: prov.nom, context: '' })
+      }
     }
-  }
 
-  // Vegueries (9)
-  for (const veg of territoris.vegueries) {
-    if (normalitza(veg.nom).includes(qN)) {
-      res.push({ tipus: 'vegueries', codi: veg.codi, nom: veg.nom, context: '' })
+    // Vegueries (9)
+    for (const veg of territoris.vegueries) {
+      if (normalitza(veg.nom).includes(qN)) {
+        res.push({ tipus: 'vegueries', codi: veg.codi, nom: veg.nom, context: '' })
+      }
     }
-  }
 
-  // Comarques (43, deduplica transfrontereres)
-  const codesVistes = new Set<string>()
-  for (const prov of territoris.arbre) {
-    for (const com of prov.comarques) {
-      if (!codesVistes.has(com.codi) && normalitza(com.nom).includes(qN)) {
-        codesVistes.add(com.codi)
-        res.push({ tipus: 'comarques', codi: com.codi, nom: com.nom, context: '' })
+    // Comarques (43, deduplica transfrontereres)
+    const codesVistes = new Set<string>()
+    for (const prov of territoris.arbre) {
+      for (const com of prov.comarques) {
+        if (!codesVistes.has(com.codi) && normalitza(com.nom).includes(qN)) {
+          codesVistes.add(com.codi)
+          res.push({ tipus: 'comarques', codi: com.codi, nom: com.nom, context: '' })
+        }
+      }
+    }
+
+    // Municipis: compta tots els coincidents però només en mostra fins a MAX_MUNICIPIS.
+    let mostrats = 0
+    for (const [, mu] of territoris.municipiPerCodi) {
+      if (normalitza(mu.nom).includes(qN)) {
+        totalMunicipis++
+        if (mostrats < MAX_MUNICIPIS) {
+          res.push({
+            tipus: 'municipis',
+            codi: mu.codi,
+            nom: mu.nom,
+            context: nomComarcaPerCodi.value.get(mu.comarca_codi) ?? '',
+          })
+          mostrats++
+        }
       }
     }
   }
 
-  // Municipis: compta tots els coincidents però només en mostra fins a MAX_MUNICIPIS.
-  let totalMunicipis = 0
-  let mostrats = 0
-  for (const [, mu] of territoris.municipiPerCodi) {
-    if (normalitza(mu.nom).includes(qN)) {
-      totalMunicipis++
-      if (mostrats < MAX_MUNICIPIS) {
-        res.push({
-          tipus: 'municipis',
-          codi: mu.codi,
-          nom: mu.nom,
-          context: nomComarcaPerCodi.value.get(mu.comarca_codi) ?? '',
-        })
-        mostrats++
+  // Categories del Què? — subtemes que coincideixen pel seu nom traduït.
+  for (const tema of TEMES) {
+    for (const sub of tema.subtemes) {
+      const nom = t(sub.clau)
+      if (normalitza(nom).includes(qN)) {
+        res.push({ tipus: 'categoria', codi: sub.codi, nom, context: t(tema.clau) })
       }
     }
   }
@@ -101,12 +116,19 @@ const municipisOcults = computed(() => Math.max(0, cerca.value.totalMunicipis - 
 
 // Agrupa resultats per tipus mantenint l'ordre: prov → veg → com → mun
 const grups = computed(() => {
-  const ordre: Resultat['tipus'][] = ['provincies', 'vegueries', 'comarques', 'municipis']
+  const ordre: Resultat['tipus'][] = [
+    'provincies',
+    'vegueries',
+    'comarques',
+    'municipis',
+    'categoria',
+  ]
   const etiquetes: Record<Resultat['tipus'], string> = {
     provincies: t('nivells.provincia'),
     vegueries: t('nivells.vegueria'),
     comarques: t('nivells.comarca'),
     municipis: t('nivells.municipi'),
+    categoria: t('cerca.categoria'),
   }
   return ordre
     .map((tipus) => ({
@@ -130,6 +152,9 @@ function selecciona(r: Resultat) {
       break
     case 'provincies':
       territoris.seleccionaProvincia(r.codi, true)
+      break
+    case 'categoria':
+      filtres.toggleSubtema(r.codi, true)
       break
   }
   queryBruta.value = ''

@@ -25,6 +25,9 @@ export const TEMES: Tema[] = [
       { codi: 'basquet', clau: 'que.esports.basquet' },
       { codi: 'tennis', clau: 'que.esports.tennis' },
       { codi: 'patinatge', clau: 'que.esports.patinatge' },
+      { codi: 'petanca', clau: 'que.esports.petanca' },
+      { codi: 'gimnas', clau: 'que.esports.gimnas' },
+      { codi: 'gimnas-geriatric', clau: 'que.esports.gimnasGeriatric' },
     ],
   },
   {
@@ -35,6 +38,8 @@ export const TEMES: Tema[] = [
       { codi: 'tobogans', clau: 'que.nens.tobogans' },
       { codi: 'gronxadors', clau: 'que.nens.gronxadors' },
       { codi: 'sorral', clau: 'que.nens.sorral' },
+      { codi: 'jocs-aigua', clau: 'que.nens.jocsAigua' },
+      { codi: 'tirolina', clau: 'que.nens.tirolina' },
     ],
   },
   {
@@ -74,6 +79,17 @@ export const TEMES: Tema[] = [
       { codi: 'btt', clau: 'que.natura.btt' },
       { codi: 'cim', clau: 'que.natura.cim' },
       { codi: 'bany-natural', clau: 'que.natura.banyNatural' },
+    ],
+  },
+  {
+    codi: 'serveis-publics',
+    clau: 'que.serveisPublics.titol',
+    subtemes: [
+      { codi: 'wc', clau: 'que.serveisPublics.wc' },
+      { codi: 'fonts-aigua', clau: 'que.serveisPublics.fontsAigua' },
+      { codi: 'dutxes', clau: 'que.serveisPublics.dutxes' },
+      { codi: 'zones-ombra', clau: 'que.serveisPublics.zonesOmbra' },
+      { codi: 'bancs', clau: 'que.serveisPublics.bancs' },
     ],
   },
 ]

@@ -1,21 +1,36 @@
 {
   "comu": {
     "reintenta": "Retry",
-    "proximament": "coming soon"
+    "proximament": "coming soon",
+    "enConstruccio": "Under construction",
+    "properament": "This section is coming soon.",
+    "tanca": "Close"
   },
   "capcalera": {
     "registra": "Sign up",
     "entra": "Log in",
-    "idioma": "Change language"
+    "idioma": "Change language",
+    "connecta": "Connect!",
+    "elMeuEspai": "My space",
+    "sortir": "Log out"
+  },
+  "auth": {
+    "nom": "Name",
+    "email": "Email",
+    "contrasenya": "Password"
   },
   "nav": {
     "menuPrincipal": "Main menu",
     "seccions": {
       "cerca": "Search",
       "agenda": "Cultural Agenda",
+      "anuncis": "Notice board",
+      "fetALaTerra": "Made in 'la terra'",
       "jocs": "Games",
       "merchandising": "Merchandising",
-      "sobre": "About us"
+      "sobre": "About us",
+      "contacte": "Contact",
+      "suggeriments": "Suggestion box"
     },
     "tabs": {
       "on": "Where?",
@@ -32,9 +47,10 @@
   "cerca": {
     "placeholder": "Search by name…",
     "boto": "Search",
-    "aria": "Search a territory by name",
+    "aria": "Search a territory or category by name",
     "capResultat": "No results for «{q}»",
-    "mesMunicipis": "There are {n} more municipalities. Refine your search to see them."
+    "mesMunicipis": "There are {n} more municipalities. Refine your search to see them.",
+    "categoria": "Category"
   },
   "on": {
     "carregant": "Loading the map of Catalonia…",
@@ -52,14 +68,19 @@
       "futbol": "Football pitch",
       "basquet": "Basketball court",
       "tennis": "Tennis court",
-      "patinatge": "Skating rink"
+      "patinatge": "Skating rink",
+      "petanca": "Pétanque court",
+      "gimnas": "Gym",
+      "gimnasGeriatric": "Senior fitness area"
     },
     "nens": {
       "titol": "Kids",
       "parcInfantil": "Playground",
       "tobogans": "Slides",
       "gronxadors": "Swings",
-      "sorral": "Sandpit"
+      "sorral": "Sandpit",
+      "jocsAigua": "Water play area",
+      "tirolina": "Zip line"
     },
     "culinari": {
       "titol": "Food",
@@ -87,6 +108,14 @@
       "btt": "MTB trail",
       "cim": "Peak (100 peaks)",
       "banyNatural": "Natural bathing area"
+    },
+    "serveisPublics": {
+      "titol": "Public amenities",
+      "wc": "Public toilets",
+      "fontsAigua": "Drinking fountain",
+      "dutxes": "Showers",
+      "zonesOmbra": "Shaded areas",
+      "bancs": "Benches"
     }
   },
   "quan": {

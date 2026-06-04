@@ -14,12 +14,17 @@ const route = useRoute()
 const tabActiva = ref<Tab | null>(null)
 const menuObert = ref(false)
 
+// grup 1: seccions amb mapa · grup 2: Merchandising · grup 3: meta (sense mapa)
 const SECCIONS = [
-  { id: 'cerca', clau: 'nav.seccions.cerca', ruta: '/cerca' },
-  { id: 'agenda', clau: 'nav.seccions.agenda', ruta: '/agenda' },
-  { id: 'jocs', clau: 'nav.seccions.jocs', ruta: '/jocs' },
-  { id: 'merchandising', clau: 'nav.seccions.merchandising', ruta: '/merchandising' },
-  { id: 'sobre', clau: 'nav.seccions.sobre', ruta: '/sobre' },
+  { id: 'cerca', clau: 'nav.seccions.cerca', ruta: '/cerca', grup: 1 },
+  { id: 'agenda', clau: 'nav.seccions.agenda', ruta: '/agenda', grup: 1 },
+  { id: 'anuncis', clau: 'nav.seccions.anuncis', ruta: '/anuncis', grup: 1 },
+  { id: 'fet-a-la-terra', clau: 'nav.seccions.fetALaTerra', ruta: '/fet-a-la-terra', grup: 1 },
+  { id: 'jocs', clau: 'nav.seccions.jocs', ruta: '/jocs', grup: 1 },
+  { id: 'merchandising', clau: 'nav.seccions.merchandising', ruta: '/merchandising', grup: 2 },
+  { id: 'sobre', clau: 'nav.seccions.sobre', ruta: '/sobre', grup: 3 },
+  { id: 'contacte', clau: 'nav.seccions.contacte', ruta: '/contacte', grup: 3 },
+  { id: 'suggeriments', clau: 'nav.seccions.suggeriments', ruta: '/suggeriments', grup: 3 },
 ]
 
 const seccioActiva = computed(() => SECCIONS.find((s) => route.path.startsWith(s.ruta)))
@@ -97,17 +102,24 @@ watch(
     <!-- ── Menú principal desplegable ───────────────────────────────── -->
     <Transition name="desplega">
       <div v-if="menuObert" class="menu-principal" role="menu">
-        <button
-          v-for="seccio in SECCIONS"
-          :key="seccio.id"
-          type="button"
-          role="menuitem"
-          class="menu-principal__item"
-          :class="{ 'menu-principal__item--activa': seccioActiva?.id === seccio.id }"
-          @click="navegaA(seccio.ruta)"
-        >
-          {{ $t(seccio.clau) }}
-        </button>
+        <template v-for="(seccio, i) in SECCIONS" :key="seccio.id">
+          <hr
+            v-if="i > 0 && seccio.grup !== SECCIONS[i - 1]?.grup"
+            class="menu-principal__separador"
+          />
+          <button
+            type="button"
+            role="menuitem"
+            class="menu-principal__item"
+            :class="{
+              'menu-principal__item--activa': seccioActiva?.id === seccio.id,
+              'menu-principal__item--secundari': seccio.grup === 3,
+            }"
+            @click="navegaA(seccio.ruta)"
+          >
+            {{ $t(seccio.clau) }}
+          </button>
+        </template>
       </div>
     </Transition>
 
@@ -324,6 +336,25 @@ watch(
 .menu-principal__item--activa {
   color: #2d6a2d;
   background: #eef4ee;
+}
+
+.menu-principal__separador {
+  border: none;
+  border-top: 1px solid #e8e8e4;
+  margin: 4px 0;
+}
+
+/* Grup secundari (Sobre / Contacte / Suggeriments): més discret, sense majúscules */
+.menu-principal__item--secundari {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0.3px;
+  color: #777;
+}
+
+.menu-principal__item--secundari:hover {
+  color: #2d6a2d;
 }
 
 /* ── Contingut tab actiu ────────────────────────────────────────────────── */

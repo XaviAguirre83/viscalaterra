@@ -1,21 +1,36 @@
 {
   "comu": {
     "reintenta": "Reintenta",
-    "proximament": "pròximament"
+    "proximament": "pròximament",
+    "enConstruccio": "En construcció",
+    "properament": "Aquesta secció arribarà ben aviat.",
+    "tanca": "Tanca"
   },
   "capcalera": {
     "registra": "Registra't",
     "entra": "Entra",
-    "idioma": "Canvia d'idioma"
+    "idioma": "Canvia d'idioma",
+    "connecta": "Connecta!",
+    "elMeuEspai": "El meu espai",
+    "sortir": "Sortir"
+  },
+  "auth": {
+    "nom": "Nom",
+    "email": "Correu electrònic",
+    "contrasenya": "Contrasenya"
   },
   "nav": {
     "menuPrincipal": "Menú principal",
     "seccions": {
       "cerca": "Cerca",
       "agenda": "Agenda Cultural",
+      "anuncis": "Taulell d'anuncis",
+      "fetALaTerra": "Fet a la terra",
       "jocs": "Jocs",
       "merchandising": "Merchandising",
-      "sobre": "Sobre nosaltres"
+      "sobre": "Sobre nosaltres",
+      "contacte": "Contacte",
+      "suggeriments": "Bústia de suggeriments"
     },
     "tabs": {
       "on": "On?",
@@ -32,9 +47,10 @@
   "cerca": {
     "placeholder": "Cerca per nom…",
     "boto": "Cerca",
-    "aria": "Cerca un territori per nom",
+    "aria": "Cerca un territori o categoria pel nom",
     "capResultat": "Cap resultat per «{q}»",
-    "mesMunicipis": "Hi ha {n} municipis més. Afina la cerca per veure'ls."
+    "mesMunicipis": "Hi ha {n} municipis més. Afina la cerca per veure'ls.",
+    "categoria": "Categoria"
   },
   "on": {
     "carregant": "Carregant el mapa de Catalunya…",
@@ -52,14 +68,19 @@
       "futbol": "Pista de futbol",
       "basquet": "Pista de bàsquet",
       "tennis": "Pista de tennis",
-      "patinatge": "Pista de patinatge"
+      "patinatge": "Pista de patinatge",
+      "petanca": "Pista de petanca",
+      "gimnas": "Gimnàs",
+      "gimnasGeriatric": "Gimnàs geriàtric"
     },
     "nens": {
       "titol": "Nens",
       "parcInfantil": "Parc infantil",
       "tobogans": "Tobogans",
       "gronxadors": "Gronxadors",
-      "sorral": "Sorral"
+      "sorral": "Sorral",
+      "jocsAigua": "Jocs d'aigua",
+      "tirolina": "Tirolina"
     },
     "culinari": {
       "titol": "Culinari",
@@ -87,6 +108,14 @@
       "btt": "Ruta de BTT",
       "cim": "Cim (100 cims)",
       "banyNatural": "Zona de bany natural"
+    },
+    "serveisPublics": {
+      "titol": "Serveis públics",
+      "wc": "Lavabos públics",
+      "fontsAigua": "Font d'aigua potable",
+      "dutxes": "Dutxes",
+      "zonesOmbra": "Zones d'ombra",
+      "bancs": "Bancs per seure"
     }
   },
   "quan": {

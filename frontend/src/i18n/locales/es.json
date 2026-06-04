@@ -1,21 +1,36 @@
 {
   "comu": {
     "reintenta": "Reintentar",
-    "proximament": "próximamente"
+    "proximament": "próximamente",
+    "enConstruccio": "En construcción",
+    "properament": "Esta sección llegará muy pronto.",
+    "tanca": "Cerrar"
   },
   "capcalera": {
     "registra": "Crear cuenta",
     "entra": "Entrar",
-    "idioma": "Cambiar idioma"
+    "idioma": "Cambiar idioma",
+    "connecta": "Conecta!",
+    "elMeuEspai": "Mi espacio",
+    "sortir": "Salir"
+  },
+  "auth": {
+    "nom": "Nombre",
+    "email": "Correo electrónico",
+    "contrasenya": "Contraseña"
   },
   "nav": {
     "menuPrincipal": "Menú principal",
     "seccions": {
       "cerca": "Buscar",
       "agenda": "Agenda Cultural",
+      "anuncis": "Tablón de anuncios",
+      "fetALaTerra": "Hecho en 'la terra'",
       "jocs": "Juegos",
       "merchandising": "Merchandising",
-      "sobre": "Sobre nosotros"
+      "sobre": "Sobre nosotros",
+      "contacte": "Contacto",
+      "suggeriments": "Buzón de sugerencias"
     },
     "tabs": {
       "on": "¿Dónde?",
@@ -32,9 +47,10 @@
   "cerca": {
     "placeholder": "Busca por nombre…",
     "boto": "Buscar",
-    "aria": "Busca un territorio por nombre",
+    "aria": "Busca un territorio o categoría por nombre",
     "capResultat": "Sin resultados para «{q}»",
-    "mesMunicipis": "Hay {n} municipios más. Afina la búsqueda para verlos."
+    "mesMunicipis": "Hay {n} municipios más. Afina la búsqueda para verlos.",
+    "categoria": "Categoría"
   },
   "on": {
     "carregant": "Cargando el mapa de Catalunya…",
@@ -52,14 +68,19 @@
       "futbol": "Pista de fútbol",
       "basquet": "Pista de baloncesto",
       "tennis": "Pista de tenis",
-      "patinatge": "Pista de patinaje"
+      "patinatge": "Pista de patinaje",
+      "petanca": "Pista de petanca",
+      "gimnas": "Gimnasio",
+      "gimnasGeriatric": "Gimnasio geriátrico"
     },
     "nens": {
       "titol": "Niños",
       "parcInfantil": "Parque infantil",
       "tobogans": "Toboganes",
       "gronxadors": "Columpios",
-      "sorral": "Arenero"
+      "sorral": "Arenero",
+      "jocsAigua": "Juegos de agua",
+      "tirolina": "Tirolina"
     },
     "culinari": {
       "titol": "Culinario",
@@ -87,6 +108,14 @@
       "btt": "Ruta de BTT",
       "cim": "Cima (100 cimas)",
       "banyNatural": "Zona de baño natural"
+    },
+    "serveisPublics": {
+      "titol": "Servicios públicos",
+      "wc": "Aseos públicos",
+      "fontsAigua": "Fuente de agua potable",
+      "dutxes": "Duchas",
+      "zonesOmbra": "Zonas de sombra",
+      "bancs": "Bancos para sentarse"
     }
   },
   "quan": {
