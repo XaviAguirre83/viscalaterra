@@ -119,13 +119,47 @@
     }
   },
   "quan": {
-    "permanent": "Permanent",
-    "permanentDesc": "Always available",
-    "recurrent": "Recurring",
-    "recurrentDesc": "Repeats periodically",
-    "puntual": "One-off",
-    "puntualDesc": "Specific dates",
-    "qualsevol": "Any time"
+    "modes": {
+      "permanent": "Permanent",
+      "permanentDesc": "Always available, no end date",
+      "dates": "Specific dates",
+      "datesDesc": "A single day or a date range",
+      "setmanal": "Days of the week",
+      "setmanalDesc": "Repeats every week",
+      "mensual": "Every month",
+      "mensualDesc": "First or last weekday of the month"
+    },
+    "dataInici": "Start date",
+    "dataFi": "End date",
+    "errorRang": "The end date must be the same as or later than the start date",
+    "triaDies": "Choose the days",
+    "triaOrdinals": "Choose the position within the month",
+    "resumMensual": "{ordinals} · {dies} of every month",
+    "ordinals": {
+      "primer": "First",
+      "segon": "Second",
+      "tercer": "Third",
+      "quart": "Fourth",
+      "ultim": "Last"
+    },
+    "dies": {
+      "1": "Monday",
+      "2": "Tuesday",
+      "3": "Wednesday",
+      "4": "Thursday",
+      "5": "Friday",
+      "6": "Saturday",
+      "7": "Sunday"
+    },
+    "diesCurt": {
+      "1": "Mon",
+      "2": "Tue",
+      "3": "Wed",
+      "4": "Thu",
+      "5": "Fri",
+      "6": "Sat",
+      "7": "Sun"
+    }
   },
   "mapa": {
     "carregant": "Loading the map…",

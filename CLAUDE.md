@@ -12,7 +12,7 @@ Spec de producto detallada: `viscalaterra_plan.md`
 
 - **On?** — selector geográfico (Província → Comarca → Municipi)
 - **Què?** — categorías de espacio público y equipamientos colectivos (datos abiertos)
-- **Quan?** — temporalidad: Permanent / Recurrent / Puntual
+- **Quan?** — temporalidad: cuatro modalidades excluyentes (Permanent / Dates concretes / Dies de la setmana / Cada mes). La unidad mínima es el **día** (nunca se seleccionan horas).
 
 ## Stack técnico
 
@@ -140,6 +140,26 @@ Cerca client-side sobre les dades ja carregades al store `territoris` (sense cri
 - **Context**: cada municipi mostra el nom de la comarca al costat en gris.
 - **Selecció**: clic sobre un resultat → crida al store (`seleccionaMunicipi/Comarca/Vegueria/Provincia`) equivalent a fer clic al mapa.
 - **Tanca** en seleccionar o en perdre el focus fora del component.
+
+### Panell Quan? (`TabQuan.vue`)
+
+Selector temporal: respon a "quan està disponible" el contingut (Què?) dins el territori (On?). La **unitat mínima és el dia** — mai es trien hores.
+
+El model viu a `frontend/src/data/temporal.ts` (mòdul pur, sense Vue, testejable). El store `filtres` només hi afegeix reactivitat. Quatre modalitats **mútuament excloents** (`ModeTemporal`):
+
+| Mode        | Paràmetres                          | "Complet" quan…                  |
+| ----------- | ----------------------------------- | -------------------------------- |
+| `permanent` | cap                                 | sempre                           |
+| `dates`     | `dataInici`, `dataFi` (ISO, 2 cal.) | hi ha `dataInici` i `fi ≥ inici` |
+| `setmanal`  | `diesSetmana[]` (1=Dl … 7=Dg)       | ≥ 1 dia                          |
+| `mensual`   | `ordinals[]` × `diesSetmana[]`      | ≥ 1 ordinal **i** ≥ 1 dia        |
+
+- **`ordinals`**: `primer · segon · tercer · quart · últim`. El mode `mensual` combina ordinals × dies (p. ex. "primer i últim dilluns de cada mes").
+- **`seleccioTemporalCompleta(s)`** decideix si el filtre realment s'aplica; `teFiltresActius` del store en depèn (un mode triat però sense paràmetres encara no filtra).
+- **Canviar de mode neteja** els paràmetres dels altres modes (`defineixModeTemporal` reassigna una selecció buida + el nou mode) per evitar estats incoherents.
+- **Reactivitat**: les accions del store (`toggleDiaSetmana`, `toggleOrdinal`, `defineixRangDates`) reassignen l'objecte sencer (patró del store `territoris` amb els `Set`), mantenint `diesSetmana` ordenat ascendentment i `ordinals` en l'ordre canònic d'`ORDINALS`.
+- **i18n**: claus sota `quan.*` (`modes`, `dies`, `diesCurt`, `ordinals`, `resumMensual`, …) als tres idiomes. Els dies mostren nom curt (Dl/Dt…) en mòbil i complet en desktop.
+- **Tests**: `data/__tests__/temporal.spec.ts` (lògica pura), `stores/__tests__/filtres.spec.ts` (mutacions + reactivitat) i `components/filtres/__tests__/TabQuan.spec.ts` (interacció real amb `@vue/test-utils`).
 
 ### Sistema de 4 nivells territorials al mapa
 
@@ -344,5 +364,4 @@ Els botons `+`/`−` de Leaflet s'oculten en mòbil (`display: none`). El zoom e
 ## Pendiente de decidir
 
 - Público objetivo
-- Interfaz del Quan? (calendario, selector de días, rango de fechas…)
 - Criterio de ordenación cuando una división pertenece a múltiples unidades superiores

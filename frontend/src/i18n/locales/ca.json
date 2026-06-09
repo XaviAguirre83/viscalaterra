@@ -119,13 +119,47 @@
     }
   },
   "quan": {
-    "permanent": "Permanent",
-    "permanentDesc": "Sempre disponible",
-    "recurrent": "Recurrent",
-    "recurrentDesc": "Es repeteix periòdicament",
-    "puntual": "Puntual",
-    "puntualDesc": "Dates concretes",
-    "qualsevol": "Qualsevol moment"
+    "modes": {
+      "permanent": "Permanent",
+      "permanentDesc": "Sempre disponible, sense data de fi",
+      "dates": "Dates concretes",
+      "datesDesc": "Un dia o un interval de dates",
+      "setmanal": "Dies de la setmana",
+      "setmanalDesc": "Es repeteix cada setmana",
+      "mensual": "Cada mes",
+      "mensualDesc": "Primer o últim dia de la setmana del mes"
+    },
+    "dataInici": "Data d'inici",
+    "dataFi": "Data de fi",
+    "errorRang": "La data de fi ha de ser igual o posterior a la d'inici",
+    "triaDies": "Tria els dies",
+    "triaOrdinals": "Tria la posició dins el mes",
+    "resumMensual": "{ordinals} · {dies} de cada mes",
+    "ordinals": {
+      "primer": "Primer",
+      "segon": "Segon",
+      "tercer": "Tercer",
+      "quart": "Quart",
+      "ultim": "Últim"
+    },
+    "dies": {
+      "1": "Dilluns",
+      "2": "Dimarts",
+      "3": "Dimecres",
+      "4": "Dijous",
+      "5": "Divendres",
+      "6": "Dissabte",
+      "7": "Diumenge"
+    },
+    "diesCurt": {
+      "1": "Dl",
+      "2": "Dt",
+      "3": "Dc",
+      "4": "Dj",
+      "5": "Dv",
+      "6": "Ds",
+      "7": "Dg"
+    }
   },
   "mapa": {
     "carregant": "Carregant el mapa…",
