@@ -220,7 +220,8 @@ Opacitats:
 - **`minZoom`**: igual al zoom inicial (8). No es pot fer zoom out més enllà de la vista inicial de Catalunya.
 - **Re-centrat**: en tornar al zoom mínim (`zoomend` amb `zoom <= zoomInicial`), el mapa fa `setView` al `centreInicial` (capturat una sola vegada a `onMounted`, no el del store que s'actualitza en moure's).
 - **`maxBounds` dinàmics** (`actualitzaMaxBounds`): en lloc d'uns bounds estàtics, es calculen com `LIMITS_CATALUNYA` (bbox real) + mig viewport en graus. Això garanteix que el centre del mapa sempre pugui arribar a qualsevol cantonada del territori independentment de la mida de la finestra o el zoom. Es recalcula a `zoomend` i `resize`.
-- **Dragging adaptatiu** (`actualitzaDragging`): al zoom mínim, comprova si el viewport cobreix tot `LIMITS_CATALUNYA`. Si sí → `dragging.disable()` (immòbil, tot és visible). Si no → `dragging.enable()` (finestra petita, cal poder desplaçar-se). Als zooms superiors, sempre habilitat.
+- **Dragging adaptatiu** (`actualitzaDragging`): al zoom mínim, comprova si el viewport cobreix tots els límits base. Si sí → `dragging.disable()` (immòbil, tot és visible). Si no → `dragging.enable()` (finestra petita, cal poder desplaçar-se). Als zooms superiors, sempre habilitat.
+- **Vista base generalitzada**: el zoom mínim, el centre de retorn i els límits operen sobre una "vista base" (`zoomBase`/`centreBase`/`limitsBase`) que normalment és Catalunya (`LIMITS_CATALUNYA`) i en mode joc amb territori contenidor passa a ser el bbox del contenidor (`entraModeJoc`/`surtModeJoc`).
 
 ### Comarques transfrontereres
 
@@ -298,7 +299,7 @@ La funció `temaDeInfo(info)` a `MapaLeaflet.vue` centralitza la resolució del 
 - **`/jocs`** — `JocsView.vue`: menú de jocs disponibles (targetes).
 - **`/jocs/geofreak`** — `GeoFreakView.vue`: primer joc a implementar (abans anomenat GeoMaster; rebatejat 2026-06-11 per col·lisió de nom). Spec completa a `viscalaterra_plan.md` § GeoFreak.
 - **Store**: `stores/geofreak.ts` — estat del joc (nivell, modalitat, demarcacions pendents/encertades, comptadors, cronòmetre). Independent dels stores de cerca.
-- **Mapa en mode joc**: `MapaLeaflet.vue` s'usa en mode "joc" on el clic no fa selecció sinó que dispara la lògica de resposta del GeoFreak. La prop `modeJoc` (o similar) desactiva els handlers normals i n'activa els del joc.
+- **Mapa en mode joc**: `MapaLeaflet.vue` rep la prop `modeJoc` (`ModeJocMapa`, definida a `stores/mapa.ts`: capa jugada + territori contenidor + codis jugables). En mode joc: el nivell actiu el mana el joc (`nivellEfectiu`), el panell info-territori s'amaga (el hover delataria la resposta), la selecció d'usuari no es pinta, les features fora del contenidor queden atenuades (rentat blanc) i no jugables, i el clic emet `clicJoc(codi, nom)` en lloc de seleccionar. Amb contenidor, la "vista base" del mapa passa del bbox de Catalunya al bbox del contenidor (vegeu § Navegació del mapa).
 
 ## Disseny responsive (mòbil)
 

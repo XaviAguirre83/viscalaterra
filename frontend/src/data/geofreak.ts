@@ -8,6 +8,8 @@
 // testejable i el store (`stores/geofreak.ts`) només hi afegeix reactivitat.
 // Mateix patró que `data/temporal.ts` ↔ `stores/filtres.ts`.
 
+import type { NivellTerritorial } from '@/stores/mapa'
+
 // «On és...?»     → es mostra el nom i el jugador clica el territori al mapa.
 // «Com es diu...?» → s'il·lumina el territori i el jugador n'escriu el nom.
 export type ModalitatJoc = 'onEs' | 'comEsDiu'
@@ -15,6 +17,15 @@ export type ModalitatJoc = 'onEs' | 'comEsDiu'
 export const MODALITATS: ModalitatJoc[] = ['onEs', 'comEsDiu']
 
 export type TipusDemarcacio = 'provincia' | 'vegueria' | 'comarca' | 'municipi'
+
+// Capa del mapa Leaflet corresponent a cada tipus de demarcació.
+// (Import només de tipus: el mòdul es manté pur en runtime.)
+export const CAPA_PER_DEMARCACIO: Record<TipusDemarcacio, NivellTerritorial> = {
+  provincia: 'provincies',
+  vegueria: 'vegueries',
+  comarca: 'comarques',
+  municipi: 'municipis',
+}
 
 export interface NivellGeoFreak {
   id: number

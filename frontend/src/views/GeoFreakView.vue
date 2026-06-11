@@ -5,7 +5,8 @@ import MapaLeaflet from '@/components/mapa/MapaLeaflet.vue'
 import PanellFiltres from '@/components/filtres/PanellFiltres.vue'
 import { useTerritorisStore } from '@/stores/territoris'
 import { useGeofreakStore } from '@/stores/geofreak'
-import { MODALITATS, NIVELLS, type TipusDemarcacio } from '@/data/geofreak'
+import { CAPA_PER_DEMARCACIO, MODALITATS, NIVELLS, type TipusDemarcacio } from '@/data/geofreak'
+import type { ModeJocMapa } from '@/stores/mapa'
 
 // GeoFreak — joc d'identificació territorial (spec: viscalaterra_plan.md § GeoFreak).
 // Fase 1: modal de configuració (modalitat + nivell + territori contenidor).
@@ -76,6 +77,44 @@ const contenidorSeleccionat = computed({
   set: (codi: string) => geofreak.defineixContenidor(codi || null),
 })
 
+// ── Mode joc per al mapa (fase de partida) ─────────────────────────────────
+
+// Codis de les features jugables dins el contenidor triat; null = totes les
+// del nivell. Les comarques transfrontereres compten a totes dues bandes
+// (mateix criteri que el panell On?).
+const codisPermesos = computed<string[] | null>(() => {
+  const nivell = geofreak.nivellActual
+  const codi = geofreak.configuracio.codiContenidor
+  if (!nivell?.contenidor || !codi) return null
+  if (nivell.demarcacio === 'municipi') {
+    switch (nivell.contenidor) {
+      case 'comarca':
+        return territoris.municipisDeComarca(codi).map((m) => m.codi)
+      case 'vegueria':
+        return territoris.municipisDeVegueria(codi).map((m) => m.codi)
+      default:
+        return territoris.municipisDeProvincia(codi).map((m) => m.codi)
+    }
+  }
+  // Comarques dins una província o una vegueria.
+  if (nivell.contenidor === 'provincia') {
+    return territoris.arbre?.find((p) => p.codi === codi)?.comarques.map((c) => c.codi) ?? null
+  }
+  return [...new Set(territoris.municipisDeVegueria(codi).map((m) => m.comarca_codi))]
+})
+
+const modeJocMapa = computed<ModeJocMapa | null>(() => {
+  const nivell = geofreak.nivellActual
+  if (geofreak.fase !== 'partida' || !nivell) return null
+  const codi = geofreak.configuracio.codiContenidor
+  return {
+    nivell: CAPA_PER_DEMARCACIO[nivell.demarcacio],
+    contenidor:
+      nivell.contenidor && codi ? { nivell: CAPA_PER_DEMARCACIO[nivell.contenidor], codi } : null,
+    codisPermesos: codisPermesos.value,
+  }
+})
+
 // Resum de la configuració triada (banner provisional de la fase de partida).
 const resumPartida = computed(() => {
   const c = geofreak.configuracio
@@ -91,7 +130,7 @@ const resumPartida = computed(() => {
   <div class="gf-layout">
     <PanellFiltres />
     <div class="gf-cos">
-      <MapaLeaflet />
+      <MapaLeaflet :mode-joc="modeJocMapa" />
 
       <!-- ── Modal de configuració de la partida ─────────────────────────── -->
       <div v-if="geofreak.fase === 'configuracio'" class="gf-modal-fons">

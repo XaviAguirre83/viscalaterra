@@ -3,7 +3,7 @@ import { onMounted, onUnmounted, watch, ref, computed } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useTerritorisStore } from '@/stores/territoris'
-import { useMapaStore, type NivellTerritorial } from '@/stores/mapa'
+import { useMapaStore, type ModeJocMapa, type NivellTerritorial } from '@/stores/mapa'
 import {
   temaPerProvincia,
   temaPerVegueria,
@@ -15,6 +15,29 @@ import {
 
 const territoris = useTerritorisStore()
 const mapaStore = useMapaStore()
+
+// ── Mode joc (GeoFreak) ────────────────────────────────────────────────────
+// Quan `modeJoc` arriba informat, el mapa serveix el joc: el nivell actiu el
+// determina el joc (no el selector), el panell info-territori s'amaga (el
+// hover delataria la resposta), els clics s'emeten cap al pare en lloc de
+// seleccionar, i si hi ha territori contenidor el mapa s'hi enquadra i no se'n
+// pot sortir.
+const props = defineProps<{ modeJoc?: ModeJocMapa | null }>()
+const emit = defineEmits<{ clicJoc: [codi: string, nom: string] }>()
+
+// Nivell que mana al mapa: el del joc en mode joc, el del selector altrament.
+const nivellEfectiu = computed<NivellTerritorial>(
+  () => props.modeJoc?.nivell ?? mapaStore.nivellActiu
+)
+
+// Features jugables (Set per a cerca O(1)); null = totes les del nivell.
+const codisJugables = computed<Set<string> | null>(() =>
+  props.modeJoc?.codisPermesos ? new Set(props.modeJoc.codisPermesos) : null
+)
+
+function esJugable(info: InfoFeature): boolean {
+  return !codisJugables.value || codisJugables.value.has(info.codi)
+}
 
 let mapa: L.Map | null = null
 let mascaraCatalunya: L.Polygon | null = null
@@ -48,7 +71,7 @@ const ESTIL_NIVELL: Record<number, { weight: number; opacity: number }> = {
 }
 
 function nivellNumero(capa: NivellTerritorial): number {
-  return NIVELLS_ORDRE[mapaStore.nivellActiu].indexOf(capa) + 1
+  return NIVELLS_ORDRE[nivellEfectiu.value].indexOf(capa) + 1
 }
 
 // ── Extracció de codis ─────────────────────────────────────────────────────
@@ -244,7 +267,7 @@ function creaPanesTerritorials() {
 
 function actualitzaInteractivitatPanes() {
   if (!mapa) return
-  const actiu = mapaStore.nivellActiu
+  const actiu = nivellEfectiu.value
   ;(Object.keys(PANE_NOMS) as NivellTerritorial[]).forEach((nivell) => {
     const pane = mapa!.getPane(PANE_NOMS[nivell])
     if (!pane) return
@@ -275,7 +298,26 @@ function estilPerFeature(
 
   if (!info) return baseEstil
 
-  const esCapaActiva = nivell === mapaStore.nivellActiu
+  // ── Mode joc: estils propis (la selecció d'usuari no es pinta) ───────────
+  if (props.modeJoc) {
+    const mj = props.modeJoc
+    // El territori contenidor destaca amb vora forta a la seva pròpia capa.
+    if (mj.contenidor && nivell === mj.contenidor.nivell && info.codi === mj.contenidor.codi) {
+      return { color: '#1a2635', weight: 2.5, opacity: 1, fillOpacity: 0 }
+    }
+    if (nivell === mj.nivell) {
+      // Exterior al contenidor: atenuat (rentat blanc, com la màscara de
+      // Catalunya). Els handlers l'exclouen del joc via esJugable.
+      if (!esJugable(info)) {
+        return { color: '#999', weight: 0.5, opacity: 0.4, fillColor: '#ffffff', fillOpacity: 0.45 }
+      }
+      return { color: '#555', weight: 2, opacity: 1, fillOpacity: 0 }
+    }
+    // Capes de context: només traç, segons la matriu de prominència.
+    return baseEstil
+  }
+
+  const esCapaActiva = nivell === nivellEfectiu.value
 
   // ── Únicament la capa de municipis mostra farcit de color ──────────────────
   // Les capes superiors (comarca, vegueria, província) mantenen fillOpacity:0
@@ -326,7 +368,7 @@ function estilHoverPerFeature(
 
   // Municipis: farcit intens en hover (única capa amb farcit persistent a selecció).
   if (nivell === 'municipis') {
-    const estaSeleccionat = estatSeleccioFeature(info, nivell) !== 'cap'
+    const estaSeleccionat = !props.modeJoc && estatSeleccioFeature(info, nivell) !== 'cap'
     if (estaSeleccionat) {
       return { color: tema.vora, weight: 3, opacity, fillOpacity: 0.85 }
     }
@@ -387,15 +429,100 @@ const LIMITS_CATALUNYA: [[number, number], [number, number]] = [
   [42.86, 3.33],
 ]
 
+// ── Vista base ─────────────────────────────────────────────────────────────
+// El zoom mínim, el centre de retorn i els límits de desplaçament del mapa.
+// Normalment és Catalunya sencera; en mode joc amb territori contenidor passa
+// a ser el bbox del contenidor (mateixa lògica, límits més estrets).
+let zoomInicial = 0
+let centreInicial: [number, number] = [0, 0]
+let zoomBase = 0
+let centreBase: [number, number] = [0, 0]
+let limitsBase: [[number, number], [number, number]] = LIMITS_CATALUNYA
+
 function actualitzaMaxBounds() {
   if (!mapa) return
   const b = mapa.getBounds()
   const halfLat = (b.getNorth() - b.getSouth()) / 2
   const halfLng = (b.getEast() - b.getWest()) / 2
   mapa.setMaxBounds([
-    [LIMITS_CATALUNYA[0][0] - halfLat, LIMITS_CATALUNYA[0][1] - halfLng],
-    [LIMITS_CATALUNYA[1][0] + halfLat, LIMITS_CATALUNYA[1][1] + halfLng],
+    [limitsBase[0][0] - halfLat, limitsBase[0][1] - halfLng],
+    [limitsBase[1][0] + halfLat, limitsBase[1][1] + halfLng],
   ])
+}
+
+// Al zoom mínim: si el viewport ja cobreix tots els límits base, no cal poder
+// desplaçar-se (tot és visible); si no (finestra petita), sí. Zooms superiors:
+// sempre habilitat.
+function actualitzaDragging() {
+  if (!mapa) return
+  if (mapa.getZoom() > zoomBase) {
+    mapa.dragging.enable()
+    return
+  }
+  const b = mapa.getBounds()
+  const [sw, ne] = limitsBase
+  const cobreixTot =
+    b.getSouth() <= sw[0] && b.getNorth() >= ne[0] && b.getWest() <= sw[1] && b.getEast() >= ne[1]
+  if (cobreixTot) {
+    mapa.dragging.disable()
+  } else {
+    mapa.dragging.enable()
+  }
+}
+
+// ── Mode joc: enquadrament al territori contenidor ─────────────────────────
+
+// Bbox del contenidor a partir de la capa ja carregada (acumula per si el
+// territori té més d'una feature).
+function boundsContenidor(contenidor: { nivell: NivellTerritorial; codi: string }) {
+  const capa = capesActives[contenidor.nivell]
+  if (!capa) return null
+  let bounds: L.LatLngBounds | null = null
+  capa.eachLayer((layer) => {
+    const geo = layer as L.Polygon & { feature?: GeoJSON.Feature }
+    if (!geo.feature) return
+    if (codiDeFeature(geo.feature, contenidor.nivell)?.codi !== contenidor.codi) return
+    const b = geo.getBounds()
+    bounds = bounds ? bounds.extend(b) : L.latLngBounds(b.getSouthWest(), b.getNorthEast())
+  })
+  return bounds as L.LatLngBounds | null
+}
+
+// Redefineix la vista base (límits + zoom mínim + centre) i hi porta el mapa.
+function aplicaVistaBase() {
+  if (!mapa) return
+  hoverInfo.value = null
+  mapa.setMinZoom(zoomBase)
+  mapa.setView(centreBase, zoomBase, { animate: true })
+  actualitzaMaxBounds()
+  actualitzaDragging()
+  actualitzaEstilsTotes()
+  actualitzaInteractivitatPanes()
+}
+
+function entraModeJoc(mj: ModeJocMapa) {
+  if (!mapa) return
+  const bounds = mj.contenidor ? boundsContenidor(mj.contenidor) : null
+  if (bounds) {
+    limitsBase = [
+      [bounds.getSouth(), bounds.getWest()],
+      [bounds.getNorth(), bounds.getEast()],
+    ]
+    zoomBase = mapa.getBoundsZoom(bounds)
+    centreBase = [bounds.getCenter().lat, bounds.getCenter().lng]
+  } else {
+    limitsBase = LIMITS_CATALUNYA
+    zoomBase = zoomInicial
+    centreBase = centreInicial
+  }
+  aplicaVistaBase()
+}
+
+function surtModeJoc() {
+  limitsBase = LIMITS_CATALUNYA
+  zoomBase = zoomInicial
+  centreBase = centreInicial
+  aplicaVistaBase()
 }
 
 // ── Màscara: destaca Catalunya, atenua la resta del món ───────────────────
@@ -487,28 +614,40 @@ async function carregaCapa(nivell: NivellTerritorial, zoom: number) {
         const pathLayer = layer as L.Path
         layer.on({
           mouseover() {
-            if (nivell !== mapaStore.nivellActiu) return
-            pathLayer.setStyle(estilHoverPerFeature(feature, nivell))
+            if (nivell !== nivellEfectiu.value) return
             const info = codiDeFeature(feature, nivell)
-            if (info) {
-              hoverInfo.value = {
-                nivell,
-                nom: info.nom ?? '',
-                nomProvincia: info.nomProvincia,
-                nomsProvincia: info.nomsProvincia,
-                nomVegueria: info.nomVegueria,
-                nomsVegueria: info.nomsVegueria,
-                nomComarca: info.nomComarca,
-              }
+            if (!info) return
+            // En mode joc no es mostra cap nom (delataria la resposta): només
+            // feedback visual, i únicament a les features jugables.
+            if (props.modeJoc) {
+              if (!esJugable(info)) return
+              pathLayer.setStyle(estilHoverPerFeature(feature, nivell))
+              return
+            }
+            pathLayer.setStyle(estilHoverPerFeature(feature, nivell))
+            hoverInfo.value = {
+              nivell,
+              nom: info.nom ?? '',
+              nomProvincia: info.nomProvincia,
+              nomsProvincia: info.nomsProvincia,
+              nomVegueria: info.nomVegueria,
+              nomsVegueria: info.nomsVegueria,
+              nomComarca: info.nomComarca,
             }
           },
           mouseout() {
-            if (nivell !== mapaStore.nivellActiu) return
+            if (nivell !== nivellEfectiu.value) return
             pathLayer.setStyle(estilPerFeature(feature, nivell))
             hoverInfo.value = null
           },
           click() {
-            if (nivell !== mapaStore.nivellActiu) return
+            if (nivell !== nivellEfectiu.value) return
+            if (props.modeJoc) {
+              const info = codiDeFeature(feature, nivell)
+              if (!info || !esJugable(info)) return
+              emit('clicJoc', info.codi, info.nom ?? '')
+              return
+            }
             gestionaClicFeature(feature, nivell)
           },
         })
@@ -572,8 +711,10 @@ function actualitzaEstilsTotes() {
 // ── Lifecycle ──────────────────────────────────────────────────────────────
 
 onMounted(() => {
-  const zoomInicial = mapaStore.zoom
-  const centreInicial = mapaStore.centre
+  zoomInicial = mapaStore.zoom
+  centreInicial = mapaStore.centre
+  zoomBase = zoomInicial
+  centreBase = centreInicial
 
   mapa = L.map('mapa-contenidor', {
     center: centreInicial,
@@ -591,30 +732,13 @@ onMounted(() => {
 
   creaPanesTerritorials()
 
-  function actualitzaDragging() {
-    if (!mapa) return
-    if (mapa.getZoom() > zoomInicial) {
-      mapa.dragging.enable()
-      return
-    }
-    const b = mapa.getBounds()
-    const [sw, ne] = LIMITS_CATALUNYA
-    const cobreixTot =
-      b.getSouth() <= sw[0] && b.getNorth() >= ne[0] && b.getWest() <= sw[1] && b.getEast() >= ne[1]
-    if (cobreixTot) {
-      mapa.dragging.disable()
-    } else {
-      mapa.dragging.enable()
-    }
-  }
-
   mapa.on('zoomend', () => {
     const zoom = mapa!.getZoom()
     mapaStore.actualitzaZoom(zoom)
     carregaTotesCapes(zoom)
     actualitzaMaxBounds()
-    if (zoom <= zoomInicial) {
-      mapa!.setView(centreInicial, zoomInicial, { animate: true })
+    if (zoom <= zoomBase) {
+      mapa!.setView(centreBase, zoomBase, { animate: true })
       mapa!.once('moveend', actualitzaDragging)
     } else {
       mapa!.dragging.enable()
@@ -638,6 +762,13 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  // Si es desmunta en plena partida (navegació directa a una altra secció),
+  // restaura zoom/centre del store: el proper mapa arrencaria amb minZoom
+  // clavat dins el territori del joc.
+  if (props.modeJoc) {
+    mapaStore.actualitzaZoom(zoomInicial)
+    mapaStore.actualitzaCentre(centreInicial[0], centreInicial[1])
+  }
   mapa?.remove()
   mapa = null
 })
@@ -649,19 +780,31 @@ watch(
 )
 
 // Quan el nivell actiu canvia, re-aplica estils i la interactivitat dels panes.
+// (En mode joc el selector està amagat i el nivell el mana el joc — s'ignora.)
 watch(
   () => mapaStore.nivellActiu,
   () => {
+    if (props.modeJoc) return
     actualitzaEstilsTotes()
     actualitzaInteractivitatPanes()
     hoverInfo.value = null
+  }
+)
+
+// Entrada/sortida del mode joc: redefineix la vista base i els estils.
+watch(
+  () => props.modeJoc,
+  (mj) => {
+    if (mj) entraModeJoc(mj)
+    else surtModeJoc()
   }
 )
 </script>
 
 <template>
   <div id="mapa-contenidor" class="mapa-contenidor">
-    <div class="info-territori">
+    <!-- Panell ocult en mode joc: mostrar el nom en hover faria trivial el GeoFreak -->
+    <div v-if="!modeJoc" class="info-territori">
       <div class="info-territori__grid" role="radiogroup" :aria-label="$t('mapa.nivellAria')">
         <div class="info-territori__cel">
           <button

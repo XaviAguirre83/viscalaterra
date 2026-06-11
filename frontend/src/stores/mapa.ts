@@ -7,6 +7,15 @@ const CENTRE_INICIAL: [number, number] = [41.708, 1.738]
 
 export type NivellTerritorial = 'provincies' | 'vegueries' | 'comarques' | 'municipis'
 
+// Configuració del mode joc del mapa (GeoFreak): la capa que es juga, el
+// territori contenidor on s'enquadra el mapa (null = tota Catalunya) i els
+// codis de les features jugables (null = totes les de la capa).
+export interface ModeJocMapa {
+  nivell: NivellTerritorial
+  contenidor: { nivell: NivellTerritorial; codi: string } | null
+  codisPermesos: string[] | null
+}
+
 export const useMapaStore = defineStore('mapa', () => {
   const zoom = ref(ZOOM_INICIAL)
   const centre = ref<[number, number]>(CENTRE_INICIAL)
