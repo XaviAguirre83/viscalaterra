@@ -5,7 +5,13 @@ import MapaLeaflet from '@/components/mapa/MapaLeaflet.vue'
 import PanellFiltres from '@/components/filtres/PanellFiltres.vue'
 import { useTerritorisStore } from '@/stores/territoris'
 import { useGeofreakStore } from '@/stores/geofreak'
-import { CAPA_PER_DEMARCACIO, MODALITATS, NIVELLS, type TipusDemarcacio } from '@/data/geofreak'
+import {
+  CAPA_PER_DEMARCACIO,
+  MODALITATS,
+  NIVELLS,
+  type ModalitatJoc,
+  type TipusDemarcacio,
+} from '@/data/geofreak'
 import type { ModeJocMapa } from '@/stores/mapa'
 
 // GeoFreak — joc d'identificació territorial (spec: viscalaterra_plan.md § GeoFreak).
@@ -71,7 +77,22 @@ function quantitatNivell(id: number): number | null {
   }
 }
 
-// El <select> delega l'escriptura al store (patró get/set).
+// Els <select> deleguen l'escriptura al store (patró get/set). El valor ''
+// és el placeholder ("Tria'n una…"), deshabilitat: el set mai el rep.
+const modalitatSeleccionada = computed({
+  get: () => geofreak.configuracio.modalitat ?? '',
+  set: (m: ModalitatJoc | '') => {
+    if (m !== '') geofreak.defineixModalitat(m)
+  },
+})
+
+const nivellSeleccionat = computed({
+  get: () => geofreak.configuracio.nivell ?? '',
+  set: (id: number | '') => {
+    if (id !== '') geofreak.defineixNivell(id)
+  },
+})
+
 const contenidorSeleccionat = computed({
   get: () => geofreak.configuracio.codiContenidor ?? '',
   set: (codi: string) => geofreak.defineixContenidor(codi || null),
@@ -138,47 +159,31 @@ const resumPartida = computed(() => {
           <h2 id="gf-titol" class="gf-modal__titol">GeoFreak</h2>
           <p class="gf-modal__sub">{{ $t('geofreak.titolModal') }}</p>
 
-          <fieldset class="gf-camp">
-            <legend>{{ $t('geofreak.modalitat') }}</legend>
-            <div class="gf-modalitats">
-              <button
-                v-for="m in MODALITATS"
-                :key="m"
-                type="button"
-                class="gf-modalitat"
-                :class="{ 'gf-modalitat--activa': geofreak.configuracio.modalitat === m }"
-                :aria-pressed="geofreak.configuracio.modalitat === m"
-                @click="geofreak.defineixModalitat(m)"
-              >
-                <span class="gf-modalitat__nom">{{ $t(`geofreak.modalitats.${m}`) }}</span>
-                <span class="gf-modalitat__desc">{{ $t(`geofreak.modalitats.${m}Desc`) }}</span>
-              </button>
-            </div>
-          </fieldset>
+          <div class="gf-camp">
+            <label for="gf-modalitat">{{ $t('geofreak.modalitat') }}</label>
+            <select id="gf-modalitat" v-model="modalitatSeleccionada">
+              <option value="" disabled>{{ $t('geofreak.triaOpcio') }}</option>
+              <option v-for="m in MODALITATS" :key="m" :value="m">
+                {{ $t(`geofreak.modalitats.${m}`) }}
+              </option>
+            </select>
+            <p v-if="geofreak.configuracio.modalitat" class="gf-desc">
+              {{ $t(`geofreak.modalitats.${geofreak.configuracio.modalitat}Desc`) }}
+            </p>
+          </div>
 
-          <fieldset class="gf-camp">
-            <legend>{{ $t('geofreak.nivell') }}</legend>
-            <div class="gf-nivells" role="radiogroup">
-              <button
-                v-for="n in NIVELLS"
-                :key="n.id"
-                type="button"
-                class="gf-nivell"
-                :class="{ 'gf-nivell--actiu': geofreak.configuracio.nivell === n.id }"
-                role="radio"
-                :aria-checked="geofreak.configuracio.nivell === n.id"
-                @click="geofreak.defineixNivell(n.id)"
-              >
-                <span class="gf-nivell__num">{{ n.id }}</span>
-                <span class="gf-nivell__nom">{{ $t(`geofreak.nivells.n${n.id}`) }}</span>
-                <span v-if="quantitatNivell(n.id)" class="gf-nivell__quantitat">
-                  {{ quantitatNivell(n.id) }}
-                </span>
-              </button>
-            </div>
-          </fieldset>
+          <div class="gf-camp">
+            <label for="gf-nivell">{{ $t('geofreak.nivell') }}</label>
+            <select id="gf-nivell" v-model="nivellSeleccionat">
+              <option value="" disabled>{{ $t('geofreak.triaOpcio') }}</option>
+              <option v-for="n in NIVELLS" :key="n.id" :value="n.id">
+                {{ n.id }} · {{ $t(`geofreak.nivells.n${n.id}`)
+                }}{{ quantitatNivell(n.id) ? ` (${quantitatNivell(n.id)})` : '' }}
+              </option>
+            </select>
+          </div>
 
-          <div v-if="tipusContenidor" class="gf-camp gf-camp--contenidor">
+          <div v-if="tipusContenidor" class="gf-camp">
             <label for="gf-contenidor">{{
               $t(`geofreak.triaContenidor.${tipusContenidor}`)
             }}</label>
@@ -272,7 +277,6 @@ const resumPartida = computed(() => {
   border: none;
 }
 
-.gf-camp legend,
 .gf-camp label {
   display: block;
   margin-bottom: 6px;
@@ -283,115 +287,7 @@ const resumPartida = computed(() => {
   color: #777;
 }
 
-/* Modalitats: dos botons grans costat a costat */
-
-.gf-modalitats {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.gf-modalitat {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 12px 10px;
-  background: #f7f8f9;
-  border: 2px solid #e2e6ea;
-  border-radius: 10px;
-  cursor: pointer;
-  text-align: center;
-  transition:
-    border-color 0.15s,
-    background 0.15s;
-}
-
-.gf-modalitat:hover {
-  border-color: #2d6a2d;
-}
-
-.gf-modalitat--activa {
-  background: #eef4ee;
-  border-color: #2d6a2d;
-}
-
-.gf-modalitat__nom {
-  font-size: 1rem;
-  font-weight: 800;
-  color: #1a2635;
-}
-
-.gf-modalitat__desc {
-  font-size: var(--text-xs);
-  color: var(--color-text-secundari, #737373);
-  line-height: 1.3;
-}
-
-/* Nivells: llista vertical compacta */
-
-.gf-nivells {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.gf-nivell {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 7px 10px;
-  background: none;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  cursor: pointer;
-  text-align: left;
-  transition: background 0.12s;
-}
-
-.gf-nivell:hover {
-  background: #f4f7f4;
-}
-
-.gf-nivell--actiu {
-  background: #eef4ee;
-  border-color: #2d6a2d;
-}
-
-.gf-nivell__num {
-  flex-shrink: 0;
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: #e2e6ea;
-  font-size: var(--text-xs);
-  font-weight: 800;
-  color: #444;
-}
-
-.gf-nivell--actiu .gf-nivell__num {
-  background: #2d6a2d;
-  color: #fff;
-}
-
-.gf-nivell__nom {
-  flex: 1;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: #333;
-}
-
-.gf-nivell__quantitat {
-  font-size: var(--text-xs);
-  font-weight: 700;
-  color: #999;
-}
-
-/* Desplegable de territori contenidor */
-
-.gf-camp--contenidor select {
+.gf-camp select {
   width: 100%;
   padding: 9px 10px;
   border: 1px solid #ccd2d8;
@@ -399,6 +295,14 @@ const resumPartida = computed(() => {
   font-size: var(--text-sm);
   background: #fff;
   color: #222;
+}
+
+/* Explicació de la modalitat triada, sota el seu desplegable */
+.gf-desc {
+  margin-top: 5px;
+  font-size: var(--text-xs);
+  color: var(--color-text-secundari, #737373);
+  line-height: 1.3;
 }
 
 /* Botó Som-hi! */
