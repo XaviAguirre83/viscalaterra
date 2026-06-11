@@ -296,9 +296,9 @@ La funció `temaDeInfo(info)` a `MapaLeaflet.vue` centralitza la resolució del 
 ### Secció Jocs (`/jocs`)
 
 - **`/jocs`** — `JocsView.vue`: menú de jocs disponibles (targetes).
-- **`/jocs/geomaster`** — `GeoMasterView.vue`: primer joc implementat. Spec completa a `viscalaterra_plan.md` § GeoMaster.
-- **Store**: `stores/geomaster.ts` — estat del joc (nivell, modalitat, demarcacions pendents/encertades, comptadors, cronòmetre). Independent dels stores de cerca.
-- **Mapa en mode joc**: `MapaLeaflet.vue` s'usa en mode "joc" on el clic no fa selecció sinó que dispara la lògica de resposta del GeoMaster. La prop `modeJoc` (o similar) desactiva els handlers normals i n'activa els del joc.
+- **`/jocs/geofreak`** — `GeoFreakView.vue`: primer joc a implementar (abans anomenat GeoMaster; rebatejat 2026-06-11 per col·lisió de nom). Spec completa a `viscalaterra_plan.md` § GeoFreak.
+- **Store**: `stores/geofreak.ts` — estat del joc (nivell, modalitat, demarcacions pendents/encertades, comptadors, cronòmetre). Independent dels stores de cerca.
+- **Mapa en mode joc**: `MapaLeaflet.vue` s'usa en mode "joc" on el clic no fa selecció sinó que dispara la lògica de resposta del GeoFreak. La prop `modeJoc` (o similar) desactiva els handlers normals i n'activa els del joc.
 
 ## Disseny responsive (mòbil)
 

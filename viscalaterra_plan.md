@@ -326,24 +326,45 @@ Cerca, Jocs i Marxandatge conviuen sota el mateix domini, comparteixen sistema d
 - Mode convidat: es pot jugar sense registrar-se, sense persistència.
 - Usuari registrat: puntuacions, progrés i rànquings desats.
 
-### GeoMaster (primer joc a implementar)
+### GeoFreak (primer joc a implementar)
 
-Joc d'identificació territorial. Ruta: `/jocs/geomaster`. La pàgina `/jocs` actua com a menú de tots els jocs.
+Joc d'identificació territorial. Ruta: `/jocs/geofreak`. La pàgina `/jocs` actua com a menú de tots els jocs.
 
-**Dues modalitats** (seleccionables per separat):
+> **Nom** (2026-06-11): rebatejat de "GeoMaster" → **GeoFreak** (passió per la geografia). "GeoMaster" ja existia a l'App Store amb el mateix concepte; "GeoGeek" també està ocupat (GeoGeek AR, App Store i Google Play). "GeoFreak" no presenta col·lisions conegudes. Obert a un nom millor més endavant.
 
-- **Nom → Mapa**: apareix el nom d'una demarcació i l'usuari ha de clicar-la al mapa.
-- **Mapa → Nom**: apareix una demarcació marcada al mapa i l'usuari ha d'escriure el nom correcte. Requereix autocomplete (imprescindible als nivells alts).
+**Dues modalitats** (seleccionables per separat), batejades amb la pregunta que formulen:
+
+- **«On és...?»** (nom → mapa): apareix el nom d'una demarcació i l'usuari ha de clicar-la al mapa.
+- **«Com es diu...?»** (mapa → nom): apareix una demarcació il·luminada al mapa i l'usuari n'escriu el nom en un recuadre tipus "Cerca per nom", amb autocomplete (imprescindible als nivells alts i per a grafies difícils, p. ex. Castell-Platja d'Aro).
+
+**Pista** (2026-06-11 — substitueix l'antiga decisió "el joc no corregeix ni pista"):
+
+- Botó «Pista» disponible a cada ronda; usar-lo penalitza (vegeu fórmula de puntuació).
+- A «Com es diu...?»: desplega 4 opcions clicables (1 correcta + 3 distractors).
+- A «On és...?» (simètric): s'il·luminen 4 territoris candidats i només aquests són clicables.
+- Els distractors són veïns o del mateix àmbit (si toca l'Alt Empordà: Baix Empordà, Gironès, Pla de l'Estany…), mai de l'altra punta del país — si no, la pista regala massa.
+- Cost: un encert amb pista compta com a **mig encert (0,5)** al ràtio de puntuació. Penalització multiplicativa: escala sola amb el nivell, sense números màgics.
 
 **Mecànica**:
 
 - Rondes infinites fins que s'encerten totes les demarcacions del nivell o l'usuari surt.
-- Comptador d'encerts i errors (sense penalització, purament informatiu).
+- Comptador d'encerts i errors. **Sense límit d'errors ni vides** (2026-06-11): el ràtio encerts/total ja penalitza a la puntuació, i provar a l'atzar surt car per si sol.
 - Cronòmetre de temps total.
 - Una demarcació encertada queda marcada permanentment al mapa i no torna a sortir.
-- El joc no corregeix ni pista — simplement compta encerts i errors.
 - El zoom és lliure en qualsevol modalitat i nivell.
-- **El panell d'informació territorial (hover amb el nom) està ocult durant el joc.** Si es mostrés el nom en passar el cursor, la modalitat nom→mapa seria trivial (busques amb el cursor fins trobar el nom demanat). El mapa en mode GeoMaster desactiva el panell hover.
+- **El panell d'informació territorial (hover amb el nom) està ocult durant el joc.** Si es mostrés el nom en passar el cursor, la modalitat «On és...?» seria trivial (busques amb el cursor fins trobar el nom demanat). El mapa en mode joc desactiva el panell hover.
+- **Enquadrament al territori contenidor** (2026-06-11 — nivells "a triar": 2, 3, 5, 6, 7): si es juga p. ex. a "Municipis del Maresme", el mapa fa `fitBounds` al bbox de la comarca (tan gran com permeti el viewport), els `maxBounds` impedeixen desplaçar-se fora i el `minZoom` queda fixat a l'enquadrament inicial. És la generalització de la lògica ja existent de `LIMITS_CATALUNYA`/`actualitzaMaxBounds` a `MapaLeaflet.vue`, amb el bbox del contenidor en lloc del de Catalunya. El territori exterior queda atenuat i no interactiu.
+
+**Flux de configuració (modal)** (2026-06-11): en entrar al joc, un modal sobre el mapa configura la partida:
+
+1. **Modalitat**: «On és...?» / «Com es diu...?».
+2. **Nivell**: 0–8.
+3. **Territori contenidor**: desplegable, només visible als nivells "a triar" (2, 3, 5, 6, 7).
+4. Botó **«Som-hi!»** → tanca el modal i arrenca la partida.
+
+**HUD durant la partida**: la posició superior central (alliberada pel panell info-territori, ocult en mode joc) mostra el prompt — «On és... el Ripollès?» o el recuadre d'escriptura amb autocomplete. Als laterals: cronòmetre + progrés (p. ex. 12/43) a un costat; comptadors ✓/✗, botó «Pista» i botó «Surt» a l'altre.
+
+**Final de partida**: modal de resultats — temps total, encerts/errors, pistes usades i puntuació — amb botons «Tornar a jugar» i «Canviar nivell». Quan existeixi l'auth real, aquí anirà el CTA «Registra't per sortir al rànquing» (costura prevista joc ↔ registre).
 
 **9 nivells de dificultat**:
 
@@ -371,7 +392,7 @@ Joc d'identificació territorial. Ruta: `/jocs/geomaster`. La pàgina `/jocs` ac
   ```
 
   - `multiplicador_nivell` = `nivell + 1` (×1 per Províncies → ×9 per tots els municipis)
-  - `encerts / total` = ràtio d'èxit (els errors penalitzen implícitament)
+  - `encerts / total` = ràtio d'èxit (els errors penalitzen implícitament); un encert amb pista compta 0,5
   - `bonus_temps` = decreix com més temps es triga (a definir la corba exacta)
 
 - El rànking **distingeix entre modalitats**: rànking nom→mapa i rànking mapa→nom per separat.
@@ -380,9 +401,9 @@ Joc d'identificació territorial. Ruta: `/jocs/geomaster`. La pàgina `/jocs` ac
 
 **BanderaMaster funciona exactament amb la mateixa mecànica que EscutMaster** — l'única diferència és que les imatges són banderes en lloc d'escuts. Tot el que es descriu a continuació s'aplica a ambdós jocs.
 
-Jocs d'identificació d'escuts heràldics i banderes de les demarcacions catalanes. Mecànica general idèntica al GeoMaster (rondes infinites, comptadors encerts/errors, cronòmetre, rànking per modalitat, mode convidat i registrat).
+Jocs d'identificació d'escuts heràldics i banderes de les demarcacions catalanes. Mecànica general idèntica al GeoFreak (rondes infinites, comptadors encerts/errors, cronòmetre, rànking per modalitat, mode convidat i registrat).
 
-**Diferències respecte al GeoMaster:**
+**Diferències respecte al GeoFreak:**
 
 - Les **vegueries queden excloses** — no disposen d'escut ni bandera pròpies.
 - **Dues modalitats** (rànking separat per a cadascuna):
