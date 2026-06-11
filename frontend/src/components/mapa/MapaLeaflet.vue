@@ -524,20 +524,20 @@ function aplicaVistaBase() {
 
 function entraModeJoc(mj: ModeJocMapa) {
   if (!mapa) return
-  boundsJoc = mj.contenidor ? boundsContenidor(mj.contenidor) : null
-  if (boundsJoc) {
-    limitsBase = [
-      [boundsJoc.getSouth(), boundsJoc.getWest()],
-      [boundsJoc.getNorth(), boundsJoc.getEast()],
-    ]
-    zoomBase = mapa.getBoundsZoom(boundsJoc)
-    centreBase = [boundsJoc.getCenter().lat, boundsJoc.getCenter().lng]
-  } else {
-    limitsBase = LIMITS_CATALUNYA
-    zoomBase = zoomInicial
-    centreBase = centreInicial
-  }
+  // Sense contenidor (o si no es troba), el territori de joc és Catalunya
+  // sencera — també s'enquadra amb zoom fraccionari per omplir el viewport
+  // (la vista inicial de l'app usa el zoom enter 8 i queda més petita).
+  boundsJoc =
+    (mj.contenidor ? boundsContenidor(mj.contenidor) : null) ??
+    L.latLngBounds(LIMITS_CATALUNYA[0], LIMITS_CATALUNYA[1])
+  limitsBase = [
+    [boundsJoc.getSouth(), boundsJoc.getWest()],
+    [boundsJoc.getNorth(), boundsJoc.getEast()],
+  ]
+  zoomBase = mapa.getBoundsZoom(boundsJoc)
+  centreBase = [boundsJoc.getCenter().lat, boundsJoc.getCenter().lng]
   aplicaVistaBase()
+  mascaraCatalunya?.setStyle({ fillOpacity: OPACITAT_MASCARA_JOC })
 }
 
 function surtModeJoc() {
@@ -546,9 +546,15 @@ function surtModeJoc() {
   zoomBase = zoomInicial
   centreBase = centreInicial
   aplicaVistaBase()
+  mascaraCatalunya?.setStyle({ fillOpacity: OPACITAT_MASCARA })
 }
 
 // ── Màscara: destaca Catalunya, atenua la resta del món ───────────────────
+
+// En mode joc la màscara es torna quasi opaca: les etiquetes costaneres dels
+// tiles d'OSM sobresurten del polígon municipal cap al mar i delatarien el nom.
+const OPACITAT_MASCARA = 0.55
+const OPACITAT_MASCARA_JOC = 0.92
 
 async function carregaMascaraCatalunya() {
   if (!mapa || mascaraCatalunya) return
@@ -581,7 +587,7 @@ async function carregaMascaraCatalunya() {
     mascaraCatalunya = L.polygon([anellMon, ...forats], {
       color: 'transparent',
       fillColor: '#ffffff',
-      fillOpacity: 0.55,
+      fillOpacity: props.modeJoc ? OPACITAT_MASCARA_JOC : OPACITAT_MASCARA,
       interactive: false,
     }).addTo(mapa)
   } catch (err) {
@@ -774,17 +780,14 @@ onMounted(() => {
   })
 
   mapa.on('resize', () => {
-    // En mode joc, el zoom d'enquadrament depèn de la mida del viewport:
-    // es recalcula i, si el zoom actual queda per sota del nou mínim,
-    // es torna a enquadrar el contenidor.
+    // En mode joc l'enquadrament depèn de la mida del viewport: en canviar
+    // (rotació del mòbil, redimensionar la finestra) es re-enquadra el
+    // territori de joc des de zero.
     if (boundsJoc) {
       zoomBase = mapa!.getBoundsZoom(boundsJoc)
       centreBase = [boundsJoc.getCenter().lat, boundsJoc.getCenter().lng]
-      if (mapa!.getZoom() < zoomBase) {
-        aplicaVistaBase()
-        return
-      }
-      mapa!.setMinZoom(zoomBase)
+      aplicaVistaBase()
+      return
     }
     actualitzaMaxBounds()
     actualitzaDragging()
