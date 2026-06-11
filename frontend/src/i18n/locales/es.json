@@ -161,6 +161,59 @@
       "7": "Do"
     }
   },
+  "jocs": {
+    "titol": "Juegos",
+    "subtitol": "Aprende el territorio jugando",
+    "juga": "Jugar",
+    "properament": "Próximamente",
+    "geofreak": {
+      "nom": "GeoFreak",
+      "desc": "¿Conoces el mapa de Catalunya? Encuentra provincias, veguerías, comarcas y municipios."
+    },
+    "escutmaster": {
+      "nom": "EscutMaster",
+      "desc": "¿Reconoces los escudos heráldicos de las demarcaciones catalanas?"
+    },
+    "banderamaster": {
+      "nom": "BanderaMaster",
+      "desc": "Identifica las banderas de comarcas y municipios."
+    },
+    "capitals": {
+      "nom": "Capitales de comarca",
+      "desc": "¿Sabes cuál es la capital de cada comarca?"
+    }
+  },
+  "geofreak": {
+    "titolModal": "Configura la partida",
+    "modalitat": "Modalidad",
+    "modalitats": {
+      "onEs": "¿Dónde está...?",
+      "onEsDesc": "Te damos el nombre, haz clic en el mapa",
+      "comEsDiu": "¿Cómo se llama...?",
+      "comEsDiuDesc": "Te iluminamos el territorio, escribe su nombre"
+    },
+    "nivell": "Nivel",
+    "nivells": {
+      "n0": "Provincias",
+      "n1": "Veguerías",
+      "n2": "Comarcas de una veguería",
+      "n3": "Comarcas de una provincia",
+      "n4": "Todas las comarcas",
+      "n5": "Municipios de una comarca",
+      "n6": "Municipios de una veguería",
+      "n7": "Municipios de una provincia",
+      "n8": "Todos los municipios de Catalunya"
+    },
+    "triaContenidor": {
+      "vegueria": "¿Qué veguería?",
+      "provincia": "¿Qué provincia?",
+      "comarca": "¿Qué comarca?"
+    },
+    "triaOpcio": "Elige una…",
+    "somhi": "¡Vamos!",
+    "enPreparacio": "Modo juego en preparación — próximamente",
+    "tornaConfig": "Cambia la configuración"
+  },
   "mapa": {
     "carregant": "Cargando el mapa…",
     "error": "No se han podido cargar los datos del mapa.",

@@ -18,7 +18,12 @@ const router = createRouter({
       component: placeholder,
       props: { ambMapa: true },
     },
-    { path: '/jocs', name: 'jocs', component: placeholder, props: { ambMapa: true } },
+    { path: '/jocs', name: 'jocs', component: () => import('@/views/JocsView.vue') },
+    {
+      path: '/jocs/geofreak',
+      name: 'geofreak',
+      component: () => import('@/views/GeoFreakView.vue'),
+    },
 
     // Seccions que no requereixen el mapa (en construcció)
     {

@@ -161,6 +161,59 @@
       "7": "Sun"
     }
   },
+  "jocs": {
+    "titol": "Games",
+    "subtitol": "Learn the territory by playing",
+    "juga": "Play",
+    "properament": "Coming soon",
+    "geofreak": {
+      "nom": "GeoFreak",
+      "desc": "How well do you know the map of Catalonia? Find provinces, vegueries, comarques and municipalities."
+    },
+    "escutmaster": {
+      "nom": "EscutMaster",
+      "desc": "Can you recognise the coats of arms of the Catalan territories?"
+    },
+    "banderamaster": {
+      "nom": "BanderaMaster",
+      "desc": "Identify the flags of comarques and municipalities."
+    },
+    "capitals": {
+      "nom": "Comarca capitals",
+      "desc": "Do you know the capital of each comarca?"
+    }
+  },
+  "geofreak": {
+    "titolModal": "Set up your game",
+    "modalitat": "Game mode",
+    "modalitats": {
+      "onEs": "Where is...?",
+      "onEsDesc": "We give you the name, click it on the map",
+      "comEsDiu": "What's it called...?",
+      "comEsDiuDesc": "We highlight the territory, type its name"
+    },
+    "nivell": "Level",
+    "nivells": {
+      "n0": "Provinces",
+      "n1": "Vegueries",
+      "n2": "Comarques of a vegueria",
+      "n3": "Comarques of a province",
+      "n4": "All comarques",
+      "n5": "Municipalities of a comarca",
+      "n6": "Municipalities of a vegueria",
+      "n7": "Municipalities of a province",
+      "n8": "All municipalities of Catalonia"
+    },
+    "triaContenidor": {
+      "vegueria": "Which vegueria?",
+      "provincia": "Which province?",
+      "comarca": "Which comarca?"
+    },
+    "triaOpcio": "Pick one…",
+    "somhi": "Let's go!",
+    "enPreparacio": "Game mode under construction — coming soon",
+    "tornaConfig": "Change settings"
+  },
   "mapa": {
     "carregant": "Loading the map…",
     "error": "Could not load the map data.",
