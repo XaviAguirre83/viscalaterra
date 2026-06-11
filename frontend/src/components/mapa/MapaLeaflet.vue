@@ -309,9 +309,11 @@ function estilPerFeature(
       // Exterior al contenidor: atenuat (rentat blanc, com la màscara de
       // Catalunya). Els handlers l'exclouen del joc via esJugable.
       if (!esJugable(info)) {
-        return { color: '#999', weight: 0.5, opacity: 0.4, fillColor: '#ffffff', fillOpacity: 0.45 }
+        return { color: '#999', weight: 0.5, opacity: 0.4, fillColor: '#ffffff', fillOpacity: 0.6 }
       }
-      return { color: '#555', weight: 2, opacity: 1, fillOpacity: 0 }
+      // Farcit OPAC: el tile d'OSM mostra els noms de municipis i ciutats a
+      // zooms alts i delataria la resposta. El territori jugat es tapa del tot.
+      return { color: '#555', weight: 1.5, opacity: 1, fillColor: '#f2efe9', fillOpacity: 1 }
     }
     // Capes de context: només traç, segons la matriu de prominència.
     return baseEstil
@@ -366,9 +368,14 @@ function estilHoverPerFeature(
   const { opacity } = ESTIL_NIVELL[num]!
   const tema = temaDeInfo(info)
 
+  // Mode joc: hover amb farcit OPAC (mantenir tapats els noms del tile d'OSM).
+  if (props.modeJoc) {
+    return { color: tema.vora, weight: 2.5, opacity: 1, fillColor: tema.parcial, fillOpacity: 1 }
+  }
+
   // Municipis: farcit intens en hover (única capa amb farcit persistent a selecció).
   if (nivell === 'municipis') {
-    const estaSeleccionat = !props.modeJoc && estatSeleccioFeature(info, nivell) !== 'cap'
+    const estaSeleccionat = estatSeleccioFeature(info, nivell) !== 'cap'
     if (estaSeleccionat) {
       return { color: tema.vora, weight: 3, opacity, fillOpacity: 0.85 }
     }
@@ -438,6 +445,14 @@ let centreInicial: [number, number] = [0, 0]
 let zoomBase = 0
 let centreBase: [number, number] = [0, 0]
 let limitsBase: [[number, number], [number, number]] = LIMITS_CATALUNYA
+// Bbox del contenidor del joc (null fora de mode joc). Es conserva per poder
+// recalcular l'enquadrament quan canvia la mida del viewport (resize/rotació).
+let boundsJoc: L.LatLngBounds | null = null
+
+const LIMITS_MON: L.LatLngBoundsExpression = [
+  [-90, -180],
+  [90, 180],
+]
 
 function actualitzaMaxBounds() {
   if (!mapa) return
@@ -489,11 +504,18 @@ function boundsContenidor(contenidor: { nivell: NivellTerritorial; codi: string 
 }
 
 // Redefineix la vista base (límits + zoom mínim + centre) i hi porta el mapa.
+// Ordre crític: primer s'alliberen les restriccions velles (un setMinZoom per
+// sobre del zoom actual dispara un setZoom implícit ANIMAT, i Leaflet ignora
+// el setView següent mentre anima — el mapa quedava descentrat en territoris
+// lluny del centre, p. ex. Val d'Aran). El moviment es fa sense animació i
+// les restriccions noves s'apliquen quan el mapa ja és a lloc.
 function aplicaVistaBase() {
   if (!mapa) return
   hoverInfo.value = null
+  mapa.setMinZoom(0)
+  mapa.setMaxBounds(LIMITS_MON)
+  mapa.setView(centreBase, zoomBase, { animate: false })
   mapa.setMinZoom(zoomBase)
-  mapa.setView(centreBase, zoomBase, { animate: true })
   actualitzaMaxBounds()
   actualitzaDragging()
   actualitzaEstilsTotes()
@@ -502,14 +524,14 @@ function aplicaVistaBase() {
 
 function entraModeJoc(mj: ModeJocMapa) {
   if (!mapa) return
-  const bounds = mj.contenidor ? boundsContenidor(mj.contenidor) : null
-  if (bounds) {
+  boundsJoc = mj.contenidor ? boundsContenidor(mj.contenidor) : null
+  if (boundsJoc) {
     limitsBase = [
-      [bounds.getSouth(), bounds.getWest()],
-      [bounds.getNorth(), bounds.getEast()],
+      [boundsJoc.getSouth(), boundsJoc.getWest()],
+      [boundsJoc.getNorth(), boundsJoc.getEast()],
     ]
-    zoomBase = mapa.getBoundsZoom(bounds)
-    centreBase = [bounds.getCenter().lat, bounds.getCenter().lng]
+    zoomBase = mapa.getBoundsZoom(boundsJoc)
+    centreBase = [boundsJoc.getCenter().lat, boundsJoc.getCenter().lng]
   } else {
     limitsBase = LIMITS_CATALUNYA
     zoomBase = zoomInicial
@@ -519,6 +541,7 @@ function entraModeJoc(mj: ModeJocMapa) {
 }
 
 function surtModeJoc() {
+  boundsJoc = null
   limitsBase = LIMITS_CATALUNYA
   zoomBase = zoomInicial
   centreBase = centreInicial
@@ -723,6 +746,11 @@ onMounted(() => {
     dragging: false,
     maxBoundsViscosity: 1.0,
     zoomControl: true,
+    // Zoom fraccionari: getBoundsZoom pot retornar p. ex. 9.5 i l'enquadrament
+    // del mode joc omple el viewport. Amb el valor enter per defecte, un
+    // territori que no cap al següent nivell queda petit i amb grans marges.
+    zoomSnap: 0.25,
+    zoomDelta: 1,
   })
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -746,6 +774,18 @@ onMounted(() => {
   })
 
   mapa.on('resize', () => {
+    // En mode joc, el zoom d'enquadrament depèn de la mida del viewport:
+    // es recalcula i, si el zoom actual queda per sota del nou mínim,
+    // es torna a enquadrar el contenidor.
+    if (boundsJoc) {
+      zoomBase = mapa!.getBoundsZoom(boundsJoc)
+      centreBase = [boundsJoc.getCenter().lat, boundsJoc.getCenter().lng]
+      if (mapa!.getZoom() < zoomBase) {
+        aplicaVistaBase()
+        return
+      }
+      mapa!.setMinZoom(zoomBase)
+    }
     actualitzaMaxBounds()
     actualitzaDragging()
   })

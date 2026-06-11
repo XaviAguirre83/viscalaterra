@@ -28,13 +28,17 @@ onUnmounted(() => geofreak.reinicia())
 
 // ── Opcions del desplegable de territori contenidor ───────────────────────
 
+// El nom oficial d'alguna demarcació porta un aclariment entre parèntesis
+// ("Val d'Aran (entitat territorial singular)") — al joc només volem el nom.
+const nomCurt = (nom: string) => nom.replace(/\s*\(.+\)\s*$/, '')
+
 // Comarques úniques per codi: les transfrontereres apareixen sota dues
 // províncies a l'arbre, però al joc són una sola comarca.
 const comarquesUniques = computed(() => {
   const m = new Map<string, string>()
   territoris.arbre?.forEach((p) =>
     p.comarques.forEach((c) => {
-      if (!m.has(c.codi)) m.set(c.codi, c.nom)
+      if (!m.has(c.codi)) m.set(c.codi, nomCurt(c.nom))
     })
   )
   return [...m.entries()]
@@ -49,9 +53,11 @@ const tipusContenidor = computed<TipusDemarcacio | null>(
 const opcionsContenidor = computed<{ codi: string; nom: string }[]>(() => {
   switch (tipusContenidor.value) {
     case 'provincia':
-      return territoris.arbre?.map((p) => ({ codi: p.codi, nom: p.nom })) ?? []
+      return territoris.arbre?.map((p) => ({ codi: p.codi, nom: nomCurt(p.nom) })) ?? []
     case 'vegueria':
-      return [...territoris.vegueries].sort((a, b) => a.nom.localeCompare(b.nom, 'ca'))
+      return territoris.vegueries
+        .map((v) => ({ codi: v.codi, nom: nomCurt(v.nom) }))
+        .sort((a, b) => a.nom.localeCompare(b.nom, 'ca'))
     case 'comarca':
       return comarquesUniques.value
     default:
