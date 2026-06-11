@@ -211,8 +211,17 @@
     },
     "triaOpcio": "Tria'n una…",
     "somhi": "Som-hi!",
-    "enPreparacio": "Mode joc en preparació — pròximament",
-    "tornaConfig": "Canvia la configuració"
+    "preguntaOnEs": "On és...",
+    "surt": "Surt",
+    "tornaConfig": "Canvia la configuració",
+    "resultats": {
+      "titol": "Partida completada!",
+      "punts": "punts",
+      "temps": "Temps",
+      "encerts": "Encerts",
+      "errors": "Errors",
+      "tornaJugar": "Torna a jugar"
+    }
   },
   "mapa": {
     "carregant": "Carregant el mapa…",

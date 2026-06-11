@@ -211,8 +211,17 @@
     },
     "triaOpcio": "Elige una…",
     "somhi": "¡Vamos!",
-    "enPreparacio": "Modo juego en preparación — próximamente",
-    "tornaConfig": "Cambia la configuración"
+    "preguntaOnEs": "¿Dónde está...",
+    "surt": "Salir",
+    "tornaConfig": "Cambia la configuración",
+    "resultats": {
+      "titol": "¡Partida completada!",
+      "punts": "puntos",
+      "temps": "Tiempo",
+      "encerts": "Aciertos",
+      "errors": "Errores",
+      "tornaJugar": "Volver a jugar"
+    }
   },
   "mapa": {
     "carregant": "Cargando el mapa…",

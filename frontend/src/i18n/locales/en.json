@@ -211,8 +211,17 @@
     },
     "triaOpcio": "Pick one…",
     "somhi": "Let's go!",
-    "enPreparacio": "Game mode under construction — coming soon",
-    "tornaConfig": "Change settings"
+    "preguntaOnEs": "Where is...",
+    "surt": "Exit",
+    "tornaConfig": "Change settings",
+    "resultats": {
+      "titol": "Game complete!",
+      "punts": "points",
+      "temps": "Time",
+      "encerts": "Correct",
+      "errors": "Errors",
+      "tornaJugar": "Play again"
+    }
   },
   "mapa": {
     "carregant": "Loading the map…",

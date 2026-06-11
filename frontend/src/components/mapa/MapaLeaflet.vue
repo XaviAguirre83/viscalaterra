@@ -35,8 +35,16 @@ const codisJugables = computed<Set<string> | null>(() =>
   props.modeJoc?.codisPermesos ? new Set(props.modeJoc.codisPermesos) : null
 )
 
+const codisEncertats = computed<Set<string>>(() => new Set(props.modeJoc?.codisEncertats ?? []))
+
 function esJugable(info: InfoFeature): boolean {
   return !codisJugables.value || codisJugables.value.has(info.codi)
+}
+
+// Una demarcació encertada deixa de jugar: ni hover ni clic (el clic repetit
+// tampoc compta com a error — el store l'ignoraria igualment).
+function esEncertada(info: InfoFeature): boolean {
+  return codisEncertats.value.has(info.codi)
 }
 
 let mapa: L.Map | null = null
@@ -310,6 +318,13 @@ function estilPerFeature(
       // Catalunya). Els handlers l'exclouen del joc via esJugable.
       if (!esJugable(info)) {
         return { color: '#999', weight: 0.5, opacity: 0.4, fillColor: '#ffffff', fillOpacity: 0.6 }
+      }
+      // Encertada: pintada permanentment amb el seu color de tema (opac:
+      // sota hi segueixen havent etiquetes del tile que no s'han de veure
+      // a través dels veïns no encertats).
+      if (esEncertada(info)) {
+        const tema = temaDeInfo(info)
+        return { color: tema.vora, weight: 1.5, opacity: 1, fillColor: tema.base, fillOpacity: 1 }
       }
       // Farcit OPAC: el tile d'OSM mostra els noms de municipis i ciutats a
       // zooms alts i delataria la resposta. El territori jugat es tapa del tot.
@@ -647,9 +662,9 @@ async function carregaCapa(nivell: NivellTerritorial, zoom: number) {
             const info = codiDeFeature(feature, nivell)
             if (!info) return
             // En mode joc no es mostra cap nom (delataria la resposta): només
-            // feedback visual, i únicament a les features jugables.
+            // feedback visual, i únicament a les features jugables no encertades.
             if (props.modeJoc) {
-              if (!esJugable(info)) return
+              if (!esJugable(info) || esEncertada(info)) return
               pathLayer.setStyle(estilHoverPerFeature(feature, nivell))
               return
             }
@@ -673,7 +688,7 @@ async function carregaCapa(nivell: NivellTerritorial, zoom: number) {
             if (nivell !== nivellEfectiu.value) return
             if (props.modeJoc) {
               const info = codiDeFeature(feature, nivell)
-              if (!info || !esJugable(info)) return
+              if (!info || !esJugable(info) || esEncertada(info)) return
               emit('clicJoc', info.codi, info.nom ?? '')
               return
             }
@@ -835,11 +850,26 @@ watch(
 )
 
 // Entrada/sortida del mode joc: redefineix la vista base i els estils.
+// Si només canvien els encertats (mateixa capa i contenidor — passa a cada
+// encert de la partida), n'hi ha prou amb re-pintar: re-enquadrar el mapa
+// a cada resposta seria car i molest.
 watch(
   () => props.modeJoc,
-  (mj) => {
-    if (mj) entraModeJoc(mj)
-    else surtModeJoc()
+  (mj, anterior) => {
+    if (!mj) {
+      surtModeJoc()
+      return
+    }
+    const mateixaVista =
+      anterior &&
+      anterior.nivell === mj.nivell &&
+      anterior.contenidor?.nivell === mj.contenidor?.nivell &&
+      anterior.contenidor?.codi === mj.contenidor?.codi
+    if (mateixaVista) {
+      actualitzaEstilsTotes()
+      return
+    }
+    entraModeJoc(mj)
   }
 )
 </script>

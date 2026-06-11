@@ -78,3 +78,95 @@ export function configuracioCompleta(c: ConfiguracioGeoFreak): boolean {
   if (!nivell) return false
   return nivell.contenidor === null || c.codiContenidor !== null
 }
+
+// ── Partida: màquina d'estats de les rondes ────────────────────────────────
+//
+// Rondes fins que s'encerten totes les demarcacions: a cada ronda hi ha un
+// objectiu triat a l'atzar entre les pendents. Un clic a l'objectiu és encert
+// (la demarcació queda encertada i no torna a sortir); un clic a qualsevol
+// altra demarcació jugable és error (l'objectiu no canvia). Sense límit
+// d'errors ni vides: el ràtio d'encerts ja penalitza a la puntuació.
+
+export interface EstatPartida {
+  // Codis pendents d'encertar. L'objectiu actual NO hi és inclòs.
+  pendents: string[]
+  // Codi de la demarcació que es pregunta ara (null = partida completada).
+  objectiu: string | null
+  // Codis encertats, en ordre d'encert.
+  encertades: string[]
+  errors: number
+}
+
+// `aleatori` injectable per fer els tests deterministes (per defecte Math.random).
+export function creaPartida(codis: string[], aleatori: () => number = Math.random): EstatPartida {
+  const pendents = [...codis]
+  const objectiu = treuAleatori(pendents, aleatori)
+  return { pendents, objectiu, encertades: [], errors: 0 }
+}
+
+function treuAleatori(llista: string[], aleatori: () => number): string | null {
+  if (llista.length === 0) return null
+  const i = Math.floor(aleatori() * llista.length)
+  return llista.splice(i, 1)[0] ?? null
+}
+
+export type ResultatClic = 'encert' | 'error' | 'ignorat'
+
+// Processa el clic sobre una demarcació jugable. Retorna un estat NOU (mai
+// muta l'anterior — el store reassigna l'objecte sencer, com sempre).
+export function responClic(
+  estat: EstatPartida,
+  codi: string,
+  aleatori: () => number = Math.random
+): { estat: EstatPartida; resultat: ResultatClic } {
+  if (estat.objectiu === null) return { estat, resultat: 'ignorat' }
+  // Re-clicar una demarcació ja encertada no compta (ni encert ni error).
+  if (estat.encertades.includes(codi)) return { estat, resultat: 'ignorat' }
+
+  if (codi !== estat.objectiu) {
+    return { estat: { ...estat, errors: estat.errors + 1 }, resultat: 'error' }
+  }
+
+  const pendents = [...estat.pendents]
+  const seguent = treuAleatori(pendents, aleatori)
+  return {
+    estat: {
+      pendents,
+      objectiu: seguent,
+      encertades: [...estat.encertades, codi],
+      errors: estat.errors,
+    },
+    resultat: 'encert',
+  }
+}
+
+export function partidaCompletada(estat: EstatPartida): boolean {
+  return estat.objectiu === null && estat.pendents.length === 0
+}
+
+// ── Puntuació (v1, a afinar amb joc real) ──────────────────────────────────
+//
+//   punts = 1000 × multiplicador_nivell × ràtio × bonus_temps
+//
+//   multiplicador = nivell + 1 (×1 Províncies → ×9 tots els municipis)
+//   ràtio   = encerts / (encerts + errors)  ← els errors penalitzen aquí
+//             (quan existeixi la Pista, un encert amb pista comptarà 0,5)
+//   bonus   = T_REF / (T_REF + segons_per_demarcació), amb T_REF = 5 s:
+//             respondre a l'instant → ~1; 5 s de mitjana → 0,5; 15 s → 0,25.
+
+const SEGONS_REFERENCIA = 5
+
+export function calculaPunts(args: {
+  nivell: number
+  encerts: number
+  errors: number
+  segons: number
+}): number {
+  const { nivell, encerts, errors, segons } = args
+  if (encerts === 0) return 0
+  const multiplicador = nivell + 1
+  const ratio = encerts / (encerts + errors)
+  const segonsPerDemarcacio = segons / encerts
+  const bonusTemps = SEGONS_REFERENCIA / (SEGONS_REFERENCIA + segonsPerDemarcacio)
+  return Math.round(1000 * multiplicador * ratio * bonusTemps)
+}

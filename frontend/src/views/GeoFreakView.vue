@@ -1,32 +1,34 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MapaLeaflet from '@/components/mapa/MapaLeaflet.vue'
 import PanellFiltres from '@/components/filtres/PanellFiltres.vue'
 import { useTerritorisStore } from '@/stores/territoris'
 import { useGeofreakStore } from '@/stores/geofreak'
-import {
-  CAPA_PER_DEMARCACIO,
-  MODALITATS,
-  NIVELLS,
-  type ModalitatJoc,
-  type TipusDemarcacio,
-} from '@/data/geofreak'
+import { CAPA_PER_DEMARCACIO, MODALITATS, NIVELLS, type TipusDemarcacio } from '@/data/geofreak'
 import type { ModeJocMapa } from '@/stores/mapa'
 
 // GeoFreak — joc d'identificació territorial (spec: viscalaterra_plan.md § GeoFreak).
-// Fase 1: modal de configuració (modalitat + nivell + territori contenidor).
-// El mode joc real sobre el mapa arriba a les fases següents.
+// Fase 3: rondes jugables a la modalitat «On és...?» — HUD, comptadors,
+// cronòmetre i modal de resultats. («Com es diu...?» arriba a la fase 4.)
 
 const { t } = useI18n()
 const territoris = useTerritorisStore()
 const geofreak = useGeofreakStore()
 
-onMounted(() => territoris.carregaArbre())
-// En sortir del joc (navegar a una altra secció) la configuració es reinicia.
-onUnmounted(() => geofreak.reinicia())
+// Cronòmetre visual: el store guarda els instants; aquí només es fa el tic-tac.
+const araMs = ref(Date.now())
+let ticker: ReturnType<typeof setInterval> | null = null
 
-// ── Opcions del desplegable de territori contenidor ───────────────────────
+onMounted(() => {
+  territoris.carregaArbre()
+  ticker = setInterval(() => (araMs.value = Date.now()), 500)
+})
+// En sortir del joc (navegar a una altra secció) la configuració es reinicia.
+onUnmounted(() => {
+  if (ticker) clearInterval(ticker)
+  geofreak.reinicia()
+})
 
 // El nom oficial d'alguna demarcació porta un aclariment entre parèntesis
 // ("Val d'Aran (entitat territorial singular)") — al joc només volem el nom.
@@ -87,7 +89,7 @@ function quantitatNivell(id: number): number | null {
 // és el placeholder ("Tria'n una…"), deshabilitat: el set mai el rep.
 const modalitatSeleccionada = computed({
   get: () => geofreak.configuracio.modalitat ?? '',
-  set: (m: ModalitatJoc | '') => {
+  set: (m: (typeof MODALITATS)[number] | '') => {
     if (m !== '') geofreak.defineixModalitat(m)
   },
 })
@@ -104,7 +106,7 @@ const contenidorSeleccionat = computed({
   set: (codi: string) => geofreak.defineixContenidor(codi || null),
 })
 
-// ── Mode joc per al mapa (fase de partida) ─────────────────────────────────
+// ── Demarcacions jugables i els seus noms ──────────────────────────────────
 
 // Codis de les features jugables dins el contenidor triat; null = totes les
 // del nivell. Les comarques transfrontereres compten a totes dues bandes
@@ -130,19 +132,59 @@ const codisPermesos = computed<string[] | null>(() => {
   return [...new Set(territoris.municipisDeVegueria(codi).map((m) => m.comarca_codi))]
 })
 
+// Mapa codi → nom de les demarcacions del nivell jugat (per al prompt del HUD).
+const nomsJoc = computed<Map<string, string>>(() => {
+  const m = new Map<string, string>()
+  switch (geofreak.nivellActual?.demarcacio) {
+    case 'provincia':
+      territoris.arbre?.forEach((p) => m.set(p.codi, nomCurt(p.nom)))
+      break
+    case 'vegueria':
+      territoris.vegueries.forEach((v) => m.set(v.codi, nomCurt(v.nom)))
+      break
+    case 'comarca':
+      comarquesUniques.value.forEach((c) => m.set(c.codi, c.nom))
+      break
+    case 'municipi':
+      territoris.municipiPerCodi.forEach((mu, codi) => m.set(codi, mu.nom))
+      break
+  }
+  return m
+})
+
+// Totes les demarcacions que entren en joc: les del contenidor o totes les del nivell.
+const codisJoc = computed<string[]>(() => codisPermesos.value ?? [...nomsJoc.value.keys()])
+
+// ── Mode joc per al mapa (partida i resultats) ─────────────────────────────
+
 const modeJocMapa = computed<ModeJocMapa | null>(() => {
   const nivell = geofreak.nivellActual
-  if (geofreak.fase !== 'partida' || !nivell) return null
+  const enJoc = geofreak.fase === 'partida' || geofreak.fase === 'resultats'
+  if (!enJoc || !nivell) return null
   const codi = geofreak.configuracio.codiContenidor
   return {
     nivell: CAPA_PER_DEMARCACIO[nivell.demarcacio],
     contenidor:
       nivell.contenidor && codi ? { nivell: CAPA_PER_DEMARCACIO[nivell.contenidor], codi } : null,
     codisPermesos: codisPermesos.value,
+    codisEncertats: geofreak.partida?.encertades ?? [],
   }
 })
 
-// Resum de la configuració triada (banner provisional de la fase de partida).
+// ── HUD ────────────────────────────────────────────────────────────────────
+
+const objectiuNom = computed(() => {
+  const codi = geofreak.partida?.objectiu
+  return codi ? (nomsJoc.value.get(codi) ?? codi) : ''
+})
+
+const cronoText = computed(() => {
+  const fi = geofreak.fase === 'partida' ? araMs.value : geofreak.tempsFiMs
+  const segons = Math.max(0, Math.floor((fi - geofreak.tempsIniciMs) / 1000))
+  return `${Math.floor(segons / 60)}:${String(segons % 60).padStart(2, '0')}`
+})
+
+// Resum de la configuració triada (subtítol del modal de resultats).
 const resumPartida = computed(() => {
   const c = geofreak.configuracio
   if (c.modalitat === null || c.nivell === null) return ''
@@ -157,7 +199,7 @@ const resumPartida = computed(() => {
   <div class="gf-layout">
     <PanellFiltres />
     <div class="gf-cos">
-      <MapaLeaflet :mode-joc="modeJocMapa" />
+      <MapaLeaflet :mode-joc="modeJocMapa" @clic-joc="geofreak.clicDemarcacio" />
 
       <!-- ── Modal de configuració de la partida ─────────────────────────── -->
       <div v-if="geofreak.fase === 'configuracio'" class="gf-modal-fons">
@@ -169,8 +211,9 @@ const resumPartida = computed(() => {
             <label for="gf-modalitat">{{ $t('geofreak.modalitat') }}</label>
             <select id="gf-modalitat" v-model="modalitatSeleccionada">
               <option value="" disabled>{{ $t('geofreak.triaOpcio') }}</option>
-              <option v-for="m in MODALITATS" :key="m" :value="m">
-                {{ $t(`geofreak.modalitats.${m}`) }}
+              <option v-for="m in MODALITATS" :key="m" :value="m" :disabled="m === 'comEsDiu'">
+                {{ $t(`geofreak.modalitats.${m}`)
+                }}{{ m === 'comEsDiu' ? ` — ${$t('comu.proximament')}` : '' }}
               </option>
             </select>
             <p v-if="geofreak.configuracio.modalitat" class="gf-desc">
@@ -205,20 +248,70 @@ const resumPartida = computed(() => {
             type="button"
             class="gf-somhi"
             :disabled="!geofreak.configCompleta"
-            @click="geofreak.comencaPartida()"
+            @click="geofreak.comencaPartida(codisJoc)"
           >
             {{ $t('geofreak.somhi') }}
           </button>
         </div>
       </div>
 
-      <!-- ── Partida (provisional fins a la fase 2: mode joc al mapa) ────── -->
-      <div v-else class="gf-banner">
-        <p class="gf-banner__resum">{{ resumPartida }}</p>
-        <p class="gf-banner__nota">{{ $t('geofreak.enPreparacio') }}</p>
-        <button type="button" class="gf-banner__boto" @click="geofreak.tornaAConfiguracio()">
-          {{ $t('geofreak.tornaConfig') }}
-        </button>
+      <!-- ── HUD de partida ───────────────────────────────────────────────── -->
+      <template v-else-if="geofreak.fase === 'partida'">
+        <div class="gf-pregunta" role="status" aria-live="polite">
+          {{ $t('geofreak.preguntaOnEs') }}&nbsp;<strong>{{ objectiuNom }}</strong
+          >?
+        </div>
+        <div class="gf-xip gf-xip--esquerra">
+          <span aria-hidden="true">⏱</span>
+          <span>{{ cronoText }}</span>
+          <span class="gf-xip__separador" aria-hidden="true"></span>
+          <span
+            >{{ geofreak.partida?.encertades.length ?? 0 }}/{{ geofreak.totalDemarcacions }}</span
+          >
+        </div>
+        <div class="gf-xip gf-xip--dreta">
+          <span class="gf-xip__encerts">✓ {{ geofreak.partida?.encertades.length ?? 0 }}</span>
+          <span :key="geofreak.partida?.errors" class="gf-xip__errors"
+            >✗ {{ geofreak.partida?.errors ?? 0 }}</span
+          >
+          <span class="gf-xip__separador" aria-hidden="true"></span>
+          <button type="button" class="gf-xip__surt" @click="geofreak.tornaAConfiguracio()">
+            {{ $t('geofreak.surt') }}
+          </button>
+        </div>
+      </template>
+
+      <!-- ── Modal de resultats ───────────────────────────────────────────── -->
+      <div v-else class="gf-modal-fons">
+        <div class="gf-modal gf-resultats" role="dialog" aria-modal="true">
+          <h2 class="gf-modal__titol">{{ $t('geofreak.resultats.titol') }}</h2>
+          <p class="gf-modal__sub">{{ resumPartida }}</p>
+
+          <p class="gf-resultats__punts">{{ geofreak.punts }}</p>
+          <p class="gf-resultats__punts-etiqueta">{{ $t('geofreak.resultats.punts') }}</p>
+
+          <dl class="gf-resultats__stats">
+            <div>
+              <dt>{{ $t('geofreak.resultats.temps') }}</dt>
+              <dd>{{ cronoText }}</dd>
+            </div>
+            <div>
+              <dt>{{ $t('geofreak.resultats.encerts') }}</dt>
+              <dd>{{ geofreak.partida?.encertades.length ?? 0 }}</dd>
+            </div>
+            <div>
+              <dt>{{ $t('geofreak.resultats.errors') }}</dt>
+              <dd>{{ geofreak.partida?.errors ?? 0 }}</dd>
+            </div>
+          </dl>
+
+          <button type="button" class="gf-somhi" @click="geofreak.tornaAJugar(codisJoc)">
+            {{ $t('geofreak.resultats.tornaJugar') }}
+          </button>
+          <button type="button" class="gf-resultats__config" @click="geofreak.tornaAConfiguracio()">
+            {{ $t('geofreak.tornaConfig') }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -239,7 +332,7 @@ const resumPartida = computed(() => {
   display: flex;
 }
 
-/* ── Modal de configuració ──────────────────────────────────────────────── */
+/* ── Modal de configuració i de resultats ───────────────────────────────── */
 
 .gf-modal-fons {
   position: absolute;
@@ -311,7 +404,7 @@ const resumPartida = computed(() => {
   line-height: 1.3;
 }
 
-/* Botó Som-hi! */
+/* Botó principal (Som-hi! / Torna a jugar) */
 
 .gf-somhi {
   display: block;
@@ -338,48 +431,177 @@ const resumPartida = computed(() => {
   cursor: not-allowed;
 }
 
-/* ── Banner provisional de partida (fase 2 substituirà això pel HUD) ────── */
+/* ── HUD de partida ─────────────────────────────────────────────────────── */
 
-.gf-banner {
+.gf-pregunta {
   position: absolute;
   top: 10px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1500;
-  padding: 12px 22px;
+  max-width: calc(100% - 24px);
+  padding: 10px 22px;
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-  text-align: center;
-  max-width: calc(100% - 24px);
+  font-size: 1.05rem;
+  color: #1a2635;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.gf-banner__resum {
+.gf-pregunta strong {
+  font-weight: 800;
+}
+
+.gf-xip {
+  position: absolute;
+  top: 12px;
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
   font-size: var(--text-sm);
   font-weight: 700;
   color: #1a2635;
 }
 
-.gf-banner__nota {
-  margin-top: 2px;
-  font-size: var(--text-xs);
-  color: var(--color-text-secundari, #737373);
+.gf-xip--esquerra {
+  left: 10px;
 }
 
-.gf-banner__boto {
+.gf-xip--dreta {
+  right: 10px;
+}
+
+.gf-xip__separador {
+  width: 1px;
+  height: 16px;
+  background: #ddd;
+}
+
+.gf-xip__encerts {
+  color: #2d6a2d;
+}
+
+.gf-xip__errors {
+  color: #b03030;
+  animation: gf-sacseig 0.3s;
+}
+
+@keyframes gf-sacseig {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-3px);
+  }
+  75% {
+    transform: translateX(3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gf-xip__errors {
+    animation: none;
+  }
+}
+
+.gf-xip__surt {
+  padding: 2px 10px;
+  background: none;
+  border: 1px solid #ccd2d8;
+  border-radius: 12px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: #555;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.gf-xip__surt:hover {
+  background: #f0f0ee;
+}
+
+/* En mòbil els xips baixen sota la pregunta per no encavalcar-s'hi */
+@media (max-width: 768px) {
+  .gf-pregunta {
+    font-size: 0.95rem;
+    padding: 8px 14px;
+  }
+
+  .gf-xip {
+    top: 58px;
+  }
+}
+
+/* ── Modal de resultats ─────────────────────────────────────────────────── */
+
+.gf-resultats {
+  text-align: center;
+}
+
+.gf-resultats__punts {
+  margin-top: 10px;
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #2d6a2d;
+}
+
+.gf-resultats__punts-etiqueta {
+  margin-bottom: 14px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #777;
+}
+
+.gf-resultats__stats {
+  display: flex;
+  justify-content: center;
+  gap: 26px;
+  margin-bottom: 18px;
+}
+
+.gf-resultats__stats dt {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #777;
+}
+
+.gf-resultats__stats dd {
+  margin: 2px 0 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #1a2635;
+}
+
+.gf-resultats__config {
+  display: block;
+  width: 100%;
   margin-top: 8px;
-  padding: 6px 14px;
+  padding: 9px;
   background: none;
   border: 1px solid #2d6a2d;
-  border-radius: 16px;
+  border-radius: 10px;
   color: #2d6a2d;
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   font-weight: 700;
   cursor: pointer;
   transition: background 0.12s;
 }
 
-.gf-banner__boto:hover {
+.gf-resultats__config:hover {
   background: #eef4ee;
 }
 

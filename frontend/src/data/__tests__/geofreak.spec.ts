@@ -5,6 +5,10 @@ import {
   nivellNecessitaContenidor,
   configuracioBuida,
   configuracioCompleta,
+  creaPartida,
+  responClic,
+  partidaCompletada,
+  calculaPunts,
 } from '../geofreak'
 
 describe('geofreak — taula de nivells', () => {
@@ -63,5 +67,94 @@ describe('geofreak — configuracioCompleta', () => {
     expect(configuracioCompleta({ modalitat: 'onEs', nivell: 99, codiContenidor: null })).toBe(
       false
     )
+  })
+})
+
+describe('geofreak — partida (rondes)', () => {
+  // RNG determinista: sempre 0 → l'objectiu és sempre el primer pendent.
+  const primer = () => 0
+
+  it('creaPartida treu un objectiu i deixa la resta pendents', () => {
+    const p = creaPartida(['a', 'b', 'c'], primer)
+    expect(p.objectiu).toBe('a')
+    expect(p.pendents).toEqual(['b', 'c'])
+    expect(p.encertades).toEqual([])
+    expect(p.errors).toBe(0)
+    expect(partidaCompletada(p)).toBe(false)
+  })
+
+  it('encert: marca la demarcació, no torna a sortir i en surt una altra', () => {
+    const p = creaPartida(['a', 'b'], primer)
+    const { estat, resultat } = responClic(p, 'a', primer)
+    expect(resultat).toBe('encert')
+    expect(estat.encertades).toEqual(['a'])
+    expect(estat.objectiu).toBe('b')
+    expect(estat.pendents).toEqual([])
+  })
+
+  it("error: suma l'error i l'objectiu no canvia", () => {
+    const p = creaPartida(['a', 'b'], primer)
+    const { estat, resultat } = responClic(p, 'b', primer)
+    expect(resultat).toBe('error')
+    expect(estat.errors).toBe(1)
+    expect(estat.objectiu).toBe('a')
+    expect(estat.encertades).toEqual([])
+  })
+
+  it("re-clicar una encertada s'ignora (ni encert ni error)", () => {
+    const p = creaPartida(['a', 'b'], primer)
+    const despresEncert = responClic(p, 'a', primer).estat
+    const { estat, resultat } = responClic(despresEncert, 'a', primer)
+    expect(resultat).toBe('ignorat')
+    expect(estat).toBe(despresEncert)
+  })
+
+  it('la partida es completa en encertar totes les demarcacions', () => {
+    let estat = creaPartida(['a', 'b'], primer)
+    estat = responClic(estat, 'a', primer).estat
+    expect(partidaCompletada(estat)).toBe(false)
+    estat = responClic(estat, 'b', primer).estat
+    expect(partidaCompletada(estat)).toBe(true)
+    expect(estat.objectiu).toBeNull()
+    // Amb la partida completada, qualsevol clic s'ignora.
+    expect(responClic(estat, 'a', primer).resultat).toBe('ignorat')
+  })
+
+  it("responClic mai muta l'estat anterior", () => {
+    const p = creaPartida(['a', 'b'], primer)
+    responClic(p, 'a', primer)
+    responClic(p, 'b', primer)
+    expect(p.objectiu).toBe('a')
+    expect(p.pendents).toEqual(['b'])
+    expect(p.encertades).toEqual([])
+    expect(p.errors).toBe(0)
+  })
+})
+
+describe('geofreak — calculaPunts', () => {
+  // 5 s per demarcació → bonus_temps exactament 0,5 (sense errors d'arrodoniment).
+  const base = { nivell: 4, encerts: 43, errors: 0, segons: 215 }
+
+  it('sense encerts no hi ha punts', () => {
+    expect(calculaPunts({ nivell: 8, encerts: 0, errors: 5, segons: 10 })).toBe(0)
+  })
+
+  it('més errors → menys punts', () => {
+    const net = calculaPunts(base)
+    const ambErrors = calculaPunts({ ...base, errors: 10 })
+    expect(ambErrors).toBeLessThan(net)
+    expect(ambErrors).toBeGreaterThan(0)
+  })
+
+  it('més temps → menys punts', () => {
+    const rapid = calculaPunts(base)
+    const lent = calculaPunts({ ...base, segons: base.segons * 4 })
+    expect(lent).toBeLessThan(rapid)
+  })
+
+  it('el nivell multiplica la puntuació', () => {
+    const nivellBaix = calculaPunts({ ...base, nivell: 0 })
+    const nivellAlt = calculaPunts({ ...base, nivell: 8 })
+    expect(nivellAlt).toBe(nivellBaix * 9)
   })
 })

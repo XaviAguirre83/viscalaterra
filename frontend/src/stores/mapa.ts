@@ -14,6 +14,9 @@ export interface ModeJocMapa {
   nivell: NivellTerritorial
   contenidor: { nivell: NivellTerritorial; codi: string } | null
   codisPermesos: string[] | null
+  // Demarcacions ja encertades: pintades permanentment amb el seu color de
+  // tema i excloses del joc (ni hover ni clic).
+  codisEncertats: string[]
 }
 
 export const useMapaStore = defineStore('mapa', () => {
