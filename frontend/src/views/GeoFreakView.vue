@@ -828,7 +828,7 @@ const resumPartida = computed(() => {
 }
 
 .gf-barra__context {
-  font-size: var(--text-xs);
+  font-size: 0.85rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -840,12 +840,23 @@ const resumPartida = computed(() => {
 }
 
 .gf-barra__pregunta {
-  font-size: 0.95rem;
+  font-size: 1.2rem;
   color: #1a2635;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.3;
+}
+
+/* En dues línies (pantalla estreta) tornen a la mida compacta */
+@media (max-width: 920px) {
+  .gf-barra__context {
+    font-size: var(--text-xs);
+  }
+
+  .gf-barra__pregunta {
+    font-size: 0.95rem;
+  }
 }
 
 .gf-barra__pregunta strong {

@@ -560,7 +560,7 @@ function flaixJoc(codi: string, tipus: 'encert' | 'error') {
     ).addTo(mapa)
   }
 
-  const durada = tipus === 'encert' ? 800 : 600
+  const durada = tipus === 'encert' ? 1600 : 1200
   const inici = performance.now()
 
   const pas = (ara: number) => {
