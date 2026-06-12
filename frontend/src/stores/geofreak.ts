@@ -20,10 +20,12 @@ import {
 //
 // Fases del joc:
 //   configuracio → modal obert, l'usuari tria modalitat/nivell/contenidor.
+//   preparacio   → compte enrere "3, 2, 1" amb el mapa ja enquadrat; el
+//                  cronòmetre encara no corre.
 //   partida      → rondes en curs sobre el mapa (lògica a @/data/geofreak).
 //   resultats    → partida completada, modal de resultats amb la puntuació.
 
-export type FaseJoc = 'configuracio' | 'partida' | 'resultats'
+export type FaseJoc = 'configuracio' | 'preparacio' | 'partida' | 'resultats'
 
 export const useGeofreakStore = defineStore('geofreak', () => {
   const fase = ref<FaseJoc>('configuracio')
@@ -35,6 +37,9 @@ export const useGeofreakStore = defineStore('geofreak', () => {
   // territoris per triar distractors propers) i s'activa aquí.
   const pista = ref<string[] | null>(null)
   const encertsAmbPista = ref(0)
+
+  // Encerts consecutius sense error ni salt (per al 🔥 del HUD).
+  const ratxa = ref(0)
 
   // Cronòmetre: el store guarda els instants; la vista fa el tic-tac visual.
   const tempsIniciMs = ref(0)
@@ -84,14 +89,28 @@ export const useGeofreakStore = defineStore('geofreak', () => {
 
   // Arrenca les rondes. `codis` = demarcacions jugables (la vista les resol
   // a partir del store territoris segons nivell + contenidor).
-  function comencaPartida(codis: string[]) {
+  // Prepara la partida (mapa ja en mode joc) sense arrencar el cronòmetre:
+  // la vista hi mostra el compte enrere i crida arrencaPartida en acabar.
+  function preparaPartida(codis: string[]) {
     if (!configCompleta.value || codis.length === 0) return
     partida.value = creaPartida(codis)
     pista.value = null
     encertsAmbPista.value = 0
+    ratxa.value = 0
+    fase.value = 'preparacio'
+  }
+
+  function arrencaPartida() {
+    if (fase.value !== 'preparacio') return
     tempsIniciMs.value = Date.now()
     tempsFiMs.value = 0
     fase.value = 'partida'
+  }
+
+  // Arrencada directa sense compte enrere (tests i usos programàtics).
+  function comencaPartida(codis: string[]) {
+    preparaPartida(codis)
+    arrencaPartida()
   }
 
   // Activa la pista de la ronda (una per ronda; l'encert valdrà 0,5).
@@ -110,9 +129,14 @@ export const useGeofreakStore = defineStore('geofreak', () => {
       // L'encert tanca la ronda: si hi havia pista, compta mig encert.
       if (pista.value) encertsAmbPista.value++
       pista.value = null
+      ratxa.value++
     }
+    if (resultat === 'error') ratxa.value = 0
     // El salt (3r error de la ronda) també canvia d'objectiu: pista fora.
-    if (resultat === 'salt') pista.value = null
+    if (resultat === 'salt') {
+      pista.value = null
+      ratxa.value = 0
+    }
     if (partidaCompletada(estat)) {
       tempsFiMs.value = Date.now()
       fase.value = 'resultats'
@@ -154,6 +178,7 @@ export const useGeofreakStore = defineStore('geofreak', () => {
     partida,
     pista,
     encertsAmbPista,
+    ratxa,
     tempsIniciMs,
     tempsFiMs,
     configCompleta,
@@ -163,6 +188,8 @@ export const useGeofreakStore = defineStore('geofreak', () => {
     defineixModalitat,
     defineixNivell,
     defineixContenidor,
+    preparaPartida,
+    arrencaPartida,
     comencaPartida,
     activaPista,
     clicDemarcacio,

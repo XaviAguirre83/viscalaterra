@@ -99,6 +99,27 @@ describe('geofreak — rondes de partida', () => {
     expect(g.clicDemarcacio('a')).toBe('ignorat')
   })
 
+  it('preparaPartida no arrenca el cronòmetre fins a arrencaPartida', () => {
+    const g = configuraNivell0()
+    g.preparaPartida(['a', 'b'])
+    expect(g.fase).toBe('preparacio')
+    expect(g.clicDemarcacio('a')).toBe('ignorat')
+    g.arrencaPartida()
+    expect(g.fase).toBe('partida')
+    expect(g.tempsIniciMs).toBeGreaterThan(0)
+  })
+
+  it('la ratxa puja amb encerts consecutius i cau amb error o salt', () => {
+    const g = configuraNivell0()
+    g.comencaPartida(['a', 'b', 'c', 'd'])
+    g.clicDemarcacio(g.partida!.objectiu!)
+    g.clicDemarcacio(g.partida!.objectiu!)
+    expect(g.ratxa).toBe(2)
+    // Error sobre una pendent viva (no l'objectiu, no encertada).
+    g.clicDemarcacio(g.partida!.pendents[0]!)
+    expect(g.ratxa).toBe(0)
+  })
+
   it('pista: una per ronda, l’encert la consumeix i compta 0,5', () => {
     const g = configuraNivell0()
     g.comencaPartida(['a', 'b', 'c'])

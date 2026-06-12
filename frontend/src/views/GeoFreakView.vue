@@ -170,7 +170,7 @@ const codisJoc = computed<string[]>(() => codisPermesos.value ?? [...nomsJoc.val
 
 const modeJocMapa = computed<ModeJocMapa | null>(() => {
   const nivell = geofreak.nivellActual
-  const enJoc = geofreak.fase === 'partida' || geofreak.fase === 'resultats'
+  const enJoc = geofreak.fase !== 'configuracio'
   if (!enJoc || !nivell) return null
   const codi = geofreak.configuracio.codiContenidor
   return {
@@ -322,6 +322,40 @@ const intentsRestants = computed(() =>
   Math.max(0, MAX_INTENTS_RONDA - (geofreak.partida?.intentsRonda ?? 0))
 )
 
+// ── Compte enrere "3, 2, 1, Som-hi!" ───────────────────────────────────────
+
+// El mapa ja s'enquadra durant el compte (fase 'preparacio'); el cronòmetre
+// arrenca quan acaba. Amb prefers-reduced-motion s'arrenca directament.
+const compteEnrere = ref<string | null>(null)
+let compteTimer: ReturnType<typeof setInterval> | null = null
+
+function arrencaAmbCompte() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    geofreak.comencaPartida(codisJoc.value)
+    return
+  }
+  geofreak.preparaPartida(codisJoc.value)
+  if (geofreak.fase !== 'preparacio') return
+  const seqüencia = ['3', '2', '1', t('geofreak.somhi')]
+  let pas = 0
+  compteEnrere.value = seqüencia[pas] ?? null
+  compteTimer = setInterval(() => {
+    pas++
+    if (pas < seqüencia.length) {
+      compteEnrere.value = seqüencia[pas] ?? null
+      return
+    }
+    if (compteTimer) clearInterval(compteTimer)
+    compteTimer = null
+    compteEnrere.value = null
+    geofreak.arrencaPartida()
+  }, 650)
+}
+
+onUnmounted(() => {
+  if (compteTimer) clearInterval(compteTimer)
+})
+
 // Recompte animat dels punts al modal de resultats (0 → total amb ease-out).
 const puntsMostrats = ref(0)
 watch(
@@ -408,15 +442,30 @@ const resumPartida = computed(() => {
             type="button"
             class="gf-somhi"
             :disabled="!geofreak.configCompleta"
-            @click="geofreak.comencaPartida(codisJoc)"
+            @click="arrencaAmbCompte"
           >
             {{ $t('geofreak.somhi') }}
           </button>
         </div>
       </div>
 
+      <!-- ── Compte enrere (fase de preparació) ──────────────────────────── -->
+      <div v-else-if="geofreak.fase === 'preparacio'" class="gf-compte" aria-live="assertive">
+        <span v-if="compteEnrere" :key="compteEnrere" class="gf-compte__valor">{{
+          compteEnrere
+        }}</span>
+      </div>
+
       <!-- ── HUD de partida ───────────────────────────────────────────────── -->
       <template v-else-if="geofreak.fase === 'partida'">
+        <div class="gf-progres" aria-hidden="true">
+          <div
+            class="gf-progres__fet"
+            :style="{
+              width: `${((geofreak.partida?.encertades.length ?? 0) / Math.max(1, geofreak.totalDemarcacions)) * 100}%`,
+            }"
+          ></div>
+        </div>
         <div
           v-if="geofreak.configuracio.modalitat === 'onEs'"
           class="gf-pregunta"
@@ -468,6 +517,13 @@ const resumPartida = computed(() => {
           >
         </div>
         <div class="gf-xip gf-xip--dreta">
+          <span
+            v-if="geofreak.ratxa >= 2"
+            :key="geofreak.ratxa"
+            class="gf-xip__ratxa"
+            :title="$t('geofreak.ratxaAria')"
+            >🔥 {{ geofreak.ratxa }}</span
+          >
           <span class="gf-xip__encerts">✓ {{ geofreak.partida?.encertades.length ?? 0 }}</span>
           <span :key="geofreak.partida?.errors" class="gf-xip__errors"
             >✗ {{ geofreak.partida?.errors ?? 0 }}</span
@@ -533,7 +589,7 @@ const resumPartida = computed(() => {
             </div>
           </dl>
 
-          <button type="button" class="gf-somhi" @click="geofreak.tornaAJugar(codisJoc)">
+          <button type="button" class="gf-somhi" @click="arrencaAmbCompte">
             {{ $t('geofreak.resultats.tornaJugar') }}
           </button>
           <button type="button" class="gf-resultats__config" @click="geofreak.tornaAConfiguracio()">
@@ -657,6 +713,57 @@ const resumPartida = computed(() => {
 .gf-somhi:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* ── Compte enrere ──────────────────────────────────────────────────────── */
+
+.gf-compte {
+  position: absolute;
+  inset: 0;
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.gf-compte__valor {
+  font-size: 5rem;
+  font-weight: 800;
+  color: #1a2635;
+  text-shadow:
+    0 0 18px rgba(255, 255, 255, 0.9),
+    0 2px 6px rgba(255, 255, 255, 0.8);
+  animation: gf-compte-pop 0.6s ease-out;
+}
+
+@keyframes gf-compte-pop {
+  from {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ── Barra de progrés de la partida ─────────────────────────────────────── */
+
+.gf-progres {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  z-index: 1400;
+  background: rgba(26, 38, 53, 0.12);
+}
+
+.gf-progres__fet {
+  height: 100%;
+  background: #2d6a2d;
+  transition: width 0.25s ease;
 }
 
 /* ── HUD de partida ─────────────────────────────────────────────────────── */
@@ -804,6 +911,11 @@ const resumPartida = computed(() => {
 
 .gf-xip__encerts {
   color: #2d6a2d;
+}
+
+.gf-xip__ratxa {
+  color: #b8600b;
+  animation: gf-compte-pop 0.25s ease-out;
 }
 
 .gf-xip__errors {

@@ -50,6 +50,30 @@ function esEncertada(info: InfoFeature): boolean {
 let mapa: L.Map | null = null
 let mascaraCatalunya: L.Polygon | null = null
 
+// ── Tiles: base OSM en mode normal, Carto Positron SENSE ETIQUETES en mode
+// joc — cap nom de municipi o ciutat al fons (anti-trampa d'arrel) i el
+// relleu/trama urbana es veu net sota el joc.
+const URL_TILES_BASE = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+const URL_TILES_JOC = 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png'
+let tilesBase: L.TileLayer | null = null
+let tilesJoc: L.TileLayer | null = null
+
+function activaTilesJoc(actiu: boolean) {
+  if (!mapa) return
+  if (actiu) {
+    tilesJoc ??= L.tileLayer(URL_TILES_JOC, {
+      attribution: '© OpenStreetMap contributors © CARTO',
+      subdomains: 'abcd',
+      maxZoom: 19,
+    })
+    if (tilesBase && mapa.hasLayer(tilesBase)) mapa.removeLayer(tilesBase)
+    if (!mapa.hasLayer(tilesJoc)) tilesJoc.addTo(mapa)
+  } else {
+    if (tilesJoc && mapa.hasLayer(tilesJoc)) mapa.removeLayer(tilesJoc)
+    if (tilesBase && !mapa.hasLayer(tilesBase)) tilesBase.addTo(mapa)
+  }
+}
+
 // Capes actualment visibles per nivell (al màxim, una per nivell).
 const capesActives: Record<NivellTerritorial, L.GeoJSON | null> = {
   provincies: null,
@@ -322,26 +346,43 @@ function estilPerFeature(
       // Objectiu de «Com es diu...?»: il·luminat en daurat (color neutre —
       // el tema cromàtic delataria la província i, de retruc, la resposta).
       if (mj.codiObjectiu && info.codi === mj.codiObjectiu) {
-        return { color: '#1a2635', weight: 2.5, opacity: 1, fillColor: '#f7c948', fillOpacity: 1 }
+        return {
+          color: '#1a2635',
+          weight: 2.5,
+          opacity: 1,
+          fillColor: '#f7c948',
+          fillOpacity: 0.85,
+        }
       }
-      // Encertada: pintada permanentment amb el seu color de tema (opac:
-      // sota hi segueixen havent etiquetes del tile que no s'han de veure
-      // a través dels veïns no encertats).
+      // Encertada: pintada permanentment amb el seu color de tema (el relleu
+      // del tile sense etiquetes es transparenta una mica).
       if (esEncertada(info)) {
         const tema = temaDeInfo(info)
-        return { color: tema.vora, weight: 1.5, opacity: 1, fillColor: tema.base, fillOpacity: 1 }
+        return {
+          color: tema.vora,
+          weight: 1.5,
+          opacity: 1,
+          fillColor: tema.base,
+          fillOpacity: 0.8,
+        }
       }
       // Pista activa: els 4 candidats destaquen; la resta s'esvaeix (i deixa
-      // de respondre — vegeu els handlers). Tot es manté opac (anti-trampa).
+      // de respondre — vegeu els handlers).
       if (mj.codisPista) {
         if (mj.codisPista.includes(info.codi)) {
-          return { color: '#1a2635', weight: 2.5, opacity: 1, fillColor: '#fdf0c0', fillOpacity: 1 }
+          return {
+            color: '#1a2635',
+            weight: 2.5,
+            opacity: 1,
+            fillColor: '#fdf0c0',
+            fillOpacity: 0.85,
+          }
         }
-        return { color: '#aaa', weight: 0.5, opacity: 0.5, fillColor: '#f7f5f0', fillOpacity: 1 }
+        return { color: '#aaa', weight: 0.5, opacity: 0.5, fillColor: '#ffffff', fillOpacity: 0.6 }
       }
-      // Farcit OPAC: el tile d'OSM mostra els noms de municipis i ciutats a
-      // zooms alts i delataria la resposta. El territori jugat es tapa del tot.
-      return { color: '#555', weight: 1.5, opacity: 1, fillColor: '#f2efe9', fillOpacity: 1 }
+      // Territori jugat: transparent sobre el tile sense etiquetes — el
+      // terreny es veu net i no hi ha cap nom a tapar.
+      return { color: '#555', weight: 1.5, opacity: 1, fillOpacity: 0 }
     }
     // Capes de context: només traç, segons la matriu de prominència.
     return baseEstil
@@ -396,9 +437,9 @@ function estilHoverPerFeature(
   const { opacity } = ESTIL_NIVELL[num]!
   const tema = temaDeInfo(info)
 
-  // Mode joc: hover amb farcit OPAC (mantenir tapats els noms del tile d'OSM).
+  // Mode joc: hover amb el to parcial del tema sobre el tile sense etiquetes.
   if (props.modeJoc) {
-    return { color: tema.vora, weight: 2.5, opacity: 1, fillColor: tema.parcial, fillOpacity: 1 }
+    return { color: tema.vora, weight: 2.5, opacity: 1, fillColor: tema.parcial, fillOpacity: 0.7 }
   }
 
   // Municipis: farcit intens en hover (única capa amb farcit persistent a selecció).
@@ -595,6 +636,7 @@ function entraModeJoc(mj: ModeJocMapa) {
   zoomBase = mapa.getBoundsZoom(boundsJoc)
   centreBase = [boundsJoc.getCenter().lat, boundsJoc.getCenter().lng]
   aplicaVistaBase()
+  activaTilesJoc(true)
   mascaraCatalunya?.setStyle({ fillOpacity: OPACITAT_MASCARA_JOC })
 }
 
@@ -604,15 +646,16 @@ function surtModeJoc() {
   zoomBase = zoomInicial
   centreBase = centreInicial
   aplicaVistaBase()
+  activaTilesJoc(false)
   mascaraCatalunya?.setStyle({ fillOpacity: OPACITAT_MASCARA })
 }
 
 // ── Màscara: destaca Catalunya, atenua la resta del món ───────────────────
 
-// En mode joc la màscara es torna quasi opaca: les etiquetes costaneres dels
-// tiles d'OSM sobresurten del polígon municipal cap al mar i delatarien el nom.
+// En mode joc la màscara puja una mica per centrar l'atenció al territori
+// jugat (els tiles del joc ja no porten cap etiqueta que calgui tapar).
 const OPACITAT_MASCARA = 0.55
-const OPACITAT_MASCARA_JOC = 0.92
+const OPACITAT_MASCARA_JOC = 0.7
 
 async function carregaMascaraCatalunya() {
   if (!mapa || mascaraCatalunya) return
@@ -822,7 +865,7 @@ onMounted(() => {
     zoomDelta: 1,
   })
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  tilesBase = L.tileLayer(URL_TILES_BASE, {
     attribution: '© OpenStreetMap contributors',
     maxZoom: 19,
   }).addTo(mapa)
