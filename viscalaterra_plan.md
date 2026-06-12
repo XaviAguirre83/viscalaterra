@@ -348,7 +348,8 @@ Joc d'identificació territorial. Ruta: `/jocs/geofreak`. La pàgina `/jocs` act
 **Mecànica**:
 
 - Rondes infinites fins que s'encerten totes les demarcacions del nivell o l'usuari surt.
-- Comptador d'encerts i errors. **Sense límit d'errors ni vides** (2026-06-11): el ràtio encerts/total ja penalitza a la puntuació, i provar a l'atzar surt car per si sol.
+- Comptador d'encerts i errors. **Sense límit d'errors ni vides** (2026-06-11): el ràtio encerts/total ja penalitza a la puntuació, i provar a l'atzar surt car per si sol. Els errors mai acaben la partida.
+- **3 intents per ronda i botó «Passa»** (2026-06-12): al tercer error sobre el mateix objectiu, la ronda se salta sola — l'objectiu torna a la cua (tornarà a sortir més endavant) i el comptador d'intents es reinicia. També es pot passar voluntàriament amb «Passa», per deixar un objectiu difícil per a quan quedin menys candidates. Passar no penalitza (els errors ja han comptat i el cronòmetre segueix corrent). Evita que una ronda encallada degeneri en clicar-ho tot.
 - Cronòmetre de temps total.
 - Una demarcació encertada queda marcada permanentment al mapa i no torna a sortir.
 - El zoom és lliure en qualsevol modalitat i nivell.

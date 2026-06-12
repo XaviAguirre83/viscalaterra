@@ -7,6 +7,7 @@ import {
   creaPartida,
   nivellPerId,
   partidaCompletada,
+  passaRonda as passaRondaPartida,
   responClic,
   type ConfiguracioGeoFreak,
   type EstatPartida,
@@ -110,11 +111,20 @@ export const useGeofreakStore = defineStore('geofreak', () => {
       if (pista.value) encertsAmbPista.value++
       pista.value = null
     }
+    // El salt (3r error de la ronda) també canvia d'objectiu: pista fora.
+    if (resultat === 'salt') pista.value = null
     if (partidaCompletada(estat)) {
       tempsFiMs.value = Date.now()
       fase.value = 'resultats'
     }
     return resultat
+  }
+
+  // Passa la ronda voluntàriament (l'objectiu tornarà a sortir més endavant).
+  function passaRonda() {
+    if (fase.value !== 'partida' || !partida.value) return
+    partida.value = passaRondaPartida(partida.value)
+    pista.value = null
   }
 
   // Rejuga amb la mateixa configuració (des del modal de resultats).
@@ -156,6 +166,7 @@ export const useGeofreakStore = defineStore('geofreak', () => {
     comencaPartida,
     activaPista,
     clicDemarcacio,
+    passaRonda,
     tornaAJugar,
     tornaAConfiguracio,
     reinicia,

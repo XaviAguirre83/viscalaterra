@@ -11,6 +11,8 @@ import {
   calculaPunts,
   barreja,
   triaDistractors,
+  passaRonda,
+  MAX_INTENTS_RONDA,
 } from '../geofreak'
 
 describe('geofreak — taula de nivells', () => {
@@ -130,6 +132,46 @@ describe('geofreak — partida (rondes)', () => {
     expect(p.pendents).toEqual(['b'])
     expect(p.encertades).toEqual([])
     expect(p.errors).toBe(0)
+  })
+
+  it('al tercer error de la ronda, salta: l’objectiu torna a la cua i en surt un altre', () => {
+    let estat = creaPartida(['a', 'b', 'c'], primer) // objectiu 'a'
+    estat = responClic(estat, 'b', primer).estat
+    estat = responClic(estat, 'b', primer).estat
+    expect(estat.intentsRonda).toBe(2)
+    const { estat: despres, resultat } = responClic(estat, 'b', primer)
+    expect(resultat).toBe('salt')
+    expect(despres.errors).toBe(MAX_INTENTS_RONDA)
+    expect(despres.intentsRonda).toBe(0)
+    // L'objectiu nou no és l'anterior, i 'a' segueix pendent.
+    expect(despres.objectiu).not.toBe('a')
+    expect(despres.pendents).toContain('a')
+    expect(despres.encertades).toEqual([])
+  })
+
+  it("l'encert reinicia el comptador d'intents de la ronda", () => {
+    let estat = creaPartida(['a', 'b'], primer)
+    estat = responClic(estat, 'b', primer).estat // error: intents 1
+    const { estat: despres } = responClic(estat, 'a', primer)
+    expect(despres.intentsRonda).toBe(0)
+  })
+
+  it('passaRonda re-encua l’objectiu sense sumar error', () => {
+    const p = creaPartida(['a', 'b', 'c'], primer) // objectiu 'a'
+    const despres = passaRonda(p, primer)
+    expect(despres.errors).toBe(0)
+    expect(despres.objectiu).not.toBe('a')
+    expect(despres.pendents).toContain('a')
+    // Total de demarcacions en joc es conserva.
+    expect(despres.pendents.length + despres.encertades.length + 1).toBe(3)
+  })
+
+  it('passaRonda amb un únic objectiu el torna a treure (no hi ha alternativa)', () => {
+    let estat = creaPartida(['a', 'b'], primer)
+    estat = responClic(estat, 'a', primer).estat // queda només 'b'
+    const despres = passaRonda(estat, primer)
+    expect(despres.objectiu).toBe('b')
+    expect(despres.pendents).toEqual([])
   })
 })
 

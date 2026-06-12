@@ -214,6 +214,8 @@
     "preguntaOnEs": "Where is...",
     "escriuNom": "Type the name…",
     "pista": "Hint",
+    "passa": "Skip",
+    "intentsRonda": "Attempts left this round",
     "surt": "Exit",
     "tornaConfig": "Change settings",
     "resultats": {

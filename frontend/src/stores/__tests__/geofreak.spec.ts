@@ -121,6 +121,34 @@ describe('geofreak — rondes de partida', () => {
     expect(g.encertsAmbPista).toBe(1)
   })
 
+  it('passaRonda re-encua l’objectiu i neteja la pista', () => {
+    const g = configuraNivell0()
+    g.comencaPartida(['a', 'b', 'c'])
+    const objectiu = g.partida!.objectiu!
+    g.activaPista(['a', 'b'])
+
+    g.passaRonda()
+    expect(g.partida!.objectiu).not.toBe(objectiu)
+    expect(g.partida!.pendents).toContain(objectiu)
+    expect(g.partida!.errors).toBe(0)
+    expect(g.pista).toBeNull()
+  })
+
+  it('al tercer error de la ronda salta d’objectiu i neteja la pista', () => {
+    const g = configuraNivell0()
+    g.comencaPartida(['a', 'b', 'c'])
+    const objectiu = g.partida!.objectiu!
+    const altra = ['a', 'b', 'c'].find((c) => c !== objectiu)!
+    g.activaPista(['a', 'b'])
+
+    expect(g.clicDemarcacio(altra)).toBe('error')
+    expect(g.clicDemarcacio(altra)).toBe('error')
+    expect(g.clicDemarcacio(altra)).toBe('salt')
+    expect(g.partida!.objectiu).not.toBe(objectiu)
+    expect(g.partida!.errors).toBe(3)
+    expect(g.pista).toBeNull()
+  })
+
   it('tornaAJugar rellança una partida nova amb la mateixa configuració', () => {
     const g = configuraNivell0()
     g.comencaPartida(['a', 'b'])

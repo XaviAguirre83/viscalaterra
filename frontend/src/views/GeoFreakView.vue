@@ -8,6 +8,7 @@ import { useGeofreakStore } from '@/stores/geofreak'
 import {
   barreja,
   CAPA_PER_DEMARCACIO,
+  MAX_INTENTS_RONDA,
   MODALITATS,
   NIVELLS,
   triaDistractors,
@@ -292,6 +293,20 @@ const opcionsPista = computed(() =>
 // La pista es pot demanar si la ronda no en té ja i queda més d'una candidata.
 const pistaDisponible = computed(() => !geofreak.pista && candidats.value.length > 1)
 
+// Es pot passar quan hi ha algun altre objectiu a la cua.
+const passaDisponible = computed(() => (geofreak.partida?.pendents.length ?? 0) > 0)
+
+function passa() {
+  geofreak.passaRonda()
+  textResposta.value = ''
+  if (geofreak.configuracio.modalitat === 'comEsDiu') respostaInput.value?.focus()
+}
+
+// Intents restants de la ronda, com a puntets al HUD (●●● → ●●○ → …).
+const intentsRestants = computed(() =>
+  Math.max(0, MAX_INTENTS_RONDA - (geofreak.partida?.intentsRonda ?? 0))
+)
+
 // Resum de la configuració triada (subtítol del modal de resultats).
 const resumPartida = computed(() => {
   const c = geofreak.configuracio
@@ -418,6 +433,18 @@ const resumPartida = computed(() => {
           <span :key="geofreak.partida?.errors" class="gf-xip__errors"
             >✗ {{ geofreak.partida?.errors ?? 0 }}</span
           >
+          <span
+            class="gf-xip__intents"
+            :title="$t('geofreak.intentsRonda')"
+            :aria-label="$t('geofreak.intentsRonda')"
+          >
+            <span
+              v-for="i in MAX_INTENTS_RONDA"
+              :key="i"
+              class="gf-xip__intent"
+              :class="{ 'gf-xip__intent--gastat': i > intentsRestants }"
+            ></span>
+          </span>
           <span class="gf-xip__separador" aria-hidden="true"></span>
           <button
             type="button"
@@ -426,6 +453,9 @@ const resumPartida = computed(() => {
             @click="demanaPista"
           >
             💡 {{ $t('geofreak.pista') }}
+          </button>
+          <button type="button" class="gf-xip__surt" :disabled="!passaDisponible" @click="passa">
+            ↷ {{ $t('geofreak.passa') }}
           </button>
           <button type="button" class="gf-xip__surt" @click="geofreak.tornaAConfiguracio()">
             {{ $t('geofreak.surt') }}
@@ -743,8 +773,32 @@ const resumPartida = computed(() => {
   transition: background 0.12s;
 }
 
-.gf-xip__surt:hover {
+.gf-xip__surt:hover:not(:disabled) {
   background: #f0f0ee;
+}
+
+.gf-xip__surt:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Intents restants de la ronda (3 puntets que es van apagant) */
+.gf-xip__intents {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.gf-xip__intent {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #2d6a2d;
+  transition: background 0.2s;
+}
+
+.gf-xip__intent--gastat {
+  background: #ddd;
 }
 
 .gf-xip__pista {

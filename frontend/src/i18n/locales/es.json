@@ -214,6 +214,8 @@
     "preguntaOnEs": "¿Dónde está...",
     "escriuNom": "Escribe el nombre…",
     "pista": "Pista",
+    "passa": "Pasar",
+    "intentsRonda": "Intentos restantes de la ronda",
     "surt": "Salir",
     "tornaConfig": "Cambia la configuración",
     "resultats": {

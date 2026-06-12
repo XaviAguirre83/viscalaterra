@@ -84,8 +84,13 @@ export function configuracioCompleta(c: ConfiguracioGeoFreak): boolean {
 // Rondes fins que s'encerten totes les demarcacions: a cada ronda hi ha un
 // objectiu triat a l'atzar entre les pendents. Un clic a l'objectiu és encert
 // (la demarcació queda encertada i no torna a sortir); un clic a qualsevol
-// altra demarcació jugable és error (l'objectiu no canvia). Sense límit
-// d'errors ni vides: el ràtio d'encerts ja penalitza a la puntuació.
+// altra demarcació jugable és error. Els errors mai acaben la partida (el
+// ràtio ja penalitza a la puntuació), però al tercer error sobre el mateix
+// objectiu la ronda SE SALTA: l'objectiu torna a la cua i sortirà més
+// endavant — així una ronda encallada no degenera en clicar-ho tot. També es
+// pot passar voluntàriament (passaRonda), sense penalització afegida.
+
+export const MAX_INTENTS_RONDA = 3
 
 export interface EstatPartida {
   // Codis pendents d'encertar. L'objectiu actual NO hi és inclòs.
@@ -95,13 +100,15 @@ export interface EstatPartida {
   // Codis encertats, en ordre d'encert.
   encertades: string[]
   errors: number
+  // Errors comesos a la ronda actual (es reinicia a cada canvi d'objectiu).
+  intentsRonda: number
 }
 
 // `aleatori` injectable per fer els tests deterministes (per defecte Math.random).
 export function creaPartida(codis: string[], aleatori: () => number = Math.random): EstatPartida {
   const pendents = [...codis]
   const objectiu = treuAleatori(pendents, aleatori)
-  return { pendents, objectiu, encertades: [], errors: 0 }
+  return { pendents, objectiu, encertades: [], errors: 0, intentsRonda: 0 }
 }
 
 function treuAleatori(llista: string[], aleatori: () => number): string | null {
@@ -110,7 +117,34 @@ function treuAleatori(llista: string[], aleatori: () => number): string | null {
   return llista.splice(i, 1)[0] ?? null
 }
 
-export type ResultatClic = 'encert' | 'error' | 'ignorat'
+// L'objectiu actual torna a la cua i en surt un altre (mai el mateix si hi
+// ha alternativa). Reinicia el comptador d'intents de la ronda.
+function saltaObjectiu(estat: EstatPartida, aleatori: () => number): EstatPartida {
+  if (estat.objectiu === null) return estat
+  const anterior = estat.objectiu
+  const pendents = [...estat.pendents, anterior]
+  const candidates = pendents.length > 1 ? pendents.filter((c) => c !== anterior) : pendents
+  const seguent = candidates[Math.floor(aleatori() * candidates.length)] ?? null
+  return {
+    ...estat,
+    pendents: pendents.filter((c) => c !== seguent),
+    objectiu: seguent,
+    intentsRonda: 0,
+  }
+}
+
+// Passa la ronda voluntàriament: l'objectiu torna a la cua per a més endavant
+// (p. ex. quan quedin menys candidates). No suma error — el cronòmetre que
+// segueix corrent ja és el cost.
+export function passaRonda(
+  estat: EstatPartida,
+  aleatori: () => number = Math.random
+): EstatPartida {
+  return saltaObjectiu(estat, aleatori)
+}
+
+// 'salt' = tercer error de la ronda: compta l'error I salta l'objectiu.
+export type ResultatClic = 'encert' | 'error' | 'salt' | 'ignorat'
 
 // Processa el clic sobre una demarcació jugable. Retorna un estat NOU (mai
 // muta l'anterior — el store reassigna l'objecte sencer, com sempre).
@@ -124,7 +158,11 @@ export function responClic(
   if (estat.encertades.includes(codi)) return { estat, resultat: 'ignorat' }
 
   if (codi !== estat.objectiu) {
-    return { estat: { ...estat, errors: estat.errors + 1 }, resultat: 'error' }
+    const ambError = { ...estat, errors: estat.errors + 1, intentsRonda: estat.intentsRonda + 1 }
+    if (ambError.intentsRonda < MAX_INTENTS_RONDA) {
+      return { estat: ambError, resultat: 'error' }
+    }
+    return { estat: saltaObjectiu(ambError, aleatori), resultat: 'salt' }
   }
 
   const pendents = [...estat.pendents]
@@ -135,6 +173,7 @@ export function responClic(
       objectiu: seguent,
       encertades: [...estat.encertades, codi],
       errors: estat.errors,
+      intentsRonda: 0,
     },
     resultat: 'encert',
   }
