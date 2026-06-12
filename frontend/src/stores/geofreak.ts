@@ -29,6 +29,12 @@ export const useGeofreakStore = defineStore('geofreak', () => {
   const configuracio = ref<ConfiguracioGeoFreak>(configuracioBuida())
   const partida = ref<EstatPartida | null>(null)
 
+  // Pista de la ronda actual: les 4 opcions (objectiu + 3 distractors), o
+  // null si no s'ha demanat. Es construeix a la vista (necessita el store
+  // territoris per triar distractors propers) i s'activa aquí.
+  const pista = ref<string[] | null>(null)
+  const encertsAmbPista = ref(0)
+
   // Cronòmetre: el store guarda els instants; la vista fa el tic-tac visual.
   const tempsIniciMs = ref(0)
   const tempsFiMs = ref(0)
@@ -54,6 +60,7 @@ export const useGeofreakStore = defineStore('geofreak', () => {
       encerts: p.encertades.length,
       errors: p.errors,
       segons: (tempsFiMs.value - tempsIniciMs.value) / 1000,
+      encertsAmbPista: encertsAmbPista.value,
     })
   })
 
@@ -79,9 +86,17 @@ export const useGeofreakStore = defineStore('geofreak', () => {
   function comencaPartida(codis: string[]) {
     if (!configCompleta.value || codis.length === 0) return
     partida.value = creaPartida(codis)
+    pista.value = null
+    encertsAmbPista.value = 0
     tempsIniciMs.value = Date.now()
     tempsFiMs.value = 0
     fase.value = 'partida'
+  }
+
+  // Activa la pista de la ronda (una per ronda; l'encert valdrà 0,5).
+  function activaPista(opcions: string[]) {
+    if (fase.value !== 'partida' || pista.value || opcions.length === 0) return
+    pista.value = opcions
   }
 
   // Processa el clic sobre una demarcació jugable; retorna el resultat perquè
@@ -90,6 +105,11 @@ export const useGeofreakStore = defineStore('geofreak', () => {
     if (fase.value !== 'partida' || !partida.value) return 'ignorat'
     const { estat, resultat } = responClic(partida.value, codi)
     partida.value = estat
+    if (resultat === 'encert') {
+      // L'encert tanca la ronda: si hi havia pista, compta mig encert.
+      if (pista.value) encertsAmbPista.value++
+      pista.value = null
+    }
     if (partidaCompletada(estat)) {
       tempsFiMs.value = Date.now()
       fase.value = 'resultats'
@@ -107,6 +127,7 @@ export const useGeofreakStore = defineStore('geofreak', () => {
   function tornaAConfiguracio() {
     fase.value = 'configuracio'
     partida.value = null
+    pista.value = null
   }
 
   // Reset complet (en sortir del joc): el proper cop s'arrenca de zero.
@@ -114,12 +135,15 @@ export const useGeofreakStore = defineStore('geofreak', () => {
     fase.value = 'configuracio'
     configuracio.value = configuracioBuida()
     partida.value = null
+    pista.value = null
   }
 
   return {
     fase,
     configuracio,
     partida,
+    pista,
+    encertsAmbPista,
     tempsIniciMs,
     tempsFiMs,
     configCompleta,
@@ -130,6 +154,7 @@ export const useGeofreakStore = defineStore('geofreak', () => {
     defineixNivell,
     defineixContenidor,
     comencaPartida,
+    activaPista,
     clicDemarcacio,
     tornaAJugar,
     tornaAConfiguracio,

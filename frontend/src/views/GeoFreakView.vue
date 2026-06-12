@@ -5,7 +5,14 @@ import MapaLeaflet from '@/components/mapa/MapaLeaflet.vue'
 import PanellFiltres from '@/components/filtres/PanellFiltres.vue'
 import { useTerritorisStore } from '@/stores/territoris'
 import { useGeofreakStore } from '@/stores/geofreak'
-import { CAPA_PER_DEMARCACIO, MODALITATS, NIVELLS, type TipusDemarcacio } from '@/data/geofreak'
+import {
+  barreja,
+  CAPA_PER_DEMARCACIO,
+  MODALITATS,
+  NIVELLS,
+  triaDistractors,
+  type TipusDemarcacio,
+} from '@/data/geofreak'
 import { normalitza } from '@/data/text'
 import type { ModeJocMapa } from '@/stores/mapa'
 
@@ -172,6 +179,8 @@ const modeJocMapa = computed<ModeJocMapa | null>(() => {
     // L'objectiu només s'il·lumina a «Com es diu...?»; a «On és...?» és secret.
     codiObjectiu:
       geofreak.configuracio.modalitat === 'comEsDiu' ? (geofreak.partida?.objectiu ?? null) : null,
+    // La pista al mapa només aplica a «On és...?» (a l'altra modalitat són botons).
+    codisPista: geofreak.configuracio.modalitat === 'onEs' ? geofreak.pista : null,
     interactiu: geofreak.configuracio.modalitat === 'onEs',
   }
 })
@@ -242,6 +251,46 @@ watch(
     }
   }
 )
+
+// ── Pista ──────────────────────────────────────────────────────────────────
+
+// Construeix les 4 opcions (objectiu + 3 distractors) i les activa al store.
+// Els distractors es trien per proximitat: mateixa comarca → mateixa
+// província → qualsevol jugable viva (mai de l'altra punta si hi ha veïns).
+function demanaPista() {
+  const objectiu = geofreak.partida?.objectiu
+  if (!objectiu || geofreak.pista) return
+  const vius = candidats.value.map((c) => c.codi)
+  const grups: string[][] = []
+
+  if (geofreak.nivellActual?.demarcacio === 'municipi') {
+    const mu = territoris.municipiPerCodi.get(objectiu)
+    if (mu) {
+      grups.push(
+        vius.filter((c) => territoris.municipiPerCodi.get(c)?.comarca_codi === mu.comarca_codi)
+      )
+      grups.push(
+        vius.filter((c) => territoris.municipiPerCodi.get(c)?.provincia_codi === mu.provincia_codi)
+      )
+    }
+  } else if (geofreak.nivellActual?.demarcacio === 'comarca') {
+    // Comarques de les mateixes províncies que contenen l'objectiu.
+    const provincies = territoris.arbre?.filter((p) => p.comarques.some((c) => c.codi === objectiu))
+    const veines = new Set(provincies?.flatMap((p) => p.comarques.map((c) => c.codi)) ?? [])
+    grups.push(vius.filter((c) => veines.has(c)))
+  }
+  grups.push(vius)
+
+  geofreak.activaPista(barreja([objectiu, ...triaDistractors(objectiu, grups)]))
+}
+
+// Opcions de la pista amb nom (botons a «Com es diu...?»).
+const opcionsPista = computed(() =>
+  (geofreak.pista ?? []).map((codi) => ({ codi, nom: nomsJoc.value.get(codi) ?? codi }))
+)
+
+// La pista es pot demanar si la ronda no en té ja i queda més d'una candidata.
+const pistaDisponible = computed(() => !geofreak.pista && candidats.value.length > 1)
 
 // Resum de la configuració triada (subtítol del modal de resultats).
 const resumPartida = computed(() => {
@@ -339,7 +388,18 @@ const resumPartida = computed(() => {
             :class="{ 'gf-resposta--sacseig': sacsejant }"
             @keydown.enter.prevent="enviaResposta"
           />
-          <ul v-if="suggeriments.length" class="gf-suggeriments">
+          <!-- Pista activa: les 4 opcions substitueixen els suggeriments -->
+          <div v-if="geofreak.pista" class="gf-opcions">
+            <button
+              v-for="o in opcionsPista"
+              :key="o.codi"
+              type="button"
+              @mousedown.prevent="respon(o.codi)"
+            >
+              {{ o.nom }}
+            </button>
+          </div>
+          <ul v-else-if="suggeriments.length" class="gf-suggeriments">
             <li v-for="s in suggeriments" :key="s.codi">
               <button type="button" @mousedown.prevent="respon(s.codi)">{{ s.nom }}</button>
             </li>
@@ -359,6 +419,14 @@ const resumPartida = computed(() => {
             >✗ {{ geofreak.partida?.errors ?? 0 }}</span
           >
           <span class="gf-xip__separador" aria-hidden="true"></span>
+          <button
+            type="button"
+            class="gf-xip__pista"
+            :disabled="!pistaDisponible"
+            @click="demanaPista"
+          >
+            💡 {{ $t('geofreak.pista') }}
+          </button>
           <button type="button" class="gf-xip__surt" @click="geofreak.tornaAConfiguracio()">
             {{ $t('geofreak.surt') }}
           </button>
@@ -386,6 +454,10 @@ const resumPartida = computed(() => {
             <div>
               <dt>{{ $t('geofreak.resultats.errors') }}</dt>
               <dd>{{ geofreak.partida?.errors ?? 0 }}</dd>
+            </div>
+            <div v-if="geofreak.encertsAmbPista > 0">
+              <dt>{{ $t('geofreak.resultats.pistes') }}</dt>
+              <dd>{{ geofreak.encertsAmbPista }}</dd>
             </div>
           </dl>
 
@@ -658,7 +730,8 @@ const resumPartida = computed(() => {
   }
 }
 
-.gf-xip__surt {
+.gf-xip__surt,
+.gf-xip__pista {
   padding: 2px 10px;
   background: none;
   border: 1px solid #ccd2d8;
@@ -672,6 +745,44 @@ const resumPartida = computed(() => {
 
 .gf-xip__surt:hover {
   background: #f0f0ee;
+}
+
+.gf-xip__pista {
+  border-color: #d9b23c;
+  color: #8a6d1a;
+}
+
+.gf-xip__pista:hover:not(:disabled) {
+  background: #fdf3d0;
+}
+
+.gf-xip__pista:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Les 4 opcions de la pista («Com es diu...?») */
+.gf-opcions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.gf-opcions button {
+  padding: 8px 10px;
+  background: #fdf3d0;
+  border: 1px solid #d9b23c;
+  border-radius: 8px;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: #1a2635;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.gf-opcions button:hover {
+  background: #f7c948;
 }
 
 /* En mòbil els xips baixen sota la pregunta per no encavalcar-s'hi */

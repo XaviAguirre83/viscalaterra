@@ -20,6 +20,9 @@ export interface ModeJocMapa {
   // Demarcació il·luminada com a pregunta («Com es diu...?»). A «On és...?»
   // és sempre null: l'objectiu és secret.
   codiObjectiu: string | null
+  // Pista activa a «On és...?»: els 4 candidats (objectiu + 3 distractors).
+  // Quan és informat, només aquests responen al hover/clic; la resta s'atenua.
+  codisPista: string[] | null
   // false = el jugador no respon clicant el mapa («Com es diu...?» escriu):
   // les features no reaccionen ni al hover ni al clic.
   interactiu: boolean

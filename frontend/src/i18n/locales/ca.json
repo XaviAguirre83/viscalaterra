@@ -213,6 +213,7 @@
     "somhi": "Som-hi!",
     "preguntaOnEs": "On és...",
     "escriuNom": "Escriu el nom…",
+    "pista": "Pista",
     "surt": "Surt",
     "tornaConfig": "Canvia la configuració",
     "resultats": {
@@ -221,6 +222,7 @@
       "temps": "Temps",
       "encerts": "Encerts",
       "errors": "Errors",
+      "pistes": "Pistes",
       "tornaJugar": "Torna a jugar"
     }
   },

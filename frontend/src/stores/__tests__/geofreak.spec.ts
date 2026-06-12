@@ -99,6 +99,28 @@ describe('geofreak — rondes de partida', () => {
     expect(g.clicDemarcacio('a')).toBe('ignorat')
   })
 
+  it('pista: una per ronda, l’encert la consumeix i compta 0,5', () => {
+    const g = configuraNivell0()
+    g.comencaPartida(['a', 'b', 'c'])
+
+    g.activaPista(['a', 'b', 'c'])
+    expect(g.pista).toEqual(['a', 'b', 'c'])
+    // No es pot demanar una segona pista a la mateixa ronda.
+    g.activaPista(['x'])
+    expect(g.pista).toEqual(['a', 'b', 'c'])
+
+    // L'error no consumeix la pista.
+    const objectiu = g.partida!.objectiu!
+    const altra = ['a', 'b', 'c'].find((c) => c !== objectiu)!
+    g.clicDemarcacio(altra)
+    expect(g.pista).not.toBeNull()
+
+    // L'encert sí, i suma al comptador d'encerts amb pista.
+    g.clicDemarcacio(objectiu)
+    expect(g.pista).toBeNull()
+    expect(g.encertsAmbPista).toBe(1)
+  })
+
   it('tornaAJugar rellança una partida nova amb la mateixa configuració', () => {
     const g = configuraNivell0()
     g.comencaPartida(['a', 'b'])

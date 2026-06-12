@@ -213,6 +213,7 @@
     "somhi": "Let's go!",
     "preguntaOnEs": "Where is...",
     "escriuNom": "Type the name…",
+    "pista": "Hint",
     "surt": "Exit",
     "tornaConfig": "Change settings",
     "resultats": {
@@ -221,6 +222,7 @@
       "temps": "Time",
       "encerts": "Correct",
       "errors": "Errors",
+      "pistes": "Hints",
       "tornaJugar": "Play again"
     }
   },

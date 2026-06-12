@@ -331,6 +331,14 @@ function estilPerFeature(
         const tema = temaDeInfo(info)
         return { color: tema.vora, weight: 1.5, opacity: 1, fillColor: tema.base, fillOpacity: 1 }
       }
+      // Pista activa: els 4 candidats destaquen; la resta s'esvaeix (i deixa
+      // de respondre — vegeu els handlers). Tot es manté opac (anti-trampa).
+      if (mj.codisPista) {
+        if (mj.codisPista.includes(info.codi)) {
+          return { color: '#1a2635', weight: 2.5, opacity: 1, fillColor: '#fdf0c0', fillOpacity: 1 }
+        }
+        return { color: '#aaa', weight: 0.5, opacity: 0.5, fillColor: '#f7f5f0', fillOpacity: 1 }
+      }
       // Farcit OPAC: el tile d'OSM mostra els noms de municipis i ciutats a
       // zooms alts i delataria la resposta. El territori jugat es tapa del tot.
       return { color: '#555', weight: 1.5, opacity: 1, fillColor: '#f2efe9', fillOpacity: 1 }
@@ -671,6 +679,8 @@ async function carregaCapa(nivell: NivellTerritorial, zoom: number) {
             // i quan es respon clicant («On és...?»).
             if (props.modeJoc) {
               if (!props.modeJoc.interactiu || !esJugable(info) || esEncertada(info)) return
+              // Amb pista activa, només els 4 candidats reaccionen.
+              if (props.modeJoc.codisPista && !props.modeJoc.codisPista.includes(info.codi)) return
               pathLayer.setStyle(estilHoverPerFeature(feature, nivell))
               return
             }
@@ -696,6 +706,7 @@ async function carregaCapa(nivell: NivellTerritorial, zoom: number) {
               if (!props.modeJoc.interactiu) return
               const info = codiDeFeature(feature, nivell)
               if (!info || !esJugable(info) || esEncertada(info)) return
+              if (props.modeJoc.codisPista && !props.modeJoc.codisPista.includes(info.codi)) return
               emit('clicJoc', info.codi, info.nom ?? '')
               return
             }

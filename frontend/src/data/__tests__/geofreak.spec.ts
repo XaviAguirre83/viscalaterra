@@ -9,6 +9,8 @@ import {
   responClic,
   partidaCompletada,
   calculaPunts,
+  barreja,
+  triaDistractors,
 } from '../geofreak'
 
 describe('geofreak — taula de nivells', () => {
@@ -156,5 +158,50 @@ describe('geofreak — calculaPunts', () => {
     const nivellBaix = calculaPunts({ ...base, nivell: 0 })
     const nivellAlt = calculaPunts({ ...base, nivell: 8 })
     expect(nivellAlt).toBe(nivellBaix * 9)
+  })
+
+  it("l'encert amb pista compta mig encert al ràtio", () => {
+    const sense = calculaPunts(base)
+    const totesAmbPista = calculaPunts({ ...base, encertsAmbPista: base.encerts })
+    expect(totesAmbPista).toBe(Math.round(sense / 2))
+  })
+})
+
+describe('geofreak — pista (distractors i barreja)', () => {
+  const primer = () => 0
+
+  it('triaDistractors prefereix el primer grup i mai inclou l’objectiu', () => {
+    const distractors = triaDistractors('x', [['x', 'a', 'b', 'c', 'd'], ['llunyans']], primer)
+    expect(distractors).toHaveLength(3)
+    expect(distractors).not.toContain('x')
+    expect(distractors.every((d) => ['a', 'b', 'c', 'd'].includes(d))).toBe(true)
+  })
+
+  it('si el primer grup no arriba a 3, es completa amb el següent sense repetir', () => {
+    const distractors = triaDistractors(
+      'x',
+      [
+        ['x', 'a'],
+        ['a', 'b'],
+        ['c', 'd'],
+      ],
+      primer
+    )
+    expect(distractors).toHaveLength(3)
+    expect(new Set(distractors).size).toBe(3)
+    expect(distractors).not.toContain('x')
+  })
+
+  it('amb poques candidates retorna les que hi ha', () => {
+    expect(triaDistractors('x', [['x', 'a']], primer)).toEqual(['a'])
+    expect(triaDistractors('x', [['x']], primer)).toEqual([])
+  })
+
+  it('barreja retorna una permutació en còpia nova', () => {
+    const original = ['a', 'b', 'c', 'd']
+    const barrejada = barreja(original, primer)
+    expect(barrejada).toHaveLength(4)
+    expect([...barrejada].sort()).toEqual([...original].sort())
+    expect(original).toEqual(['a', 'b', 'c', 'd'])
   })
 })

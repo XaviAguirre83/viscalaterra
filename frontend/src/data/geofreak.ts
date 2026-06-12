@@ -144,13 +144,50 @@ export function partidaCompletada(estat: EstatPartida): boolean {
   return estat.objectiu === null && estat.pendents.length === 0
 }
 
+// ── Pista ──────────────────────────────────────────────────────────────────
+//
+// A cada ronda es pot demanar UNA pista: 4 opcions (l'objectiu + 3
+// distractors). Els distractors es trien per proximitat (mateixa comarca →
+// mateixa província → qualsevol jugable), mai de l'altra punta del país.
+// L'encert aconseguit amb pista compta 0,5 al ràtio de puntuació.
+
+// Barreja Fisher-Yates en còpia nova (RNG injectable per als tests).
+export function barreja<T>(items: T[], aleatori: () => number = Math.random): T[] {
+  const a = [...items]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(aleatori() * (i + 1))
+    ;[a[i], a[j]] = [a[j]!, a[i]!]
+  }
+  return a
+}
+
+// Tria fins a 3 distractors recorrent els grups en ordre de preferència
+// (els més propers primer). Mai inclou l'objectiu ni repeteix codis; si un
+// grup no arriba, es completa amb el següent.
+export function triaDistractors(
+  objectiu: string,
+  grups: string[][],
+  aleatori: () => number = Math.random
+): string[] {
+  const triats: string[] = []
+  for (const grup of grups) {
+    const restants = grup.filter((c) => c !== objectiu && !triats.includes(c))
+    while (triats.length < 3 && restants.length > 0) {
+      const i = Math.floor(aleatori() * restants.length)
+      triats.push(restants.splice(i, 1)[0]!)
+    }
+    if (triats.length === 3) break
+  }
+  return triats
+}
+
 // ── Puntuació (v1, a afinar amb joc real) ──────────────────────────────────
 //
 //   punts = 1000 × multiplicador_nivell × ràtio × bonus_temps
 //
 //   multiplicador = nivell + 1 (×1 Províncies → ×9 tots els municipis)
-//   ràtio   = encerts / (encerts + errors)  ← els errors penalitzen aquí
-//             (quan existeixi la Pista, un encert amb pista comptarà 0,5)
+//   ràtio   = (encerts − 0,5 × encerts_amb_pista) / (encerts + errors)
+//             ← els errors penalitzen aquí; l'encert amb pista val mig encert
 //   bonus   = T_REF / (T_REF + segons_per_demarcació), amb T_REF = 5 s:
 //             respondre a l'instant → ~1; 5 s de mitjana → 0,5; 15 s → 0,25.
 
@@ -161,11 +198,12 @@ export function calculaPunts(args: {
   encerts: number
   errors: number
   segons: number
+  encertsAmbPista?: number
 }): number {
-  const { nivell, encerts, errors, segons } = args
+  const { nivell, encerts, errors, segons, encertsAmbPista = 0 } = args
   if (encerts === 0) return 0
   const multiplicador = nivell + 1
-  const ratio = encerts / (encerts + errors)
+  const ratio = (encerts - 0.5 * encertsAmbPista) / (encerts + errors)
   const segonsPerDemarcacio = segons / encerts
   const bonusTemps = SEGONS_REFERENCIA / (SEGONS_REFERENCIA + segonsPerDemarcacio)
   return Math.round(1000 * multiplicador * ratio * bonusTemps)
