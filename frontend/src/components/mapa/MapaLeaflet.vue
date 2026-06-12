@@ -354,9 +354,20 @@ function estilPerFeature(
           fillOpacity: 0.85,
         }
       }
-      // Encertada: pintada permanentment amb el seu color de tema (el relleu
-      // del tile sense etiquetes es transparenta una mica).
+      // Encertada: pintada permanentment — amb el color del jugador que l'ha
+      // conquerida (multijugador) o amb el color de tema del territori (el
+      // relleu del tile sense etiquetes es transparenta una mica).
       if (esEncertada(info)) {
+        const colorJugador = mj.colorsEncertats?.[info.codi]
+        if (colorJugador) {
+          return {
+            color: colorJugador,
+            weight: 1.5,
+            opacity: 1,
+            fillColor: colorJugador,
+            fillOpacity: 0.8,
+          }
+        }
         const tema = temaDeInfo(info)
         return {
           color: tema.vora,
@@ -568,13 +579,17 @@ function flaixJoc(codi: string, tipus: 'encert' | 'error') {
     const suau = 1 - Math.pow(1 - t, 2) // ease-out quadràtic
 
     if (tipus === 'encert') {
+      // Destí del fos: el color del jugador (conquesta multijugador, llegit
+      // en viu — la prop s'actualitza just després del clic) o el de tema.
+      const colorFinal = props.modeJoc?.colorsEncertats?.[codi] ?? tema.base
+      const voraFinal = props.modeJoc?.colorsEncertats?.[codi] ?? tema.vora
       halo?.setStyle({ weight: 14 * (1 - suau), opacity: 0.85 * (1 - suau) })
       objectius.forEach((o) =>
         o.setStyle({
-          color: lerpColor('#ffffff', tema.vora, suau),
+          color: lerpColor('#ffffff', voraFinal, suau),
           weight: 3 - 1.5 * suau,
           opacity: 1,
-          fillColor: lerpColor(VERD_ENCERT, tema.base, suau),
+          fillColor: lerpColor(VERD_ENCERT, colorFinal, suau),
           fillOpacity: 1 - 0.2 * suau,
         })
       )

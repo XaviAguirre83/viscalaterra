@@ -133,7 +133,7 @@ describe('geofreak — rondes de partida', () => {
     const objectiu = g.partida!.objectiu!
     g.clicDemarcacio(objectiu)
     expect(g.pista).toBeNull()
-    expect(g.encertsAmbPista).toBe(1)
+    expect(g.estatJugadors[0]!.encertsAmbPista).toBe(1)
   })
 
   it('errar amb la pista activa salta la ronda i la consumeix', () => {
@@ -186,6 +186,68 @@ describe('geofreak — rondes de partida', () => {
     expect(g.fase).toBe('partida')
     expect(g.partida!.encertades).toEqual([])
     expect(g.partida!.errors).toBe(0)
+  })
+
+  it('defineixJugadors només accepta d’1 a 4 jugadors', () => {
+    const g = useGeofreakStore()
+    const dos = [
+      { nom: 'Anna', color: '#111111' },
+      { nom: 'Biel', color: '#222222' },
+    ]
+    g.defineixJugadors(dos)
+    expect(g.jugadors).toEqual(dos)
+    g.defineixJugadors([])
+    expect(g.jugadors).toEqual(dos)
+    g.defineixJugadors(Array.from({ length: 5 }, () => ({ nom: 'x', color: '#000' })))
+    expect(g.jugadors).toEqual(dos)
+  })
+
+  it('mode conquesta: torns alterns, colors al mapa i classificació', () => {
+    const g = configuraNivell0()
+    g.defineixJugadors([
+      { nom: 'Anna', color: '#111111' },
+      { nom: 'Biel', color: '#222222' },
+    ])
+    g.comencaPartida(['a', 'b', 'c'])
+    expect(g.tornActual).toBe(0)
+
+    // Anna encerta → conquesta amb el seu color i el torn passa a en Biel.
+    const primerObjectiu = g.partida!.objectiu!
+    expect(g.clicDemarcacio(primerObjectiu)).toBe('encert')
+    expect(g.tornActual).toBe(1)
+    expect(g.estatJugadors[0]!.conquestes).toEqual([primerObjectiu])
+    expect(g.colorsConquestes[primerObjectiu]).toBe('#111111')
+
+    // Biel falla un cop: l'error és seu i el torn NO passa (1r intent).
+    g.clicDemarcacio(g.partida!.pendents[0]!)
+    expect(g.tornActual).toBe(1)
+    expect(g.estatJugadors[1]!.errors).toBe(1)
+    expect(g.estatJugadors[0]!.errors).toBe(0)
+
+    // Biel encerta → torn de l'Anna; Anna encerta l'última → resultats.
+    expect(g.clicDemarcacio(g.partida!.objectiu!)).toBe('encert')
+    expect(g.tornActual).toBe(0)
+    expect(g.clicDemarcacio(g.partida!.objectiu!)).toBe('encert')
+
+    expect(g.fase).toBe('resultats')
+    expect(g.resultats).toHaveLength(2)
+    const [anna, biel] = g.resultats
+    expect(anna!.conquestes).toBe(2)
+    expect(biel!.conquestes).toBe(1)
+    expect(biel!.errors).toBe(1)
+    expect(Object.keys(g.colorsConquestes)).toHaveLength(3)
+  })
+
+  it('en multijugador, Passa també tanca el torn', () => {
+    const g = configuraNivell0()
+    g.defineixJugadors([
+      { nom: 'Anna', color: '#111111' },
+      { nom: 'Biel', color: '#222222' },
+    ])
+    g.comencaPartida(['a', 'b', 'c'])
+    g.passaRonda()
+    expect(g.tornActual).toBe(1)
+    expect(g.fase).toBe('partida')
   })
 
   it('tornaAConfiguracio conserva la configuració; reinicia la buida', () => {

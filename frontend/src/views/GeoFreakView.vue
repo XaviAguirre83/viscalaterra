@@ -124,6 +124,48 @@ const contenidorSeleccionat = computed({
   set: (codi: string) => geofreak.defineixContenidor(codi || null),
 })
 
+// ── Wizard de configuració (3 passos: jugadors → modalitat → nivell) ───────
+
+const pasWizard = ref(1)
+const numJugadors = ref(1)
+const nomsJugadors = ref(['', '', '', ''])
+
+// Paleta de colors de conquesta (distingibles entre ells i del vermell
+// d'error i el daurat de la pista). Per defecte, un per ordre de jugador.
+const COLORS_JUGADOR = ['#2b6cb0', '#c0392b', '#27a35f', '#8e44ad', '#d68910', '#16a085']
+const colorsJugadors = ref(COLORS_JUGADOR.slice(0, 4))
+
+// Tria el color d'un jugador; si un altre ja el tenia, s'intercanvien.
+function triaColor(i: number, color: string) {
+  const previ = colorsJugadors.value[i]
+  const altre = colorsJugadors.value.findIndex((c, j) => j !== i && c === color)
+  const nous = [...colorsJugadors.value]
+  nous[i] = color
+  if (altre !== -1 && previ) nous[altre] = previ
+  colorsJugadors.value = nous
+}
+
+// El pas 1 sempre és vàlid (amb un sol jugador no calen noms); el 2 demana
+// modalitat; el 3 valida amb configCompleta directament al botó Som-hi.
+const pasValid = computed(() => {
+  if (pasWizard.value === 2) return geofreak.configuracio.modalitat !== null
+  return true
+})
+
+// 🎲 Tria un territori contenidor a l'atzar (nivells "a triar").
+function triaContenidorAleatori() {
+  const opcions = opcionsContenidor.value
+  const tria = opcions[Math.floor(Math.random() * opcions.length)]
+  if (tria) geofreak.defineixContenidor(tria.codi)
+}
+
+// Torna al wizard (des de Surt o des dels resultats), directe al pas del
+// nivell — el més habitual de retocar; els altres passos queden amb Enrere.
+function obreConfiguracio() {
+  geofreak.tornaAConfiguracio()
+  pasWizard.value = 3
+}
+
 // ── Demarcacions jugables i els seus noms ──────────────────────────────────
 
 // Codis de les features jugables dins el contenidor triat; null = totes les
@@ -189,6 +231,8 @@ const modeJocMapa = computed<ModeJocMapa | null>(() => {
       nivell?.contenidor && codi ? { nivell: CAPA_PER_DEMARCACIO[nivell.contenidor], codi } : null,
     codisPermesos: codisPermesos.value,
     codisEncertats: geofreak.partida?.encertades ?? [],
+    // Mode conquesta: cada encertada amb el color del seu jugador.
+    colorsEncertats: geofreak.esMultijugador ? geofreak.colorsConquestes : null,
     // L'objectiu només s'il·lumina a «Com es diu...?» (a «On és...?» és
     // secret) i mai durant la configuració.
     codiObjectiu:
@@ -220,20 +264,33 @@ const objectiuNom = computed(() => {
   return demarcacio ? nomAmbArticle(nom, articleDemarcacio(demarcacio, codi)) : nom
 })
 
-// Anunci del nou objectiu: el canvi de lloc només es veia a la barra i
-// passava desapercebut. A «On és...?», cada nou objectiu (per encert, per
-// salt o per Passa) apareix GRAN al centre del mapa i es fon lentament.
-// (A «Com es diu...?» no: el nom és justament la resposta.)
-const anunci = ref('')
+// Anunci de cada ronda al centre del mapa (es fon lentament): a «On és...?»
+// el nou objectiu en gran; en multijugador, a sobre, "Torn de {nom}" amb el
+// color del jugador (a «Com es diu...?» només el torn — el nom del lloc és
+// justament la resposta).
+const anunciTorn = ref('')
+const anunciColor = ref('')
+const anunciLloc = ref('')
 const anunciClau = ref(0)
 watch(
-  () => (geofreak.fase === 'partida' ? (geofreak.partida?.objectiu ?? null) : null),
-  (objectiu) => {
-    if (!objectiu || geofreak.configuracio.modalitat !== 'onEs') return
-    anunci.value = objectiuNom.value
-    anunciClau.value++
+  () =>
+    geofreak.fase === 'partida' ? `${geofreak.tornActual}·${geofreak.partida?.objectiu ?? ''}` : '',
+  (clau) => {
+    if (!clau || !geofreak.partida?.objectiu) return
+    const multi = geofreak.esMultijugador
+    anunciTorn.value = multi
+      ? t('geofreak.torn', { nom: geofreak.jugadors[geofreak.tornActual]?.nom ?? '' })
+      : ''
+    anunciColor.value = multi ? (geofreak.jugadors[geofreak.tornActual]?.color ?? '') : ''
+    anunciLloc.value = geofreak.configuracio.modalitat === 'onEs' ? objectiuNom.value : ''
+    if (anunciTorn.value || anunciLloc.value) anunciClau.value++
   }
 )
+
+function netejaAnunci() {
+  anunciTorn.value = ''
+  anunciLloc.value = ''
+}
 
 // Línia de context de la barra de navegació: "Jugant a municipis del
 // Maresme (Comarca)" / "Jugant a comarques de tota Catalunya".
@@ -257,10 +314,20 @@ const textContext = computed(() => {
 })
 
 const cronoText = computed(() => {
+  // Multijugador: el rellotge personal del jugador del torn (pausat la resta).
+  if (geofreak.esMultijugador && geofreak.fase === 'partida') {
+    return formataTemps(
+      Math.floor(geofreak.tempsJugadorMs(geofreak.tornActual, araMs.value) / 1000)
+    )
+  }
   const fi = geofreak.fase === 'partida' ? araMs.value : geofreak.tempsFiMs
-  const segons = Math.max(0, Math.floor((fi - geofreak.tempsIniciMs) / 1000))
-  return `${Math.floor(segons / 60)}:${String(segons % 60).padStart(2, '0')}`
+  return formataTemps(Math.max(0, Math.floor((fi - geofreak.tempsIniciMs) / 1000)))
 })
+
+// Errors a la vista: els del jugador del torn (multi) o els globals (solo).
+const errorsMostrats = computed(() =>
+  geofreak.esMultijugador ? (geofreak.jugadorActual?.errors ?? 0) : (geofreak.partida?.errors ?? 0)
+)
 
 // ── Resposta escrita («Com es diu...?») ────────────────────────────────────
 
@@ -344,10 +411,15 @@ function enviaResposta() {
   requestAnimationFrame(() => (sacsejant.value = true))
 }
 
-// En arrencar una partida de «Com es diu...?», el focus va directe a l'input.
+// Cada torn nou (fase 'preparacio', també entre jugadors) llança el compte
+// enrere; i en arrencar una partida de «Com es diu...?», focus a l'input.
 watch(
   () => geofreak.fase,
   async (fase) => {
+    if (fase === 'preparacio') {
+      executaCompte()
+      return
+    }
     if (fase === 'partida' && geofreak.configuracio.modalitat === 'comEsDiu') {
       textResposta.value = ''
       await nextTick()
@@ -355,6 +427,16 @@ watch(
     }
   }
 )
+
+// Classificació del multijugador (ordenada per punts) i format de temps.
+// Classificació: primer per conquestes, després per punts.
+const classificacio = computed(() =>
+  [...geofreak.resultats].sort((a, b) => b.conquestes - a.conquestes || b.punts - a.punts)
+)
+
+function formataTemps(segons: number): string {
+  return `${Math.floor(segons / 60)}:${String(segons % 60).padStart(2, '0')}`
+}
 
 // ── Pista ──────────────────────────────────────────────────────────────────
 
@@ -417,14 +499,40 @@ const intentsRestants = computed(() =>
 const compteEnrere = ref<string | null>(null)
 let compteTimer: ReturnType<typeof setInterval> | null = null
 
-function arrencaAmbCompte() {
+// Confirma el wizard: fixa els jugadors (nom + color de conquesta) i prepara
+// el primer torn (el compte enrere el dispara el watch de la fase 'preparacio').
+function confirmaISomhi() {
+  const jugadorsNous =
+    numJugadors.value === 1
+      ? [{ nom: '', color: '' }]
+      : Array.from({ length: numJugadors.value }, (_, i) => ({
+          nom: (nomsJugadors.value[i] ?? '').trim() || t('geofreak.jugadorN', { n: i + 1 }),
+          color: colorsJugadors.value[i] ?? COLORS_JUGADOR[i] ?? '#2b6cb0',
+        }))
+  geofreak.defineixJugadors(jugadorsNous)
+  geofreak.preparaPartida(codisJoc.value)
+}
+
+// Re-juga amb la mateixa configuració i jugadors (des dels resultats).
+function rejuga() {
+  geofreak.preparaPartida(codisJoc.value)
+}
+
+// Compte enrere del torn: "Torn de {nom}" (si hi ha més d'un jugador) + 3, 2, 1.
+function executaCompte() {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    geofreak.comencaPartida(codisJoc.value)
+    geofreak.arrencaPartida()
     return
   }
-  geofreak.preparaPartida(codisJoc.value)
-  if (geofreak.fase !== 'preparacio') return
-  const seqüencia = ['3', '2', '1', t('geofreak.somhi')]
+  const seqüencia = [
+    ...(geofreak.jugadors.length > 1
+      ? [t('geofreak.torn', { nom: geofreak.jugadors[geofreak.tornActual]?.nom ?? '' })]
+      : []),
+    '3',
+    '2',
+    '1',
+    t('geofreak.somhi'),
+  ]
   let pas = 0
   compteEnrere.value = seqüencia[pas] ?? null
   compteTimer = setInterval(() => {
@@ -485,15 +593,24 @@ const resumPartida = computed(() => {
            de la partida i la pregunta del torn (més espai de joc al mapa). -->
       <div v-if="geofreak.fase !== 'configuracio'" class="gf-barra">
         <span class="gf-barra__context">{{ textContext }}</span>
+        <!-- Re-muntat (key per torn+objectiu) amb micro-animació CSS d'entrada:
+             més robust que una <Transition> que es pot interrompre. -->
         <span
           v-if="geofreak.fase === 'partida'"
+          :key="`${geofreak.tornActual}·${geofreak.partida?.objectiu ?? ''}`"
           class="gf-barra__pregunta"
           role="status"
           aria-live="polite"
         >
+          <template v-if="geofreak.esMultijugador">
+            <span
+              class="gf-barra__colorjug"
+              :style="{ background: geofreak.jugadorActual?.color }"
+            ></span
+            >{{ geofreak.jugadorActual?.nom }}&nbsp;·&nbsp;
+          </template>
           <template v-if="geofreak.configuracio.modalitat === 'onEs'">
-            {{ $t('geofreak.preguntaOnEs') }}&nbsp;<Transition name="gf-canvi" mode="out-in"
-              ><strong :key="objectiuNom">{{ objectiuNom }}</strong></Transition
+            {{ $t('geofreak.preguntaOnEs') }}&nbsp;<strong>{{ objectiuNom }}</strong
             >?
           </template>
           <template v-else>{{ $t('geofreak.modalitats.comEsDiu') }}</template>
@@ -509,7 +626,59 @@ const resumPartida = computed(() => {
           <h2 id="gf-titol" class="gf-modal__titol">GeoFreak</h2>
           <p class="gf-modal__sub">{{ $t('geofreak.titolModal') }}</p>
 
-          <div class="gf-camp">
+          <div class="gf-passos" aria-hidden="true">
+            <span
+              v-for="p in 3"
+              :key="p"
+              class="gf-passos__pas"
+              :class="{ 'gf-passos__pas--actiu': p === pasWizard }"
+            ></span>
+          </div>
+
+          <!-- Pas 1: jugadors (amb un de sol no calen noms) -->
+          <template v-if="pasWizard === 1">
+            <div class="gf-camp">
+              <label>{{ $t('geofreak.wizard.jugadors') }}</label>
+              <div class="gf-jugadors">
+                <button
+                  v-for="n in 4"
+                  :key="n"
+                  type="button"
+                  class="gf-jugadors__opcio"
+                  :class="{ 'gf-jugadors__opcio--actiu': numJugadors === n }"
+                  @click="numJugadors = n"
+                >
+                  {{ n }}
+                </button>
+              </div>
+            </div>
+            <div v-if="numJugadors > 1" class="gf-camp">
+              <div v-for="n in numJugadors" :key="n" class="gf-jugador-fila">
+                <input
+                  v-model="nomsJugadors[n - 1]"
+                  type="text"
+                  class="gf-jugadors__nom"
+                  autocomplete="off"
+                  :placeholder="$t('geofreak.jugadorN', { n })"
+                />
+                <div class="gf-colors">
+                  <button
+                    v-for="c in COLORS_JUGADOR"
+                    :key="c"
+                    type="button"
+                    class="gf-colors__opcio"
+                    :class="{ 'gf-colors__opcio--actiu': colorsJugadors[n - 1] === c }"
+                    :style="{ background: c }"
+                    :aria-label="c"
+                    @click="triaColor(n - 1, c)"
+                  ></button>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <!-- Pas 2: modalitat -->
+          <div v-else-if="pasWizard === 2" class="gf-camp">
             <label for="gf-modalitat">{{ $t('geofreak.modalitat') }}</label>
             <select id="gf-modalitat" v-model="modalitatSeleccionada">
               <option value="" disabled>{{ $t('geofreak.triaOpcio') }}</option>
@@ -522,57 +691,100 @@ const resumPartida = computed(() => {
             </p>
           </div>
 
-          <div class="gf-camp">
-            <label for="gf-nivell">{{ $t('geofreak.nivell') }}</label>
-            <select id="gf-nivell" v-model="nivellSeleccionat">
-              <option value="" disabled>{{ $t('geofreak.triaOpcio') }}</option>
-              <option v-for="n in NIVELLS" :key="n.id" :value="n.id">
-                {{ n.id }} · {{ $t(`geofreak.nivells.n${n.id}`)
-                }}{{ quantitatNivell(n.id) ? ` (${quantitatNivell(n.id)})` : '' }}
-              </option>
-            </select>
-          </div>
+          <!-- Pas 3: nivell i territori (amb tria a l'atzar) -->
+          <template v-else>
+            <div class="gf-camp">
+              <label for="gf-nivell">{{ $t('geofreak.nivell') }}</label>
+              <select id="gf-nivell" v-model="nivellSeleccionat">
+                <option value="" disabled>{{ $t('geofreak.triaOpcio') }}</option>
+                <option v-for="n in NIVELLS" :key="n.id" :value="n.id">
+                  {{ n.id }} · {{ $t(`geofreak.nivells.n${n.id}`)
+                  }}{{ quantitatNivell(n.id) ? ` (${quantitatNivell(n.id)})` : '' }}
+                </option>
+              </select>
+            </div>
 
-          <div v-if="tipusContenidor" class="gf-camp">
-            <label for="gf-contenidor">{{
-              $t(`geofreak.triaContenidor.${tipusContenidor}`)
-            }}</label>
-            <select id="gf-contenidor" v-model="contenidorSeleccionat">
-              <option value="" disabled>{{ $t('geofreak.triaOpcio') }}</option>
-              <option v-for="o in opcionsContenidor" :key="o.codi" :value="o.codi">
-                {{ o.nom }}
-              </option>
-            </select>
-          </div>
+            <div v-if="tipusContenidor" class="gf-camp">
+              <label for="gf-contenidor">{{
+                $t(`geofreak.triaContenidor.${tipusContenidor}`)
+              }}</label>
+              <div class="gf-contenidor-fila">
+                <select id="gf-contenidor" v-model="contenidorSeleccionat">
+                  <option value="" disabled>{{ $t('geofreak.triaOpcio') }}</option>
+                  <option v-for="o in opcionsContenidor" :key="o.codi" :value="o.codi">
+                    {{ o.nom }}
+                  </option>
+                </select>
+                <button
+                  type="button"
+                  class="gf-atzar"
+                  :disabled="!opcionsContenidor.length"
+                  @click="triaContenidorAleatori"
+                >
+                  🎲 {{ $t('geofreak.wizard.aleatori') }}
+                </button>
+              </div>
+            </div>
+          </template>
 
-          <button
-            type="button"
-            class="gf-somhi"
-            :disabled="!geofreak.configCompleta"
-            @click="arrencaAmbCompte"
-          >
-            {{ $t('geofreak.somhi') }}
-          </button>
+          <div class="gf-wizard-nav">
+            <button
+              v-if="pasWizard > 1"
+              type="button"
+              class="gf-wizard-nav__enrere"
+              @click="pasWizard--"
+            >
+              {{ $t('geofreak.wizard.enrere') }}
+            </button>
+            <button
+              v-if="pasWizard < 3"
+              type="button"
+              class="gf-somhi gf-wizard-nav__seguent"
+              :disabled="!pasValid"
+              @click="pasWizard++"
+            >
+              {{ $t('geofreak.wizard.seguent') }}
+            </button>
+            <button
+              v-else
+              type="button"
+              class="gf-somhi gf-wizard-nav__seguent"
+              :disabled="!geofreak.configCompleta"
+              @click="confirmaISomhi"
+            >
+              {{ $t('geofreak.somhi') }}
+            </button>
+          </div>
         </div>
       </div>
 
       <!-- ── Compte enrere (fase de preparació) ──────────────────────────── -->
       <div v-else-if="geofreak.fase === 'preparacio'" class="gf-compte" aria-live="assertive">
-        <span v-if="compteEnrere" :key="compteEnrere" class="gf-compte__valor">{{
-          compteEnrere
-        }}</span>
+        <span
+          v-if="compteEnrere"
+          :key="compteEnrere"
+          class="gf-compte__valor"
+          :class="{ 'gf-compte__valor--text': compteEnrere.length > 7 }"
+          >{{ compteEnrere }}</span
+        >
       </div>
 
       <!-- ── HUD de partida ───────────────────────────────────────────────── -->
       <template v-else-if="geofreak.fase === 'partida'">
         <div
-          v-if="anunci"
+          v-if="anunciTorn || anunciLloc"
           :key="anunciClau"
           class="gf-anunci"
           aria-hidden="true"
-          @animationend="anunci = ''"
+          @animationend="netejaAnunci"
         >
-          {{ anunci }}
+          <span
+            v-if="anunciTorn"
+            class="gf-anunci__torn"
+            :style="{ color: anunciColor || '#1a2635' }"
+            >{{ anunciTorn }}</span
+          >
+          <span v-if="anunciLloc" class="gf-anunci__lloc">{{ anunciLloc }}</span>
         </div>
         <div class="gf-progres" aria-hidden="true">
           <div
@@ -625,6 +837,11 @@ const resumPartida = computed(() => {
           </ul>
         </div>
         <div class="gf-xip gf-xip--esquerra">
+          <span
+            v-if="geofreak.esMultijugador"
+            class="gf-xip__colorjug"
+            :style="{ background: geofreak.jugadorActual?.color }"
+          ></span>
           <span aria-hidden="true">⏱</span>
           <span>{{ cronoText }}</span>
           <span class="gf-xip__separador" aria-hidden="true"></span>
@@ -633,17 +850,29 @@ const resumPartida = computed(() => {
           >
         </div>
         <div class="gf-xip gf-xip--dreta">
-          <span
-            v-if="geofreak.ratxa >= 2"
-            :key="geofreak.ratxa"
-            class="gf-xip__ratxa"
-            :title="$t('geofreak.ratxaAria')"
-            >🔥 {{ geofreak.ratxa }}</span
-          >
-          <span class="gf-xip__encerts">✓ {{ geofreak.partida?.encertades.length ?? 0 }}</span>
-          <span :key="geofreak.partida?.errors" class="gf-xip__errors"
-            >✗ {{ geofreak.partida?.errors ?? 0 }}</span
-          >
+          <!-- Marcador de conquestes per jugador (multijugador) -->
+          <template v-if="geofreak.esMultijugador">
+            <span
+              v-for="(j, i) in geofreak.estatJugadors"
+              :key="i"
+              class="gf-xip__jugador"
+              :class="{ 'gf-xip__jugador--actiu': i === geofreak.tornActual }"
+            >
+              <span class="gf-xip__colorjug" :style="{ background: j.color }"></span
+              >{{ j.nom }}&nbsp;{{ j.conquestes.length }}
+            </span>
+          </template>
+          <template v-else>
+            <span
+              v-if="geofreak.ratxa >= 2"
+              :key="geofreak.ratxa"
+              class="gf-xip__ratxa"
+              :title="$t('geofreak.ratxaAria')"
+              >🔥 {{ geofreak.ratxa }}</span
+            >
+            <span class="gf-xip__encerts">✓ {{ geofreak.partida?.encertades.length ?? 0 }}</span>
+          </template>
+          <span :key="errorsMostrats" class="gf-xip__errors">✗ {{ errorsMostrats }}</span>
           <span
             class="gf-xip__intents"
             :title="$t('geofreak.intentsRonda')"
@@ -668,7 +897,7 @@ const resumPartida = computed(() => {
           <button type="button" class="gf-xip__surt" :disabled="!passaDisponible" @click="passa">
             ↷ {{ $t('geofreak.passa') }}
           </button>
-          <button type="button" class="gf-xip__surt" @click="geofreak.tornaAConfiguracio()">
+          <button type="button" class="gf-xip__surt" @click="obreConfiguracio">
             {{ $t('geofreak.surt') }}
           </button>
         </div>
@@ -683,32 +912,64 @@ const resumPartida = computed(() => {
           <h2 class="gf-modal__titol">{{ $t('geofreak.resultats.titol') }}</h2>
           <p class="gf-modal__sub">{{ resumPartida }}</p>
 
-          <p class="gf-resultats__punts">{{ puntsMostrats }}</p>
-          <p class="gf-resultats__punts-etiqueta">{{ $t('geofreak.resultats.punts') }}</p>
+          <!-- Un sol jugador: puntuació gran amb recompte animat -->
+          <template v-if="geofreak.jugadors.length === 1">
+            <p class="gf-resultats__punts">{{ puntsMostrats }}</p>
+            <p class="gf-resultats__punts-etiqueta">{{ $t('geofreak.resultats.punts') }}</p>
 
-          <dl class="gf-resultats__stats">
-            <div>
-              <dt>{{ $t('geofreak.resultats.temps') }}</dt>
-              <dd>{{ cronoText }}</dd>
-            </div>
-            <div>
-              <dt>{{ $t('geofreak.resultats.encerts') }}</dt>
-              <dd>{{ geofreak.partida?.encertades.length ?? 0 }}</dd>
-            </div>
-            <div>
-              <dt>{{ $t('geofreak.resultats.errors') }}</dt>
-              <dd>{{ geofreak.partida?.errors ?? 0 }}</dd>
-            </div>
-            <div v-if="geofreak.encertsAmbPista > 0">
-              <dt>{{ $t('geofreak.resultats.pistes') }}</dt>
-              <dd>{{ geofreak.encertsAmbPista }}</dd>
-            </div>
-          </dl>
+            <dl class="gf-resultats__stats">
+              <div>
+                <dt>{{ $t('geofreak.resultats.temps') }}</dt>
+                <dd>{{ cronoText }}</dd>
+              </div>
+              <div>
+                <dt>{{ $t('geofreak.resultats.encerts') }}</dt>
+                <dd>{{ geofreak.partida?.encertades.length ?? 0 }}</dd>
+              </div>
+              <div>
+                <dt>{{ $t('geofreak.resultats.errors') }}</dt>
+                <dd>{{ geofreak.partida?.errors ?? 0 }}</dd>
+              </div>
+              <div v-if="(geofreak.resultats[0]?.encertsAmbPista ?? 0) > 0">
+                <dt>{{ $t('geofreak.resultats.pistes') }}</dt>
+                <dd>{{ geofreak.resultats[0]?.encertsAmbPista }}</dd>
+              </div>
+            </dl>
+          </template>
 
-          <button type="button" class="gf-somhi" @click="arrencaAmbCompte">
+          <!-- Multijugador: classificació de conquestes amb el guanyador destacat -->
+          <table v-else class="gf-classificacio">
+            <thead>
+              <tr>
+                <th></th>
+                <th>✓</th>
+                <th>{{ $t('geofreak.resultats.punts') }}</th>
+                <th>{{ $t('geofreak.resultats.temps') }}</th>
+                <th>✗</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(r, i) in classificacio"
+                :key="`${r.nom}-${i}`"
+                :class="{ 'gf-classificacio__guanyador': i === 0 }"
+              >
+                <td class="gf-classificacio__nom">
+                  <span class="gf-xip__colorjug" :style="{ background: r.color }"></span
+                  >{{ i === 0 ? '🏆 ' : '' }}{{ r.nom }}
+                </td>
+                <td>{{ r.conquestes }}</td>
+                <td>{{ r.punts }}</td>
+                <td>{{ formataTemps(r.segons) }}</td>
+                <td>{{ r.errors }}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <button type="button" class="gf-somhi" @click="rejuga">
             {{ $t('geofreak.resultats.tornaJugar') }}
           </button>
-          <button type="button" class="gf-resultats__config" @click="geofreak.tornaAConfiguracio()">
+          <button type="button" class="gf-resultats__config" @click="obreConfiguracio">
             {{ $t('geofreak.tornaConfig') }}
           </button>
         </div>
@@ -802,6 +1063,157 @@ const resumPartida = computed(() => {
   font-size: var(--text-xs);
   color: var(--color-text-secundari, #737373);
   line-height: 1.3;
+}
+
+/* ── Wizard: indicador de passos, jugadors i navegació ──────────────────── */
+
+.gf-passos {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.gf-passos__pas {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d9dee3;
+  transition: background 0.15s;
+}
+
+.gf-passos__pas--actiu {
+  background: #2d6a2d;
+}
+
+.gf-jugadors {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.gf-jugadors__opcio {
+  padding: 12px 0;
+  background: #f7f8f9;
+  border: 2px solid #e2e6ea;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #1a2635;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.gf-jugadors__opcio:hover {
+  border-color: #2d6a2d;
+}
+
+.gf-jugadors__opcio--actiu {
+  background: #eef4ee;
+  border-color: #2d6a2d;
+}
+
+/* Fila d'un jugador al wizard: nom + paleta de color de conquesta */
+.gf-jugador-fila {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.gf-jugadors__nom {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #ccd2d8;
+  border-radius: 8px;
+  font-size: var(--text-sm);
+  color: #222;
+}
+
+.gf-colors {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.gf-colors__opcio {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  transition:
+    transform 0.12s,
+    border-color 0.12s;
+}
+
+.gf-colors__opcio--actiu {
+  border-color: #1a2635;
+  transform: scale(1.2);
+}
+
+.gf-wizard-nav {
+  display: flex;
+  gap: 10px;
+}
+
+.gf-wizard-nav__enrere {
+  padding: 0 18px;
+  background: none;
+  border: 1px solid #ccd2d8;
+  border-radius: 10px;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: #555;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.gf-wizard-nav__enrere:hover {
+  background: #f0f0ee;
+}
+
+.gf-wizard-nav__seguent {
+  width: auto;
+  flex: 1;
+}
+
+/* Fila del territori contenidor amb la tria a l'atzar */
+.gf-contenidor-fila {
+  display: flex;
+  gap: 8px;
+}
+
+.gf-contenidor-fila select {
+  flex: 1;
+  min-width: 0;
+}
+
+.gf-atzar {
+  flex-shrink: 0;
+  padding: 0 12px;
+  background: #fdf3d0;
+  border: 1px solid #d9b23c;
+  border-radius: 8px;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: #8a6d1a;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.gf-atzar:hover:not(:disabled) {
+  background: #f7c948;
+}
+
+.gf-atzar:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 /* Botó principal (Som-hi! / Torna a jugar) */
@@ -921,6 +1333,13 @@ const resumPartida = computed(() => {
   }
 }
 
+/* Textos llargs al compte enrere ("Torn de Maria", "Som-hi!") */
+.gf-compte__valor--text {
+  font-size: 2.6rem;
+  text-align: center;
+  padding: 0 20px;
+}
+
 /* ── Anunci del nou objectiu (apareix gran i es fon lentament) ──────────── */
 
 .gf-anunci {
@@ -928,18 +1347,28 @@ const resumPartida = computed(() => {
   inset: 0;
   z-index: 1450;
   display: flex;
+  flex-direction: column;
+  gap: 8px;
   align-items: center;
   justify-content: center;
   padding: 0 24px;
   text-align: center;
   pointer-events: none;
-  font-size: 3.2rem;
   font-weight: 800;
   color: #1a2635;
   text-shadow:
     0 0 18px rgba(255, 255, 255, 0.95),
     0 2px 6px rgba(255, 255, 255, 0.85);
   animation: gf-anunci 2.4s ease-out forwards;
+}
+
+/* Línia de torn (multijugador, amb el color del jugador) i nom del lloc */
+.gf-anunci__torn {
+  font-size: 2rem;
+}
+
+.gf-anunci__lloc {
+  font-size: 3.2rem;
 }
 
 @keyframes gf-anunci {
@@ -960,7 +1389,11 @@ const resumPartida = computed(() => {
 }
 
 @media (max-width: 768px) {
-  .gf-anunci {
+  .gf-anunci__torn {
+    font-size: 1.4rem;
+  }
+
+  .gf-anunci__lloc {
     font-size: 2rem;
   }
 }
@@ -1025,30 +1458,22 @@ const resumPartida = computed(() => {
   font-weight: 800;
 }
 
-/* Micro-transició del nom objectiu en canviar de ronda */
-.gf-canvi-enter-active {
-  transition:
-    opacity 0.18s ease,
-    transform 0.18s ease;
+/* Micro-animació d'entrada de la pregunta (es re-dispara amb cada
+   re-muntat per canvi de torn o d'objectiu) */
+.gf-barra__pregunta {
+  animation: gf-pregunta-entra 0.18s ease;
 }
 
-.gf-canvi-leave-active {
-  transition: opacity 0.1s ease;
-}
-
-.gf-canvi-enter-from {
-  opacity: 0;
-  transform: translateY(-5px);
-}
-
-.gf-canvi-leave-to {
-  opacity: 0;
+@keyframes gf-pregunta-entra {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .gf-canvi-enter-active,
-  .gf-canvi-leave-active {
-    transition: none;
+  .gf-barra__pregunta {
+    animation: none;
   }
 }
 
@@ -1145,6 +1570,35 @@ const resumPartida = computed(() => {
 .gf-xip__ratxa {
   color: #b8600b;
   animation: gf-compte-pop 0.25s ease-out;
+}
+
+/* Marcador per jugador (mode conquesta) i el seu punt de color */
+.gf-xip__jugador {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  color: #777;
+}
+
+.gf-xip__jugador--actiu {
+  background: #eef4ee;
+  color: #1a2635;
+  font-weight: 800;
+}
+
+.gf-xip__colorjug,
+.gf-barra__colorjug {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.gf-barra__colorjug {
+  margin-right: 5px;
 }
 
 .gf-xip__errors {
@@ -1250,11 +1704,19 @@ const resumPartida = computed(() => {
   background: #f7c948;
 }
 
-/* En mòbil la caixa de resposta es compacta una mica */
+/* En mòbil: els marcadors poden partir-se en dues files sense desbordar,
+   i la caixa de resposta baixa per quedar sempre per sota seu */
 @media (max-width: 768px) {
   .gf-pregunta {
+    top: 96px;
     font-size: 0.95rem;
     padding: 8px 14px;
+  }
+
+  .gf-xip--dreta {
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: calc(100% - 16px);
   }
 }
 
@@ -1366,6 +1828,49 @@ const resumPartida = computed(() => {
   font-size: 1.1rem;
   font-weight: 800;
   color: #1a2635;
+}
+
+/* Classificació del multijugador */
+.gf-classificacio {
+  width: 100%;
+  margin: 12px 0 18px;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.gf-classificacio th {
+  padding: 6px 8px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #777;
+  text-align: center;
+}
+
+.gf-classificacio th:first-child {
+  text-align: left;
+}
+
+.gf-classificacio td {
+  padding: 8px;
+  text-align: center;
+  border-top: 1px solid #eee;
+  font-weight: 600;
+  color: #1a2635;
+}
+
+.gf-classificacio__nom {
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+}
+
+.gf-classificacio__guanyador td {
+  background: #eef4ee;
+  font-weight: 800;
 }
 
 .gf-resultats__config {

@@ -14,9 +14,12 @@ export interface ModeJocMapa {
   nivell: NivellTerritorial
   contenidor: { nivell: NivellTerritorial; codi: string } | null
   codisPermesos: string[] | null
-  // Demarcacions ja encertades: pintades permanentment amb el seu color de
-  // tema i excloses del joc (ni hover ni clic).
+  // Demarcacions ja encertades: pintades permanentment i excloses del joc
+  // (ni hover ni clic).
   codisEncertats: string[]
+  // Mode conquesta (multijugador): codi → color del jugador que l'ha
+  // encertada. null o absent = pintar amb el color de tema del territori.
+  colorsEncertats: Record<string, string> | null
   // Demarcació il·luminada com a pregunta («Com es diu...?»). A «On és...?»
   // és sempre null: l'objectiu és secret.
   codiObjectiu: string | null

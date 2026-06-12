@@ -185,6 +185,14 @@
   },
   "geofreak": {
     "titolModal": "Set up your game",
+    "wizard": {
+      "jugadors": "Players",
+      "enrere": "Back",
+      "seguent": "Next",
+      "aleatori": "Random"
+    },
+    "jugadorN": "Player {n}",
+    "torn": "{nom}'s turn",
     "modalitat": "Game mode",
     "modalitats": {
       "onEs": "Where is...?",

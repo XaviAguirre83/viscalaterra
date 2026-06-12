@@ -185,6 +185,14 @@
   },
   "geofreak": {
     "titolModal": "Configura la partida",
+    "wizard": {
+      "jugadors": "Jugadors",
+      "enrere": "Enrere",
+      "seguent": "Següent",
+      "aleatori": "A l'atzar"
+    },
+    "jugadorN": "Jugador {n}",
+    "torn": "Torn de {nom}",
     "modalitat": "Modalitat",
     "modalitats": {
       "onEs": "On és...?",
