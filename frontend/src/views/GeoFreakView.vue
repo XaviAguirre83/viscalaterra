@@ -195,6 +195,21 @@ const objectiuNom = computed(() => {
   return codi ? (nomsJoc.value.get(codi) ?? codi) : ''
 })
 
+// Línia de context de la barra de navegació: "Jugant a municipis de
+// Maresme (Comarca)" / "Jugant a comarques de tota Catalunya".
+const textContext = computed(() => {
+  const nivell = geofreak.nivellActual
+  if (!nivell) return ''
+  const plural = t(`geofreak.plural.${nivell.demarcacio}`)
+  const nom = opcionsContenidor.value.find(
+    (o) => o.codi === geofreak.configuracio.codiContenidor
+  )?.nom
+  if (nivell.contenidor && nom) {
+    return t('geofreak.jugantA', { plural, nom, tipus: t(`nivells.${nivell.contenidor}`) })
+  }
+  return t('geofreak.jugantTot', { plural })
+})
+
 const cronoText = computed(() => {
   const fi = geofreak.fase === 'partida' ? araMs.value : geofreak.tempsFiMs
   const segons = Math.max(0, Math.floor((fi - geofreak.tempsIniciMs) / 1000))
@@ -419,7 +434,26 @@ const resumPartida = computed(() => {
 
 <template>
   <div class="gf-layout">
-    <PanellFiltres />
+    <PanellFiltres>
+      <!-- La barra de menú queda buida durant el joc: s'hi posa el context
+           de la partida i la pregunta del torn (més espai de joc al mapa). -->
+      <div v-if="geofreak.fase !== 'configuracio'" class="gf-barra">
+        <span class="gf-barra__context">{{ textContext }}</span>
+        <span
+          v-if="geofreak.fase === 'partida'"
+          class="gf-barra__pregunta"
+          role="status"
+          aria-live="polite"
+        >
+          <template v-if="geofreak.configuracio.modalitat === 'onEs'">
+            {{ $t('geofreak.preguntaOnEs') }}&nbsp;<Transition name="gf-canvi" mode="out-in"
+              ><strong :key="objectiuNom">{{ objectiuNom }}</strong></Transition
+            >?
+          </template>
+          <template v-else>{{ $t('geofreak.modalitats.comEsDiu') }}</template>
+        </span>
+      </div>
+    </PanellFiltres>
     <div class="gf-cos">
       <MapaLeaflet ref="mapaRef" :mode-joc="modeJocMapa" @clic-joc="gestionaClicJoc" />
 
@@ -494,19 +528,9 @@ const resumPartida = computed(() => {
           ></div>
         </div>
         <div
-          v-if="geofreak.configuracio.modalitat === 'onEs'"
-          class="gf-pregunta"
-          role="status"
-          aria-live="polite"
+          v-if="geofreak.configuracio.modalitat === 'comEsDiu'"
+          class="gf-pregunta gf-pregunta--resposta"
         >
-          {{ $t('geofreak.preguntaOnEs') }}&nbsp;<Transition name="gf-canvi" mode="out-in"
-            ><strong :key="objectiuNom">{{ objectiuNom }}</strong></Transition
-          >?
-        </div>
-        <div v-else class="gf-pregunta gf-pregunta--resposta">
-          <label class="gf-resposta__etiqueta" for="gf-resposta">
-            {{ $t('geofreak.modalitats.comEsDiu') }}
-          </label>
           <input
             id="gf-resposta"
             ref="respostaInput"
@@ -515,6 +539,7 @@ const resumPartida = computed(() => {
             autocomplete="off"
             spellcheck="false"
             :placeholder="$t('geofreak.escriuNom')"
+            :aria-label="$t('geofreak.modalitats.comEsDiu')"
             :class="{ 'gf-resposta--sacseig': sacsejant }"
             @keydown.enter.prevent="enviaResposta"
             @keydown.down.prevent="mouSuggeriment(1)"
@@ -751,6 +776,43 @@ const resumPartida = computed(() => {
   cursor: not-allowed;
 }
 
+/* ── Context i pregunta a la barra de navegació (slot del PanellFiltres) ── */
+
+.gf-barra {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-left: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.gf-barra__context {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #777;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+.gf-barra__pregunta {
+  font-size: 0.95rem;
+  color: #1a2635;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+.gf-barra__pregunta strong {
+  display: inline-block;
+  font-weight: 800;
+}
+
 /* ── Compte enrere ──────────────────────────────────────────────────────── */
 
 .gf-compte {
@@ -860,17 +922,6 @@ const resumPartida = computed(() => {
   overflow: visible;
   width: min(340px, calc(100% - 24px));
   padding: 10px 14px 12px;
-}
-
-.gf-resposta__etiqueta {
-  display: block;
-  margin-bottom: 6px;
-  font-size: var(--text-xs);
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: #777;
-  text-align: center;
 }
 
 .gf-pregunta--resposta input {
@@ -1058,16 +1109,17 @@ const resumPartida = computed(() => {
   background: #f7c948;
 }
 
-/* En mòbil: el panell de marcadors centrat sota la pregunta, i el cronòmetre
-   amb el progrés centrat a la part de baix del mapa (no es tapen entre ells) */
+/* En mòbil: el panell de marcadors centrat a dalt, el cronòmetre amb el
+   progrés centrat a baix, i la caixa de resposta (si n'hi ha) entre ells */
 @media (max-width: 768px) {
   .gf-pregunta {
+    top: 58px;
     font-size: 0.95rem;
     padding: 8px 14px;
   }
 
   .gf-xip--dreta {
-    top: 58px;
+    top: 10px;
     right: auto;
     left: 50%;
     transform: translateX(-50%);

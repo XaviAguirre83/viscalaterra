@@ -96,6 +96,9 @@ watch(
             <CercaRapida />
           </div>
         </template>
+
+        <!-- Contingut contextual injectat per la vista activa (p. ex. el joc) -->
+        <slot />
       </div>
     </nav>
 

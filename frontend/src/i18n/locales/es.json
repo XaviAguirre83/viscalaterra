@@ -204,6 +204,14 @@
       "n7": "Municipios de una provincia",
       "n8": "Todos los municipios de Catalunya"
     },
+    "plural": {
+      "provincia": "provincias",
+      "vegueria": "veguerías",
+      "comarca": "comarcas",
+      "municipi": "municipios"
+    },
+    "jugantA": "Jugando a {plural} de {nom} ({tipus})",
+    "jugantTot": "Jugando a {plural} de toda Catalunya",
     "triaContenidor": {
       "vegueria": "¿Qué veguería?",
       "provincia": "¿Qué provincia?",

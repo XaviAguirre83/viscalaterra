@@ -204,6 +204,14 @@
       "n7": "Municipalities of a province",
       "n8": "All municipalities of Catalonia"
     },
+    "plural": {
+      "provincia": "provinces",
+      "vegueria": "vegueries",
+      "comarca": "comarques",
+      "municipi": "municipalities"
+    },
+    "jugantA": "Playing {plural} of {nom} ({tipus})",
+    "jugantTot": "Playing {plural} of all of Catalonia",
     "triaContenidor": {
       "vegueria": "Which vegueria?",
       "provincia": "Which province?",
