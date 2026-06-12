@@ -210,7 +210,7 @@
       "comarca": "comarques",
       "municipi": "municipalities"
     },
-    "jugantA": "Playing {plural} of {nom} ({tipus})",
+    "jugantA": "Playing the {plural} of {nom} ({tipus})",
     "jugantTot": "Playing {plural} of all of Catalonia",
     "triaContenidor": {
       "vegueria": "Which vegueria?",

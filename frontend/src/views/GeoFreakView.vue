@@ -15,6 +15,13 @@ import {
   type TipusDemarcacio,
 } from '@/data/geofreak'
 import { normalitza } from '@/data/text'
+import {
+  articleComarca,
+  articleVegueria,
+  nomAmbArticle,
+  nomAmbDe,
+  type Article,
+} from '@/data/articles'
 import type { ModeJocMapa } from '@/stores/mapa'
 
 // GeoFreak — joc d'identificació territorial (spec: viscalaterra_plan.md § GeoFreak).
@@ -196,22 +203,40 @@ const modeJocMapa = computed<ModeJocMapa | null>(() => {
 
 // ── HUD ────────────────────────────────────────────────────────────────────
 
+// Article de la demarcació (les comarques i vegueries van sense article a la
+// BD; els municipis ja el porten al nom i les províncies no en duen).
+function articleDemarcacio(tipus: TipusDemarcacio, codi: string): Article {
+  if (tipus === 'comarca') return articleComarca(codi)
+  if (tipus === 'vegueria') return articleVegueria(codi)
+  return ''
+}
+
 const objectiuNom = computed(() => {
   const codi = geofreak.partida?.objectiu
-  return codi ? (nomsJoc.value.get(codi) ?? codi) : ''
+  if (!codi) return ''
+  const nom = nomsJoc.value.get(codi) ?? codi
+  const demarcacio = geofreak.nivellActual?.demarcacio
+  // "On és... el Maresme?" / "On és... l'Anoia?" — amb l'article que toca.
+  return demarcacio ? nomAmbArticle(nom, articleDemarcacio(demarcacio, codi)) : nom
 })
 
-// Línia de context de la barra de navegació: "Jugant a municipis de
+// Línia de context de la barra de navegació: "Jugant a municipis del
 // Maresme (Comarca)" / "Jugant a comarques de tota Catalunya".
 const textContext = computed(() => {
   const nivell = geofreak.nivellActual
   if (!nivell) return ''
   const plural = t(`geofreak.plural.${nivell.demarcacio}`)
-  const nom = opcionsContenidor.value.find(
-    (o) => o.codi === geofreak.configuracio.codiContenidor
-  )?.nom
-  if (nivell.contenidor && nom) {
-    return t('geofreak.jugantA', { plural, nom, tipus: t(`nivells.${nivell.contenidor}`) })
+  const codi = geofreak.configuracio.codiContenidor
+  const nom = opcionsContenidor.value.find((o) => o.codi === codi)?.nom
+  if (nivell.contenidor && codi && nom) {
+    const article = articleDemarcacio(nivell.contenidor, codi)
+    return t('geofreak.jugantA', {
+      plural,
+      // {nomDe} per a ca/es ("del Maresme"); {nom} per a en ("el Maresme").
+      nomDe: nomAmbDe(nom, article),
+      nom: nomAmbArticle(nom, article),
+      tipus: t(`nivells.${nivell.contenidor}`),
+    })
   }
   return t('geofreak.jugantTot', { plural })
 })

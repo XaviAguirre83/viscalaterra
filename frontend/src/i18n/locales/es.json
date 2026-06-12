@@ -210,7 +210,7 @@
       "comarca": "comarcas",
       "municipi": "municipios"
     },
-    "jugantA": "Jugando a {plural} de {nom} ({tipus})",
+    "jugantA": "Jugando a {plural} {nomDe} ({tipus})",
     "jugantTot": "Jugando a {plural} de toda Catalunya",
     "triaContenidor": {
       "vegueria": "¿Qué veguería?",
