@@ -908,6 +908,10 @@ onMounted(() => {
   carregaTotesCapes(mapaStore.zoom)
   actualitzaMaxBounds()
   actualitzaDragging()
+
+  // Si el mapa neix ja en mode joc (la vista del joc el passa des del primer
+  // render), el watch de modeJoc no es dispara: s'aplica aquí.
+  if (props.modeJoc) entraModeJoc(props.modeJoc)
 })
 
 onUnmounted(() => {

@@ -168,23 +168,29 @@ const codisJoc = computed<string[]>(() => codisPermesos.value ?? [...nomsJoc.val
 
 // ── Mode joc per al mapa (partida i resultats) ─────────────────────────────
 
+// Dins la vista del joc, el mapa està SEMPRE en mode joc — també sota el
+// modal de configuració (tiles sense etiquetes, sense panell territorial).
+// Mentre es configura, la tria de nivell/contenidor es previsualitza al fons.
 const modeJocMapa = computed<ModeJocMapa | null>(() => {
   const nivell = geofreak.nivellActual
-  const enJoc = geofreak.fase !== 'configuracio'
-  if (!enJoc || !nivell) return null
   const codi = geofreak.configuracio.codiContenidor
+  const enPartida = geofreak.fase === 'partida'
   return {
-    nivell: CAPA_PER_DEMARCACIO[nivell.demarcacio],
+    // Sense nivell triat encara, el fons mostra la capa de comarques.
+    nivell: nivell ? CAPA_PER_DEMARCACIO[nivell.demarcacio] : 'comarques',
     contenidor:
-      nivell.contenidor && codi ? { nivell: CAPA_PER_DEMARCACIO[nivell.contenidor], codi } : null,
+      nivell?.contenidor && codi ? { nivell: CAPA_PER_DEMARCACIO[nivell.contenidor], codi } : null,
     codisPermesos: codisPermesos.value,
     codisEncertats: geofreak.partida?.encertades ?? [],
-    // L'objectiu només s'il·lumina a «Com es diu...?»; a «On és...?» és secret.
+    // L'objectiu només s'il·lumina a «Com es diu...?» (a «On és...?» és
+    // secret) i mai durant la configuració.
     codiObjectiu:
-      geofreak.configuracio.modalitat === 'comEsDiu' ? (geofreak.partida?.objectiu ?? null) : null,
+      geofreak.fase !== 'configuracio' && geofreak.configuracio.modalitat === 'comEsDiu'
+        ? (geofreak.partida?.objectiu ?? null)
+        : null,
     // La pista al mapa només aplica a «On és...?» (a l'altra modalitat són botons).
     codisPista: geofreak.configuracio.modalitat === 'onEs' ? geofreak.pista : null,
-    interactiu: geofreak.configuracio.modalitat === 'onEs',
+    interactiu: enPartida && geofreak.configuracio.modalitat === 'onEs',
   }
 })
 
