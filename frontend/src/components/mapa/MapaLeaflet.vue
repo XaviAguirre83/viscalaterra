@@ -470,31 +470,138 @@ function estilHoverPerFeature(
 }
 
 // ── Feedback visual del joc ────────────────────────────────────────────────
+//
+// Animacions de resposta sobre el canvas (interpolació per rAF):
+// - Error: la demarcació s'encén en vermell opac i es va esvaint (α 1 → 0)
+//   mentre la vora fon cap al gris normal.
+// - Encert: verd intens amb un halo blanc al contorn; halo, verd i gruix es
+//   fonen progressivament cap a l'estil definitiu d'encertada (color de tema).
 
-// Flaix breu sobre una feature del nivell jugat: blanc→color de tema a
-// l'encert (pop), vermell a l'error. En acabar, re-aplica l'estil normal
-// (que ja reflectirà l'encert si s'ha produït).
+const VERD_ENCERT = '#27a35f'
+const ROIG_ERROR = '#d8402f'
+const ROIG_ERROR_VORA = '#8f1d10'
+
+function hexARgb(hex: string): [number, number, number] {
+  const n = parseInt(hex.slice(1), 16)
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+}
+
+function lerpColor(a: string, b: string, t: number): string {
+  const [r1, g1, b1] = hexARgb(a)
+  const [r2, g2, b2] = hexARgb(b)
+  const c = (x: number, y: number) => Math.round(x + (y - x) * t)
+  return `rgb(${c(r1, r2)}, ${c(g1, g2)}, ${c(b1, b2)})`
+}
+
+// Una animació viva per demarcació (un clic ràpid cancel·la l'anterior).
+const animacionsFlaix = new Map<string, number>()
+
 function flaixJoc(codi: string, tipus: 'encert' | 'error') {
   const mj = props.modeJoc
-  if (!mj) return
+  if (!mj || !mapa) return
   const capa = capesActives[mj.nivell]
   if (!capa) return
+
+  const previ = animacionsFlaix.get(codi)
+  if (previ !== undefined) cancelAnimationFrame(previ)
+
+  const objectius: (L.Path & { feature?: GeoJSON.Feature })[] = []
   capa.eachLayer((layer) => {
     const geo = layer as L.Path & { feature?: GeoJSON.Feature }
-    if (!geo.feature) return
-    if (codiDeFeature(geo.feature, mj.nivell)?.codi !== codi) return
-    geo.setStyle(
-      tipus === 'encert'
-        ? { color: '#2d6a2d', weight: 3, opacity: 1, fillColor: '#ffffff', fillOpacity: 1 }
-        : { color: '#7a1f1f', weight: 3, opacity: 1, fillColor: '#e25b4a', fillOpacity: 1 }
-    )
-    setTimeout(
-      () => {
-        if (geo.feature) geo.setStyle(estilPerFeature(geo.feature, mj.nivell))
-      },
-      tipus === 'encert' ? 200 : 350
-    )
+    if (geo.feature && codiDeFeature(geo.feature, mj.nivell)?.codi === codi) objectius.push(geo)
   })
+  const primer = objectius[0]
+  if (!primer?.feature) return
+
+  const info = codiDeFeature(primer.feature, mj.nivell)
+  const tema = info ? temaDeInfo(info) : TEMA_NEUTRE
+
+  const acabaAmbEstilNormal = () => {
+    animacionsFlaix.delete(codi)
+    objectius.forEach((o) => {
+      if (o.feature) o.setStyle(estilPerFeature(o.feature, mj.nivell))
+    })
+  }
+
+  // Amb reduced-motion: marca breu estàtica, sense interpolacions.
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    objectius.forEach((o) =>
+      o.setStyle(
+        tipus === 'encert'
+          ? { color: tema.vora, weight: 2, opacity: 1, fillColor: VERD_ENCERT, fillOpacity: 0.9 }
+          : {
+              color: ROIG_ERROR_VORA,
+              weight: 2,
+              opacity: 1,
+              fillColor: ROIG_ERROR,
+              fillOpacity: 0.9,
+            }
+      )
+    )
+    setTimeout(acabaAmbEstilNormal, 250)
+    return
+  }
+
+  // Halo blanc del contorn (capa temporal amb la mateixa geometria, dibuixada
+  // per sobre dins el mateix canvas del nivell).
+  let halo: L.GeoJSON | null = null
+  if (tipus === 'encert') {
+    halo = L.geoJSON(
+      {
+        type: 'FeatureCollection',
+        features: objectius.map((o) => o.feature!),
+      } as GeoJSON.FeatureCollection,
+      {
+        ...({ renderer: canvasRenderers[mj.nivell] } as L.GeoJSONOptions),
+        pane: PANE_NOMS[mj.nivell],
+        interactive: false,
+        style: { color: '#ffffff', weight: 14, opacity: 0.85, fillOpacity: 0 },
+      }
+    ).addTo(mapa)
+  }
+
+  const durada = tipus === 'encert' ? 800 : 600
+  const inici = performance.now()
+
+  const pas = (ara: number) => {
+    const t = Math.min(1, (ara - inici) / durada)
+    const suau = 1 - Math.pow(1 - t, 2) // ease-out quadràtic
+
+    if (tipus === 'encert') {
+      halo?.setStyle({ weight: 14 * (1 - suau), opacity: 0.85 * (1 - suau) })
+      objectius.forEach((o) =>
+        o.setStyle({
+          color: lerpColor('#ffffff', tema.vora, suau),
+          weight: 3 - 1.5 * suau,
+          opacity: 1,
+          fillColor: lerpColor(VERD_ENCERT, tema.base, suau),
+          fillOpacity: 1 - 0.2 * suau,
+        })
+      )
+    } else {
+      objectius.forEach((o) =>
+        o.setStyle({
+          color: lerpColor(ROIG_ERROR_VORA, '#555555', suau),
+          weight: 3 - 1.5 * suau,
+          opacity: 1,
+          fillColor: ROIG_ERROR,
+          fillOpacity: 1 - suau,
+        })
+      )
+    }
+
+    if (t < 1 && mapa) {
+      animacionsFlaix.set(codi, requestAnimationFrame(pas))
+      return
+    }
+    if (halo) {
+      mapa?.removeLayer(halo)
+      halo = null
+    }
+    acabaAmbEstilNormal()
+  }
+
+  animacionsFlaix.set(codi, requestAnimationFrame(pas))
 }
 
 defineExpose({ flaixJoc })
@@ -915,6 +1022,8 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  animacionsFlaix.forEach((id) => cancelAnimationFrame(id))
+  animacionsFlaix.clear()
   // Si es desmunta en plena partida (navegació directa a una altra secció),
   // restaura zoom/centre del store: el proper mapa arrencaria amb minZoom
   // clavat dins el territori del joc.
