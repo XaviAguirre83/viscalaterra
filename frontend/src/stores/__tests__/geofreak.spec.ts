@@ -130,16 +130,24 @@ describe('geofreak — rondes de partida', () => {
     g.activaPista(['x'])
     expect(g.pista).toEqual(['a', 'b', 'c'])
 
-    // L'error no consumeix la pista.
     const objectiu = g.partida!.objectiu!
-    const altra = ['a', 'b', 'c'].find((c) => c !== objectiu)!
-    g.clicDemarcacio(altra)
-    expect(g.pista).not.toBeNull()
-
-    // L'encert sí, i suma al comptador d'encerts amb pista.
     g.clicDemarcacio(objectiu)
     expect(g.pista).toBeNull()
     expect(g.encertsAmbPista).toBe(1)
+  })
+
+  it('errar amb la pista activa salta la ronda i la consumeix', () => {
+    const g = configuraNivell0()
+    g.comencaPartida(['a', 'b', 'c'])
+    const objectiu = g.partida!.objectiu!
+    const altra = ['a', 'b', 'c'].find((c) => c !== objectiu)!
+    g.activaPista(['a', 'b', 'c'])
+
+    expect(g.clicDemarcacio(altra)).toBe('salt')
+    expect(g.pista).toBeNull()
+    expect(g.partida!.errors).toBe(1)
+    expect(g.partida!.objectiu).not.toBe(objectiu)
+    expect(g.partida!.pendents).toContain(objectiu)
   })
 
   it('passaRonda re-encua l’objectiu i neteja la pista', () => {
@@ -155,19 +163,17 @@ describe('geofreak — rondes de partida', () => {
     expect(g.pista).toBeNull()
   })
 
-  it('al tercer error de la ronda salta d’objectiu i neteja la pista', () => {
+  it('al tercer error de la ronda salta d’objectiu', () => {
     const g = configuraNivell0()
     g.comencaPartida(['a', 'b', 'c'])
     const objectiu = g.partida!.objectiu!
     const altra = ['a', 'b', 'c'].find((c) => c !== objectiu)!
-    g.activaPista(['a', 'b'])
 
     expect(g.clicDemarcacio(altra)).toBe('error')
     expect(g.clicDemarcacio(altra)).toBe('error')
     expect(g.clicDemarcacio(altra)).toBe('salt')
     expect(g.partida!.objectiu).not.toBe(objectiu)
     expect(g.partida!.errors).toBe(3)
-    expect(g.pista).toBeNull()
   })
 
   it('tornaAJugar rellança una partida nova amb la mateixa configuració', () => {

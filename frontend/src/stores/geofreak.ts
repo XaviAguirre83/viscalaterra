@@ -131,7 +131,16 @@ export const useGeofreakStore = defineStore('geofreak', () => {
       pista.value = null
       ratxa.value++
     }
-    if (resultat === 'error') ratxa.value = 0
+    if (resultat === 'error') {
+      ratxa.value = 0
+      // Errar amb la pista activa salta la ronda: si no, es podrien provar
+      // les 4 opcions una a una i l'encert sortiria gairebé garantit.
+      if (pista.value) {
+        partida.value = passaRondaPartida(estat)
+        pista.value = null
+        return 'salt'
+      }
+    }
     // El salt (3r error de la ronda) també canvia d'objectiu: pista fora.
     if (resultat === 'salt') {
       pista.value = null

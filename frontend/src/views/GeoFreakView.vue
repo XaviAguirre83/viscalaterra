@@ -220,6 +220,21 @@ const objectiuNom = computed(() => {
   return demarcacio ? nomAmbArticle(nom, articleDemarcacio(demarcacio, codi)) : nom
 })
 
+// Anunci del nou objectiu: el canvi de lloc només es veia a la barra i
+// passava desapercebut. A «On és...?», cada nou objectiu (per encert, per
+// salt o per Passa) apareix GRAN al centre del mapa i es fon lentament.
+// (A «Com es diu...?» no: el nom és justament la resposta.)
+const anunci = ref('')
+const anunciClau = ref(0)
+watch(
+  () => (geofreak.fase === 'partida' ? (geofreak.partida?.objectiu ?? null) : null),
+  (objectiu) => {
+    if (!objectiu || geofreak.configuracio.modalitat !== 'onEs') return
+    anunci.value = objectiuNom.value
+    anunciClau.value++
+  }
+)
+
 // Línia de context de la barra de navegació: "Jugant a municipis del
 // Maresme (Comarca)" / "Jugant a comarques de tota Catalunya".
 const textContext = computed(() => {
@@ -550,6 +565,15 @@ const resumPartida = computed(() => {
 
       <!-- ── HUD de partida ───────────────────────────────────────────────── -->
       <template v-else-if="geofreak.fase === 'partida'">
+        <div
+          v-if="anunci"
+          :key="anunciClau"
+          class="gf-anunci"
+          aria-hidden="true"
+          @animationend="anunci = ''"
+        >
+          {{ anunci }}
+        </div>
         <div class="gf-progres" aria-hidden="true">
           <div
             class="gf-progres__fet"
@@ -894,6 +918,67 @@ const resumPartida = computed(() => {
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+/* ── Anunci del nou objectiu (apareix gran i es fon lentament) ──────────── */
+
+.gf-anunci {
+  position: absolute;
+  inset: 0;
+  z-index: 1450;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+  text-align: center;
+  pointer-events: none;
+  font-size: 3.2rem;
+  font-weight: 800;
+  color: #1a2635;
+  text-shadow:
+    0 0 18px rgba(255, 255, 255, 0.95),
+    0 2px 6px rgba(255, 255, 255, 0.85);
+  animation: gf-anunci 2.4s ease-out forwards;
+}
+
+@keyframes gf-anunci {
+  0% {
+    opacity: 0;
+    transform: scale(1.15);
+  }
+  12% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .gf-anunci {
+    font-size: 2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gf-anunci {
+    animation-name: gf-anunci-fos;
+  }
+}
+
+/* Variant sense moviment (només fosa) per a reduced-motion */
+@keyframes gf-anunci-fos {
+  0%,
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
   }
 }
 

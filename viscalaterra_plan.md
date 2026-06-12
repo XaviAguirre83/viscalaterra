@@ -344,6 +344,7 @@ Joc d'identificació territorial. Ruta: `/jocs/geofreak`. La pàgina `/jocs` act
 - A «On és...?» (simètric): s'il·luminen 4 territoris candidats i només aquests són clicables.
 - Els distractors són veïns o del mateix àmbit (si toca l'Alt Empordà: Baix Empordà, Gironès, Pla de l'Estany…), mai de l'altra punta del país — si no, la pista regala massa.
 - Cost: un encert amb pista compta com a **mig encert (0,5)** al ràtio de puntuació. Penalització multiplicativa: escala sola amb el nivell, sense números màgics.
+- **Errar amb la pista activa salta la ronda** (2026-06-12): les 4 opcions desapareixen i l'objectiu torna a la cua. Si no, es podrien provar les opcions una a una i l'encert sortiria gairebé garantit.
 
 **Mecànica**:
 
