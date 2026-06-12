@@ -428,6 +428,36 @@ function estilHoverPerFeature(
   }
 }
 
+// ── Feedback visual del joc ────────────────────────────────────────────────
+
+// Flaix breu sobre una feature del nivell jugat: blanc→color de tema a
+// l'encert (pop), vermell a l'error. En acabar, re-aplica l'estil normal
+// (que ja reflectirà l'encert si s'ha produït).
+function flaixJoc(codi: string, tipus: 'encert' | 'error') {
+  const mj = props.modeJoc
+  if (!mj) return
+  const capa = capesActives[mj.nivell]
+  if (!capa) return
+  capa.eachLayer((layer) => {
+    const geo = layer as L.Path & { feature?: GeoJSON.Feature }
+    if (!geo.feature) return
+    if (codiDeFeature(geo.feature, mj.nivell)?.codi !== codi) return
+    geo.setStyle(
+      tipus === 'encert'
+        ? { color: '#2d6a2d', weight: 3, opacity: 1, fillColor: '#ffffff', fillOpacity: 1 }
+        : { color: '#7a1f1f', weight: 3, opacity: 1, fillColor: '#e25b4a', fillOpacity: 1 }
+    )
+    setTimeout(
+      () => {
+        if (geo.feature) geo.setStyle(estilPerFeature(geo.feature, mj.nivell))
+      },
+      tipus === 'encert' ? 200 : 350
+    )
+  })
+}
+
+defineExpose({ flaixJoc })
+
 // ── Gestió de clic ─────────────────────────────────────────────────────────
 
 function gestionaClicFeature(feature: GeoJSON.Feature, nivell: NivellTerritorial) {

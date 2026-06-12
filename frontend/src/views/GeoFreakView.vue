@@ -25,6 +25,8 @@ const { t } = useI18n()
 const territoris = useTerritorisStore()
 const geofreak = useGeofreakStore()
 
+const mapaRef = ref<InstanceType<typeof MapaLeaflet> | null>(null)
+
 // Cronòmetre visual: el store guarda els instants; aquí només es fa el tic-tac.
 const araMs = ref(Date.now())
 let ticker: ReturnType<typeof setInterval> | null = null
@@ -219,8 +221,21 @@ const suggeriments = computed(() => {
   return candidats.value.filter((c) => normalitza(c.nom).includes(q)).slice(0, 7)
 })
 
+// Respon una ronda (clic al mapa o resposta escrita) amb feedback visual:
+// flaix al mapa i, a la resposta escrita errònia, sacseig de l'input.
+function gestionaClicJoc(codi: string) {
+  const resultat = geofreak.clicDemarcacio(codi)
+  if (resultat === 'encert') mapaRef.value?.flaixJoc(codi, 'encert')
+  else if (resultat === 'error' || resultat === 'salt') mapaRef.value?.flaixJoc(codi, 'error')
+}
+
 function respon(codi: string) {
-  geofreak.clicDemarcacio(codi)
+  const resultat = geofreak.clicDemarcacio(codi)
+  if (resultat === 'encert') mapaRef.value?.flaixJoc(codi, 'encert')
+  else if (resultat === 'error' || resultat === 'salt') {
+    sacsejant.value = false
+    requestAnimationFrame(() => (sacsejant.value = true))
+  }
   textResposta.value = ''
   respostaInput.value?.focus()
 }
@@ -307,6 +322,29 @@ const intentsRestants = computed(() =>
   Math.max(0, MAX_INTENTS_RONDA - (geofreak.partida?.intentsRonda ?? 0))
 )
 
+// Recompte animat dels punts al modal de resultats (0 → total amb ease-out).
+const puntsMostrats = ref(0)
+watch(
+  () => geofreak.fase,
+  (fase) => {
+    if (fase !== 'resultats') return
+    const final = geofreak.punts
+    if (final === 0 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      puntsMostrats.value = final
+      return
+    }
+    puntsMostrats.value = 0
+    const durada = 900
+    const inici = performance.now()
+    const pas = (ara: number) => {
+      const progres = Math.min(1, (ara - inici) / durada)
+      puntsMostrats.value = Math.round(final * (1 - Math.pow(1 - progres, 3)))
+      if (progres < 1 && geofreak.fase === 'resultats') requestAnimationFrame(pas)
+    }
+    requestAnimationFrame(pas)
+  }
+)
+
 // Resum de la configuració triada (subtítol del modal de resultats).
 const resumPartida = computed(() => {
   const c = geofreak.configuracio
@@ -322,7 +360,7 @@ const resumPartida = computed(() => {
   <div class="gf-layout">
     <PanellFiltres />
     <div class="gf-cos">
-      <MapaLeaflet :mode-joc="modeJocMapa" @clic-joc="geofreak.clicDemarcacio" />
+      <MapaLeaflet ref="mapaRef" :mode-joc="modeJocMapa" @clic-joc="gestionaClicJoc" />
 
       <!-- ── Modal de configuració de la partida ─────────────────────────── -->
       <div v-if="geofreak.fase === 'configuracio'" class="gf-modal-fons">
@@ -385,7 +423,8 @@ const resumPartida = computed(() => {
           role="status"
           aria-live="polite"
         >
-          {{ $t('geofreak.preguntaOnEs') }}&nbsp;<strong>{{ objectiuNom }}</strong
+          {{ $t('geofreak.preguntaOnEs') }}&nbsp;<Transition name="gf-canvi" mode="out-in"
+            ><strong :key="objectiuNom">{{ objectiuNom }}</strong></Transition
           >?
         </div>
         <div v-else class="gf-pregunta gf-pregunta--resposta">
@@ -465,11 +504,14 @@ const resumPartida = computed(() => {
 
       <!-- ── Modal de resultats ───────────────────────────────────────────── -->
       <div v-else class="gf-modal-fons">
+        <div class="gf-confeti" aria-hidden="true">
+          <span v-for="n in 14" :key="n" :style="{ '--gf-i': String(n) }"></span>
+        </div>
         <div class="gf-modal gf-resultats" role="dialog" aria-modal="true">
           <h2 class="gf-modal__titol">{{ $t('geofreak.resultats.titol') }}</h2>
           <p class="gf-modal__sub">{{ resumPartida }}</p>
 
-          <p class="gf-resultats__punts">{{ geofreak.punts }}</p>
+          <p class="gf-resultats__punts">{{ puntsMostrats }}</p>
           <p class="gf-resultats__punts-etiqueta">{{ $t('geofreak.resultats.punts') }}</p>
 
           <dl class="gf-resultats__stats">
@@ -638,7 +680,35 @@ const resumPartida = computed(() => {
 }
 
 .gf-pregunta strong {
+  display: inline-block;
   font-weight: 800;
+}
+
+/* Micro-transició del nom objectiu en canviar de ronda */
+.gf-canvi-enter-active {
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.gf-canvi-leave-active {
+  transition: opacity 0.1s ease;
+}
+
+.gf-canvi-enter-from {
+  opacity: 0;
+  transform: translateY(-5px);
+}
+
+.gf-canvi-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gf-canvi-enter-active,
+  .gf-canvi-leave-active {
+    transition: none;
+  }
 }
 
 /* Variant amb input de resposta («Com es diu...?») */
@@ -855,6 +925,71 @@ const resumPartida = computed(() => {
 
 .gf-resultats {
   text-align: center;
+  animation: gf-apareix 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+@keyframes gf-apareix {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translateY(12px);
+  }
+}
+
+/* Confeti de celebració (cau una sola vegada sobre el mapa de fons) */
+.gf-confeti {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.gf-confeti span {
+  position: absolute;
+  top: -20px;
+  left: calc((var(--gf-i) - 1) * 7.5%);
+  width: 8px;
+  height: 14px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: gf-confeti-cau 1.9s ease-in forwards;
+  animation-delay: calc(var(--gf-i) * 0.07s);
+}
+
+.gf-confeti span:nth-child(4n + 1) {
+  background: #c4382e;
+}
+.gf-confeti span:nth-child(4n + 2) {
+  background: #2d6a2d;
+}
+.gf-confeti span:nth-child(4n + 3) {
+  background: #b8860b;
+}
+.gf-confeti span:nth-child(4n) {
+  background: #2b6cb0;
+}
+
+@keyframes gf-confeti-cau {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotateZ(0deg);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(85vh) rotateZ(560deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gf-resultats {
+    animation: none;
+  }
+
+  .gf-confeti {
+    display: none;
+  }
 }
 
 .gf-resultats__punts {
