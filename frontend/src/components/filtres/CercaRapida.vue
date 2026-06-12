@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTerritorisStore } from '@/stores/territoris'
 import { useFiltresStore } from '@/stores/filtres'
@@ -165,6 +165,40 @@ function tancaEnBlur(e: FocusEvent) {
     obert.value = false
   }
 }
+
+// ── Navegació amb teclat (fletxes amunt/avall + Enter + Esc) ───────────────
+
+const indexActiu = ref(-1)
+
+// Llista plana dels resultats en el mateix ordre visual que el desplegable.
+const llistaPlana = computed(() => grups.value.flatMap((g) => g.items))
+
+// Quan canvien els resultats (s'ha escrit més text), la selecció es reinicia.
+watch(resultats, () => (indexActiu.value = -1))
+
+function mouSeleccio(delta: number) {
+  const n = llistaPlana.value.length
+  if (n === 0) return
+  obert.value = true
+  indexActiu.value = (indexActiu.value + delta + n) % n
+  void nextTick(() => {
+    document
+      .querySelector('.cerca-rapida .cerca-resultat--actiu')
+      ?.scrollIntoView({ block: 'nearest' })
+  })
+}
+
+function enterSeleccio() {
+  const r = llistaPlana.value[indexActiu.value]
+  if (r) selecciona(r)
+}
+
+function escTanca() {
+  queryBruta.value = ''
+  query.value = ''
+  indexActiu.value = -1
+  obert.value = false
+}
 </script>
 
 <template>
@@ -180,6 +214,10 @@ function tancaEnBlur(e: FocusEvent) {
         :aria-label="$t('cerca.aria')"
         @focus="obert = true"
         @blur="tancaEnBlur"
+        @keydown.down.prevent="mouSeleccio(1)"
+        @keydown.up.prevent="mouSeleccio(-1)"
+        @keydown.enter.prevent="enterSeleccio"
+        @keydown.esc.prevent="escTanca"
       />
       <button class="cerca-btn" tabindex="-1" @mousedown.prevent @click="inputRef?.focus()">
         {{ $t('cerca.boto') }}
@@ -194,6 +232,7 @@ function tancaEnBlur(e: FocusEvent) {
           :key="r.codi"
           type="button"
           class="cerca-resultat"
+          :class="{ 'cerca-resultat--actiu': llistaPlana[indexActiu] === r }"
           @mousedown.prevent
           @click="selecciona(r)"
         >
@@ -340,7 +379,8 @@ function tancaEnBlur(e: FocusEvent) {
   transition: background 0.1s;
 }
 
-.cerca-resultat:hover {
+.cerca-resultat:hover,
+.cerca-resultat--actiu {
   background: #f4f7f4;
 }
 

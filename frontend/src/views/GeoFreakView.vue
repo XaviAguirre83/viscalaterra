@@ -221,6 +221,27 @@ const suggeriments = computed(() => {
   return candidats.value.filter((c) => normalitza(c.nom).includes(q)).slice(0, 7)
 })
 
+// ── Navegació amb teclat pels suggeriments (fletxes + Enter + Esc) ─────────
+
+const indexSuggeriment = ref(-1)
+watch(suggeriments, () => (indexSuggeriment.value = -1))
+
+function mouSuggeriment(delta: number) {
+  const n = suggeriments.value.length
+  if (n === 0) return
+  indexSuggeriment.value = (indexSuggeriment.value + delta + n) % n
+  void nextTick(() => {
+    document
+      .querySelector('.gf-suggeriments .gf-suggeriment--actiu')
+      ?.scrollIntoView({ block: 'nearest' })
+  })
+}
+
+function escNeteja() {
+  textResposta.value = ''
+  indexSuggeriment.value = -1
+}
+
 // Respon una ronda (clic al mapa o resposta escrita) amb feedback visual:
 // flaix al mapa i, a la resposta escrita errònia, sacseig de l'input.
 function gestionaClicJoc(codi: string) {
@@ -240,10 +261,16 @@ function respon(codi: string) {
   respostaInput.value?.focus()
 }
 
-// Enter: respon si el text és un nom exacte o si només queda un suggeriment;
-// si és ambigu o no coincideix amb cap candidata, sacseja sense penalitzar
-// (l'error només compta quan es tria una demarcació vàlida equivocada).
+// Enter: respon el suggeriment ressaltat amb les fletxes; si no n'hi ha, el
+// text exacte o el suggeriment únic; si és ambigu o no coincideix amb cap
+// candidata, sacseja sense penalitzar (l'error només compta quan es tria
+// una demarcació vàlida equivocada).
 function enviaResposta() {
+  const ressaltada = suggeriments.value[indexSuggeriment.value]
+  if (ressaltada) {
+    respon(ressaltada.codi)
+    return
+  }
   const q = normalitza(textResposta.value.trim())
   if (!q) return
   const exacte = candidats.value.find((c) => normalitza(c.nom) === q)
@@ -490,6 +517,9 @@ const resumPartida = computed(() => {
             :placeholder="$t('geofreak.escriuNom')"
             :class="{ 'gf-resposta--sacseig': sacsejant }"
             @keydown.enter.prevent="enviaResposta"
+            @keydown.down.prevent="mouSuggeriment(1)"
+            @keydown.up.prevent="mouSuggeriment(-1)"
+            @keydown.esc.prevent="escNeteja"
           />
           <!-- Pista activa: les 4 opcions substitueixen els suggeriments -->
           <div v-if="geofreak.pista" class="gf-opcions">
@@ -503,8 +533,14 @@ const resumPartida = computed(() => {
             </button>
           </div>
           <ul v-else-if="suggeriments.length" class="gf-suggeriments">
-            <li v-for="s in suggeriments" :key="s.codi">
-              <button type="button" @mousedown.prevent="respon(s.codi)">{{ s.nom }}</button>
+            <li v-for="(s, i) in suggeriments" :key="s.codi">
+              <button
+                type="button"
+                :class="{ 'gf-suggeriment--actiu': i === indexSuggeriment }"
+                @mousedown.prevent="respon(s.codi)"
+              >
+                {{ s.nom }}
+              </button>
             </li>
           </ul>
         </div>
@@ -874,7 +910,8 @@ const resumPartida = computed(() => {
   transition: background 0.12s;
 }
 
-.gf-suggeriments button:hover {
+.gf-suggeriments button:hover,
+.gf-suggeriments .gf-suggeriment--actiu {
   background: #eef4ee;
   color: #2d6a2d;
 }
@@ -1021,15 +1058,26 @@ const resumPartida = computed(() => {
   background: #f7c948;
 }
 
-/* En mòbil els xips baixen sota la pregunta per no encavalcar-s'hi */
+/* En mòbil: el panell de marcadors centrat sota la pregunta, i el cronòmetre
+   amb el progrés centrat a la part de baix del mapa (no es tapen entre ells) */
 @media (max-width: 768px) {
   .gf-pregunta {
     font-size: 0.95rem;
     padding: 8px 14px;
   }
 
-  .gf-xip {
+  .gf-xip--dreta {
     top: 58px;
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .gf-xip--esquerra {
+    top: auto;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
   }
 }
 
