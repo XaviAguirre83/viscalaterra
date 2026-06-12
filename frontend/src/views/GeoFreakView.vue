@@ -811,11 +811,20 @@ const resumPartida = computed(() => {
 
 .gf-barra {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   justify-content: center;
+  gap: 16px;
   margin-left: 12px;
   min-width: 0;
   flex: 1;
+}
+
+/* En pantalles estretes, context i pregunta passen a dues línies centrades */
+@media (max-width: 920px) {
+  .gf-barra {
+    flex-direction: column;
+    gap: 0;
+  }
 }
 
 .gf-barra__context {
@@ -899,7 +908,7 @@ const resumPartida = computed(() => {
 
 .gf-pregunta {
   position: absolute;
-  top: 10px;
+  top: 58px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1500;
@@ -1000,7 +1009,6 @@ const resumPartida = computed(() => {
 
 .gf-xip {
   position: absolute;
-  top: 12px;
   z-index: 1500;
   display: flex;
   align-items: center;
@@ -1014,12 +1022,18 @@ const resumPartida = computed(() => {
   color: #1a2635;
 }
 
-.gf-xip--esquerra {
-  left: 10px;
+/* Marcadors (✓/✗, pista, passa, surt): centrats a dalt del mapa */
+.gf-xip--dreta {
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
-.gf-xip--dreta {
-  right: 10px;
+/* Cronòmetre + progrés: centrats a baix del mapa */
+.gf-xip--esquerra {
+  bottom: 34px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .gf-xip__separador {
@@ -1140,27 +1154,11 @@ const resumPartida = computed(() => {
   background: #f7c948;
 }
 
-/* En mòbil: el panell de marcadors centrat a dalt, el cronòmetre amb el
-   progrés centrat a baix, i la caixa de resposta (si n'hi ha) entre ells */
+/* En mòbil la caixa de resposta es compacta una mica */
 @media (max-width: 768px) {
   .gf-pregunta {
-    top: 58px;
     font-size: 0.95rem;
     padding: 8px 14px;
-  }
-
-  .gf-xip--dreta {
-    top: 10px;
-    right: auto;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-
-  .gf-xip--esquerra {
-    top: auto;
-    bottom: 34px;
-    left: 50%;
-    transform: translateX(-50%);
   }
 }
 
