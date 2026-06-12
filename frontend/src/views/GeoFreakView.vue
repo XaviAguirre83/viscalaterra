@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MapaLeaflet from '@/components/mapa/MapaLeaflet.vue'
 import PanellFiltres from '@/components/filtres/PanellFiltres.vue'
 import { useTerritorisStore } from '@/stores/territoris'
 import { useGeofreakStore } from '@/stores/geofreak'
 import { CAPA_PER_DEMARCACIO, MODALITATS, NIVELLS, type TipusDemarcacio } from '@/data/geofreak'
+import { normalitza } from '@/data/text'
 import type { ModeJocMapa } from '@/stores/mapa'
 
 // GeoFreak — joc d'identificació territorial (spec: viscalaterra_plan.md § GeoFreak).
-// Fase 3: rondes jugables a la modalitat «On és...?» — HUD, comptadors,
-// cronòmetre i modal de resultats. («Com es diu...?» arriba a la fase 4.)
+// Dues modalitats jugables: «On és...?» (clic al mapa) i «Com es diu...?»
+// (el mapa il·lumina l'objectiu i s'escriu el nom, amb autocomplete).
 
 const { t } = useI18n()
 const territoris = useTerritorisStore()
@@ -168,6 +169,10 @@ const modeJocMapa = computed<ModeJocMapa | null>(() => {
       nivell.contenidor && codi ? { nivell: CAPA_PER_DEMARCACIO[nivell.contenidor], codi } : null,
     codisPermesos: codisPermesos.value,
     codisEncertats: geofreak.partida?.encertades ?? [],
+    // L'objectiu només s'il·lumina a «Com es diu...?»; a «On és...?» és secret.
+    codiObjectiu:
+      geofreak.configuracio.modalitat === 'comEsDiu' ? (geofreak.partida?.objectiu ?? null) : null,
+    interactiu: geofreak.configuracio.modalitat === 'onEs',
   }
 })
 
@@ -183,6 +188,60 @@ const cronoText = computed(() => {
   const segons = Math.max(0, Math.floor((fi - geofreak.tempsIniciMs) / 1000))
   return `${Math.floor(segons / 60)}:${String(segons % 60).padStart(2, '0')}`
 })
+
+// ── Resposta escrita («Com es diu...?») ────────────────────────────────────
+
+const textResposta = ref('')
+const respostaInput = ref<HTMLInputElement | null>(null)
+const sacsejant = ref(false)
+
+// Candidates vives: jugables encara no encertades, amb el seu nom.
+const candidats = computed(() => {
+  const encertades = new Set(geofreak.partida?.encertades ?? [])
+  return codisJoc.value
+    .filter((codi) => !encertades.has(codi))
+    .map((codi) => ({ codi, nom: nomsJoc.value.get(codi) ?? codi }))
+})
+
+const suggeriments = computed(() => {
+  const q = normalitza(textResposta.value.trim())
+  if (!q) return []
+  return candidats.value.filter((c) => normalitza(c.nom).includes(q)).slice(0, 7)
+})
+
+function respon(codi: string) {
+  geofreak.clicDemarcacio(codi)
+  textResposta.value = ''
+  respostaInput.value?.focus()
+}
+
+// Enter: respon si el text és un nom exacte o si només queda un suggeriment;
+// si és ambigu o no coincideix amb cap candidata, sacseja sense penalitzar
+// (l'error només compta quan es tria una demarcació vàlida equivocada).
+function enviaResposta() {
+  const q = normalitza(textResposta.value.trim())
+  if (!q) return
+  const exacte = candidats.value.find((c) => normalitza(c.nom) === q)
+  const unica = exacte ?? (suggeriments.value.length === 1 ? suggeriments.value[0] : undefined)
+  if (unica) {
+    respon(unica.codi)
+    return
+  }
+  sacsejant.value = false
+  requestAnimationFrame(() => (sacsejant.value = true))
+}
+
+// En arrencar una partida de «Com es diu...?», el focus va directe a l'input.
+watch(
+  () => geofreak.fase,
+  async (fase) => {
+    if (fase === 'partida' && geofreak.configuracio.modalitat === 'comEsDiu') {
+      textResposta.value = ''
+      await nextTick()
+      respostaInput.value?.focus()
+    }
+  }
+)
 
 // Resum de la configuració triada (subtítol del modal de resultats).
 const resumPartida = computed(() => {
@@ -211,9 +270,8 @@ const resumPartida = computed(() => {
             <label for="gf-modalitat">{{ $t('geofreak.modalitat') }}</label>
             <select id="gf-modalitat" v-model="modalitatSeleccionada">
               <option value="" disabled>{{ $t('geofreak.triaOpcio') }}</option>
-              <option v-for="m in MODALITATS" :key="m" :value="m" :disabled="m === 'comEsDiu'">
-                {{ $t(`geofreak.modalitats.${m}`)
-                }}{{ m === 'comEsDiu' ? ` — ${$t('comu.proximament')}` : '' }}
+              <option v-for="m in MODALITATS" :key="m" :value="m">
+                {{ $t(`geofreak.modalitats.${m}`) }}
               </option>
             </select>
             <p v-if="geofreak.configuracio.modalitat" class="gf-desc">
@@ -257,9 +315,35 @@ const resumPartida = computed(() => {
 
       <!-- ── HUD de partida ───────────────────────────────────────────────── -->
       <template v-else-if="geofreak.fase === 'partida'">
-        <div class="gf-pregunta" role="status" aria-live="polite">
+        <div
+          v-if="geofreak.configuracio.modalitat === 'onEs'"
+          class="gf-pregunta"
+          role="status"
+          aria-live="polite"
+        >
           {{ $t('geofreak.preguntaOnEs') }}&nbsp;<strong>{{ objectiuNom }}</strong
           >?
+        </div>
+        <div v-else class="gf-pregunta gf-pregunta--resposta">
+          <label class="gf-resposta__etiqueta" for="gf-resposta">
+            {{ $t('geofreak.modalitats.comEsDiu') }}
+          </label>
+          <input
+            id="gf-resposta"
+            ref="respostaInput"
+            v-model="textResposta"
+            type="text"
+            autocomplete="off"
+            spellcheck="false"
+            :placeholder="$t('geofreak.escriuNom')"
+            :class="{ 'gf-resposta--sacseig': sacsejant }"
+            @keydown.enter.prevent="enviaResposta"
+          />
+          <ul v-if="suggeriments.length" class="gf-suggeriments">
+            <li v-for="s in suggeriments" :key="s.codi">
+              <button type="button" @mousedown.prevent="respon(s.codi)">{{ s.nom }}</button>
+            </li>
+          </ul>
         </div>
         <div class="gf-xip gf-xip--esquerra">
           <span aria-hidden="true">⏱</span>
@@ -453,6 +537,67 @@ const resumPartida = computed(() => {
 
 .gf-pregunta strong {
   font-weight: 800;
+}
+
+/* Variant amb input de resposta («Com es diu...?») */
+.gf-pregunta--resposta {
+  white-space: normal;
+  overflow: visible;
+  width: min(340px, calc(100% - 24px));
+  padding: 10px 14px 12px;
+}
+
+.gf-resposta__etiqueta {
+  display: block;
+  margin-bottom: 6px;
+  font-size: var(--text-xs);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #777;
+  text-align: center;
+}
+
+.gf-pregunta--resposta input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #ccd2d8;
+  border-radius: 8px;
+  font-size: var(--text-sm);
+  color: #222;
+}
+
+.gf-resposta--sacseig {
+  animation: gf-sacseig 0.3s;
+  border-color: #b03030 !important;
+}
+
+.gf-suggeriments {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  max-height: 210px;
+  overflow-y: auto;
+}
+
+.gf-suggeriments button {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  text-align: left;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: #1a2635;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.gf-suggeriments button:hover {
+  background: #eef4ee;
+  color: #2d6a2d;
 }
 
 .gf-xip {

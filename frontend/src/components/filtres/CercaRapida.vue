@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useTerritorisStore } from '@/stores/territoris'
 import { useFiltresStore } from '@/stores/filtres'
 import { TEMES } from '@/data/categories'
+import { normalitza } from '@/data/text'
 
 const territoris = useTerritorisStore()
 const filtres = useFiltresStore()
@@ -24,11 +25,6 @@ watch(queryBruta, (val) => {
     query.value = val
   }, 150)
 })
-
-// Normalitza text per cercar sense accents ni majúscules.
-function normalitza(s: string): string {
-  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-}
 
 // Mapa codi comarca → nom, calculat una sola vegada (evita el bucle imbricat O(n×m)).
 const nomComarcaPerCodi = computed<Map<string, string>>(() => {

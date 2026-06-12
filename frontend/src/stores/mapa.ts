@@ -17,6 +17,12 @@ export interface ModeJocMapa {
   // Demarcacions ja encertades: pintades permanentment amb el seu color de
   // tema i excloses del joc (ni hover ni clic).
   codisEncertats: string[]
+  // Demarcació il·luminada com a pregunta («Com es diu...?»). A «On és...?»
+  // és sempre null: l'objectiu és secret.
+  codiObjectiu: string | null
+  // false = el jugador no respon clicant el mapa («Com es diu...?» escriu):
+  // les features no reaccionen ni al hover ni al clic.
+  interactiu: boolean
 }
 
 export const useMapaStore = defineStore('mapa', () => {

@@ -319,6 +319,11 @@ function estilPerFeature(
       if (!esJugable(info)) {
         return { color: '#999', weight: 0.5, opacity: 0.4, fillColor: '#ffffff', fillOpacity: 0.6 }
       }
+      // Objectiu de «Com es diu...?»: il·luminat en daurat (color neutre —
+      // el tema cromàtic delataria la província i, de retruc, la resposta).
+      if (mj.codiObjectiu && info.codi === mj.codiObjectiu) {
+        return { color: '#1a2635', weight: 2.5, opacity: 1, fillColor: '#f7c948', fillOpacity: 1 }
+      }
       // Encertada: pintada permanentment amb el seu color de tema (opac:
       // sota hi segueixen havent etiquetes del tile que no s'han de veure
       // a través dels veïns no encertats).
@@ -662,9 +667,10 @@ async function carregaCapa(nivell: NivellTerritorial, zoom: number) {
             const info = codiDeFeature(feature, nivell)
             if (!info) return
             // En mode joc no es mostra cap nom (delataria la resposta): només
-            // feedback visual, i únicament a les features jugables no encertades.
+            // feedback visual, i únicament a les features jugables no encertades
+            // i quan es respon clicant («On és...?»).
             if (props.modeJoc) {
-              if (!esJugable(info) || esEncertada(info)) return
+              if (!props.modeJoc.interactiu || !esJugable(info) || esEncertada(info)) return
               pathLayer.setStyle(estilHoverPerFeature(feature, nivell))
               return
             }
@@ -687,6 +693,7 @@ async function carregaCapa(nivell: NivellTerritorial, zoom: number) {
           click() {
             if (nivell !== nivellEfectiu.value) return
             if (props.modeJoc) {
+              if (!props.modeJoc.interactiu) return
               const info = codiDeFeature(feature, nivell)
               if (!info || !esJugable(info) || esEncertada(info)) return
               emit('clicJoc', info.codi, info.nom ?? '')
