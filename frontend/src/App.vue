@@ -21,7 +21,10 @@ import CabeceraApp from '@/components/CabeceraApp.vue'
 .app-layout {
   display: flex;
   flex-direction: column;
+  /* dvh: alçada REAL visible al mòbil (100vh inclou la zona tapada per la
+     barra del navegador i el que s'ancora a baix queda fora de pantalla). */
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 

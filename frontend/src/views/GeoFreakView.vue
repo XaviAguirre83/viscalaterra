@@ -1075,7 +1075,7 @@ const resumPartida = computed(() => {
 
   .gf-xip--esquerra {
     top: auto;
-    bottom: 14px;
+    bottom: 34px;
     left: 50%;
     transform: translateX(-50%);
   }

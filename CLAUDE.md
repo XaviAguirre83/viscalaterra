@@ -98,7 +98,7 @@ npm workspaces: `frontend` y `backend` son paquetes independientes. Las dependen
 ### Frontend
 
 - **Entrada**: `frontend/src/main.ts` monta la app Vue, registra Pinia y Vue Router.
-- **Layout global**: `App.vue` — flex column `height: 100vh`: `CabeceraApp` (110px, `flex-shrink: 0`) + `RouterView` (`flex: 1; min-height: 0`).
+- **Layout global**: `App.vue` — flex column `height: 100dvh` (amb fallback `100vh`; el dvh evita que el que s'ancora a baix quedi sota la barra del navegador mòbil): `CabeceraApp` (110px, `flex-shrink: 0`) + `RouterView` (`flex: 1; min-height: 0`).
 - **Estado global**: Pinia (`frontend/src/stores/`). Stores activos:
   - `territoris` — árbol provincial completo (província → comarca → municipi), municipis seleccionats, helpers de selección global y per-provincia (distinción necesaria por las comarques transfrontereres)
   - `mapa` — zoom y centro del mapa Leaflet
