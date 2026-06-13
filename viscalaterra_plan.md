@@ -68,25 +68,28 @@ Temes i subtemes inicials (llista oberta):
 
 ### Quan?
 
-Tres naturaleses de contingut segons temporalitat:
+Respon "quan està disponible" el contingut dins el territori. La **unitat mínima
+és el dia** — mai es trien hores. Quatre modalitats **mútuament excloents**
+(implementades a `frontend/src/data/temporal.ts`; detall a CLAUDE.md § Panell Quan?):
 
-- **Permanent**: sempre disponible (parc infantil, taula de ping-pong, castell...)
-  No requereix filtre temporal però pot incloure's en qualsevol cerca.
-- **Recurrent**: patró repetitiu (mercat setmanal els dimarts, festa major cada agost...)
-  Filtrable per dia de la setmana o per data concreta.
-- **Puntual**: esdeveniment únic amb data concreta (fira, concert, activitat...)
-  Filtrable per rang de dates.
+- **Permanent**: sempre disponible (parc infantil, taula de ping-pong, castell...).
+  No aplica cap restricció temporal.
+- **Dates concretes**: un dia o un interval `[inici, fi]` (dos calendaris).
+  Per a esdeveniments puntuals (fira, concert).
+- **Dies de la setmana**: es repeteix cada setmana en uns dies (p. ex. el mercat
+  dels dimarts i dijous).
+- **Cada mes**: combinació d'ordinals (`primer · segon · tercer · quart · últim`)
+  × dies de la setmana (p. ex. "primer i últim dilluns de cada mes").
 
-Cas d'ús típic: "Estic de vacances al Maresme del 15 al 22 de juliol,
-què passa a prop meu aquesta setmana?" → combina On? + Quan? + opcionalment Què?
-
-Interfície del Quan? _(pendent de definir: selector de dies, calendari, rang de dates...)_
+Cas d'ús típic: "Estic de vacances al Maresme del 15 al 22 de juliol, què passa
+a prop meu aquesta setmana?" → combina On? + Quan? (dates concretes) i,
+opcionalment, Què?
 
 ## Funcionalitats principals
 
 - Mapa de Catalunya amb selector de divisió territorial (ràdio button, una sola activa):
   - Província (4)
-  - Vegueria (8)
+  - Vegueria (9, incloent la Val d'Aran com a entitat territorial singular)
   - Comarca (43)
   - Municipi (947)
 - Quatre estats visuals per zona:
@@ -175,16 +178,16 @@ Mostra la jerarquia completa des del nivell superior fins al nivell actiu al sel
 
 ## Stack tecnològic
 
-| Capa          | Tecnologia           | Notes                                                     |
-| ------------- | -------------------- | --------------------------------------------------------- |
-| Frontend      | Vue 3 + Vite         | Més accessible que React per a qui ve de fora del món web |
-| Llenguatge    | TypeScript           | JS amb tipat estàtic — natural per a qui ve de C          |
-| Backend       | Node.js + Express    | Ja iniciat en el prototip                                 |
-| Base de dades | PostgreSQL + PostGIS | Relacional + suport natiu de dades geogràfiques           |
-| Mapa          | Leaflet.js           | Ja decidit                                                |
-| Temps real    | Socket.io            | Per al Trivial multijugador                               |
-| Autenticació  | JWT + bcrypt         | Control propi; migrable a servei extern si cal            |
-| i18n          | i18next              | Frontend i backend comparteixen el mateix sistema         |
+| Capa          | Tecnologia           | Notes                                                          |
+| ------------- | -------------------- | -------------------------------------------------------------- |
+| Frontend      | Vue 3 + Vite         | Més accessible que React per a qui ve de fora del món web      |
+| Llenguatge    | TypeScript           | JS amb tipat estàtic — natural per a qui ve de C               |
+| Backend       | Node.js + Express    | Ja iniciat en el prototip                                      |
+| Base de dades | PostgreSQL + PostGIS | Relacional + suport natiu de dades geogràfiques                |
+| Mapa          | Leaflet.js           | Ja decidit                                                     |
+| Temps real    | Socket.io            | _Previst_ (Trivial multijugador online) — encara no instal·lat |
+| Autenticació  | JWT + bcrypt         | Control propi; migrable a servei extern si cal                 |
+| i18n          | Vue I18n (vue-i18n)  | Frontend (ca/es/en). El contingut de dades es traduirà a BD    |
 
 ## Entorn de desenvolupament
 
@@ -213,23 +216,33 @@ Mostra la jerarquia completa des del nivell superior fins al nivell actiu al sel
 
 Docker garanteix que l'entorn de producció sigui idèntic al de desenvolupament local. El `docker-compose.yml` que s'usa en local és el mateix que s'usa al servidor. Això elimina la clàssica bretxa "funciona a la meva màquina".
 
-### Fases de desplegament
+### Fases de desplegament — **DECIDIT: VPS únic amb Docker (no serverless)**
+
+> El roadmap viu de desplegament és a `full de ruta.md`. Resum de la decisió:
 
 **Fase 1 — Desenvolupament (ara, cost 0€)**
 Tot corre en local amb `docker compose up`. No cal cap servidor extern.
 
-**Fase 1.5 — Preview privat per a feedback (cost 0€)**
-Abans d'obrir al públic, desplegar a Vercel per compartir el prototip amb amics i coneguts i recollir feedback en un entorn real de producció. La URL de preview de Vercel (`viscalaterra-xxxx.vercel.app`) és aleatòria i no indexada per Google — accés controlat de facto sense cap configuració addicional. Quan es vulgui obrir al públic, simplement s'apunta `viscalaterra.cat` al deploy de producció.
+**Fase 1.5 — Vitrina/preview per a feedback (cost 0€)**
+Desplegament estàtic a Vercel o Cloudflare Pages per ensenyar la versió actual
+(mapa + selector + jocs) i recollir feedback. URL de preview no indexada → accés
+controlat de facto.
 
-**Fase 2 — MVP / primers col·laboradors (cost 0€)**
-| Peça | Servei | Notes |
-|---|---|---|
-| Frontend | Vercel o Cloudflare Pages | Deploy automàtic des de GitHub. Domini personalitzat inclòs. |
-| Backend | Render (tier gratuït) | S'adorm als 15 min sense peticions. Vàlid per a proves. |
-| Base de dades | Supabase (tier gratuït) | PostgreSQL + PostGIS. 500 MB. Suficient per a les geodades. |
+**Fase 2 — Producció real: VPS Hetzner CX22 + Docker**
+Quan hi hagi usuaris, producció = **un sol VPS amb el mateix `docker compose up`
+que en local** (no serverless). Motius: Socket.io (temps real) necessita un procés
+sempre viu; PostGIS i el creixement de dades superen els tiers gratuïts; estat,
+rate limiting i caché viuen millor en un procés estable i de cost fix.
 
-**Fase 3 — Producció real (quan hi hagi usuaris, ~4-6€/mes)**
-Un VPS (Hetzner, OVH o similar) on s'executa exactament el mateix `docker compose up` que en local. Tota la complexitat ja està resolta al `docker-compose.yml`. La migració des de la Fase 2 és trivial.
+- Màquina d'arrencada: **Hetzner CX22** (2 vCPU · 4 GB RAM · 40 GB SSD, ~4,5 €/mes)
+  - backups; redimensionable sense reinstal·lar.
+- Reverse proxy **Caddy** (HTTPS automàtic). Setup de paritat dev/prod ja
+  implementat: `docker-compose.prod.yml`, `backend/Dockerfile`, `frontend/Dockerfile`,
+  `frontend/Caddyfile`. La BD territorial s'autopobla (`infra/db/init/`).
+- GeoJSON estàtics opcionalment via CDN (Cloudflare) per descarregar el VPS.
+
+> _Alternativa serverless descartada_ (Vercel + Render + Supabase): Render s'adorm
+> sense peticions i no encaixa amb el temps real; Supabase 500 MB es queda curt.
 
 ### Domini
 
@@ -357,23 +370,62 @@ Joc d'identificació territorial. Ruta: `/jocs/geofreak`. La pàgina `/jocs` act
 - **El panell d'informació territorial (hover amb el nom) està ocult durant el joc.** Si es mostrés el nom en passar el cursor, la modalitat «On és...?» seria trivial (busques amb el cursor fins trobar el nom demanat). El mapa en mode joc desactiva el panell hover.
 - **Enquadrament al territori contenidor** (2026-06-11 — nivells "a triar": 2, 3, 5, 6, 7): si es juga p. ex. a "Municipis del Maresme", el mapa fa `fitBounds` al bbox de la comarca (tan gran com permeti el viewport), els `maxBounds` impedeixen desplaçar-se fora i el `minZoom` queda fixat a l'enquadrament inicial. És la generalització de la lògica ja existent de `LIMITS_CATALUNYA`/`actualitzaMaxBounds` a `MapaLeaflet.vue`, amb el bbox del contenidor en lloc del de Catalunya. El territori exterior queda atenuat i no interactiu.
 
-**Flux de configuració (modal)** (2026-06-11): en entrar al joc, un modal sobre el mapa configura la partida:
+**Flux de configuració — wizard de 3 passos** (2026-06-12): en entrar al joc, un
+modal sobre el mapa (amb indicador de passos i botons Enrere/Següent) configura
+la partida. El fons ja mostra el mapa en mode joc (tiles sense etiquetes) i
+previsualitza el territori en triar-lo.
 
-1. **Modalitat**: «On és...?» / «Com es diu...?».
-2. **Nivell**: 0–8.
-3. **Territori contenidor**: desplegable, només visible als nivells "a triar" (2, 3, 5, 6, 7).
-4. Botó **«Som-hi!»** → tanca el modal i arrenca la partida.
+1. **Jugadors** (1–4). Amb més d'un, cada jugador tria **nom** i **color** de
+   conquesta (paleta de 6 colors intercanviables).
+2. **Modalitat**: «On és...?» / «Com es diu...?» (amb la seva descripció).
+3. **Nivell** (0–8) i, als nivells "a triar" (2, 3, 5, 6, 7), **territori
+   contenidor** — amb botó **🎲 A l'atzar** per triar-lo aleatòriament.
+4. Botó **«Som-hi!»** → compte enrere "3, 2, 1, Som-hi!" (fase de preparació, amb
+   el mapa ja enquadrat; en multijugador anteposa "Torn de {nom}") i arrenca.
 
-**HUD durant la partida**: la posició superior central (alliberada pel panell info-territori, ocult en mode joc) mostra el prompt — «On és... el Ripollès?» o el recuadre d'escriptura amb autocomplete. Als laterals: cronòmetre + progrés (p. ex. 12/43) a un costat; comptadors ✓/✗, botó «Pista» i botó «Surt» a l'altre.
+**HUD durant la partida**: el context i la pregunta del torn van a la barra de
+menú («On és... el Ripollès?» o, a «Com es diu...?», un recuadre d'escriptura amb
+autocomplete sobre el mapa). Sobre el mapa: barra de progrés, cronòmetre + progrés
+(p. ex. 12/43), comptadors ✓/✗ amb ratxa 🔥, intents restants (●●●), i botons
+«Pista», «Passa» i «Surt». En multijugador, marcador de conquestes per jugador
+(amb el seu color) i el del torn ressaltat.
 
-**Final de partida**: modal de resultats — temps total, encerts/errors, pistes usades i puntuació — amb botons «Tornar a jugar» i «Canviar nivell». Quan existeixi l'auth real, aquí anirà el CTA «Registra't per sortir al rànquing» (costura prevista joc ↔ registre).
+**Feedback i estètica**: encert → flaix verd + halo blanc que es fon cap al color
+final; error → flaix vermell que s'esvaeix; anunci gran del nou objectiu al centre;
+confeti i recompte animat de punts al final. Tot respecta `prefers-reduced-motion`.
+Els noms es construeixen amb article català correcte ("del Maresme", "de l'Anoia",
+"d'Osona" — mòdul `data/articles.ts`).
+
+**Pausa**: mentre l'app està bloquejada en landscape al mòbil (overlay "Gira el
+dispositiu"), la partida es pausa i el cronòmetre no corre.
+
+**Final de partida**: modal de resultats. En solitari: punts (amb recompte animat),
+temps, encerts, errors i pistes. En multijugador: **classificació** ordenada per
+conquestes (desempat per punts) amb el guanyador destacat (🏆). Botons «Torna a
+jugar» i «Canvia la configuració». Quan existeixi l'auth real, aquí anirà el CTA
+«Registra't per sortir al rànquing» (costura prevista joc ↔ registre).
+
+### Multijugador local del GeoFreak (mode conquesta)
+
+Realitza la modalitat social **Local** (vegeu § Modalitats socials). 1–4 jugadors
+per torns al mateix dispositiu, sense xarxa:
+
+- **Torns alterns ronda a ronda** sobre la mateixa bossa de demarcacions (no
+  tandes senceres). El torn es tanca amb encert, amb salt (3r error o error amb
+  pista) o amb «Passa»; els errors 1–2 mantenen el torn.
+- **Rellotge per jugador**: el cronòmetre de cadascú només corre al seu torn,
+  pausat la resta.
+- **Conquesta acolorida**: cada demarcació encertada es pinta al mapa amb el color
+  del jugador que l'ha encertada → Catalunya acaba com un mapa de "territori
+  conquerit" per colors.
+- **Classificació final** per nombre de conquestes (desempat per punts).
 
 **9 nivells de dificultat**:
 
 | Nivell | Demarcacions                        | Quantitat |
 | ------ | ----------------------------------- | --------- |
 | 0      | Províncies                          | 4         |
-| 1      | Vegueries                           | 8         |
+| 1      | Vegueries                           | 9         |
 | 2      | Comarques d'una vegueria (a triar)  | ~5–8      |
 | 3      | Comarques d'una província (a triar) | ~8–15     |
 | 4      | Totes les comarques de Catalunya    | 43        |
@@ -387,15 +439,17 @@ Joc d'identificació territorial. Ruta: `/jocs/geofreak`. La pàgina `/jocs` act
 - **Mode convidat**: es pot jugar sense registrar-se. Sense persistència de puntuacions.
 - **Usuari registrat**: les partides completades es desen i computen al rànking global.
 - **Rànking unificat** (un sol rànking per joc, no per nivell): concentra la competència i evita taules buides als nivells poc jugats. Es pot filtrar per nivell com a vista secundària. Incentiva jugar nivells difícils perquè puntuen més.
-- **Fórmula de puntuació** _(a afinar, idea base)_:
+- **Fórmula de puntuació** (v1 implementada a `calculaPunts`, a afinar amb joc real):
 
   ```
-  punts = multiplicador_nivell × (encerts / total) × bonus_temps
+  punts = 1000 × multiplicador_nivell × ràtio × bonus_temps
   ```
 
   - `multiplicador_nivell` = `nivell + 1` (×1 per Províncies → ×9 per tots els municipis)
-  - `encerts / total` = ràtio d'èxit (els errors penalitzen implícitament); un encert amb pista compta 0,5
-  - `bonus_temps` = decreix com més temps es triga (a definir la corba exacta)
+  - `ràtio` = `(encerts − 0,5 × encerts_amb_pista) / (encerts + errors)` — els errors
+    penalitzen i un encert amb pista val mig encert
+  - `bonus_temps` = `5 / (5 + segons_per_demarcació)` — respondre a l'instant → ~1;
+    5 s de mitjana → 0,5; 15 s → 0,25
 
 - El rànking **distingeix entre modalitats**: rànking nom→mapa i rànking mapa→nom per separat.
 

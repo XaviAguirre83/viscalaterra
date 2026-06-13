@@ -6,19 +6,23 @@ Plataforma de descoberta de Catalunya. El mapa actua com a filtre geogràfic: l'
 
 - **Cerca** — Filtra per territori (On?), categoria (Què?) i temporalitat (Quan?)
 - **Agenda** — Esdeveniments culturals de tot tipus arreu de Catalunya
-- **Jocs** — Jocs geogràfics i trivial de Catalunya
+- **Jocs** — Jocs geogràfics sobre Catalunya. El primer, **GeoFreak**: identificació
+  territorial (províncies, vegueries, comarques i municipis) amb 9 nivells de
+  dificultat, dues modalitats, pista, i mode individual o **multijugador local**.
 - **Contingut col·laboratiu** — Els usuaris contribueixen i verifiquen el contingut
 
 ## Stack tecnològic
 
-| Capa          | Tecnologia                     |
-| ------------- | ------------------------------ |
-| Frontend      | Vue 3 + Vite + TypeScript      |
-| Backend       | Node.js + Express + TypeScript |
-| Base de dades | PostgreSQL + PostGIS           |
-| Mapa          | Leaflet.js                     |
-| Temps real    | Socket.io                      |
-| Contenidors   | Docker + Docker Compose        |
+| Capa          | Tecnologia                            |
+| ------------- | ------------------------------------- |
+| Frontend      | Vue 3 + Vite + TypeScript             |
+| Backend       | Node.js + Express + TypeScript        |
+| Base de dades | PostgreSQL + PostGIS                  |
+| Mapa          | Leaflet.js                            |
+| i18n          | Vue I18n (català · castellà · anglès) |
+| Testing       | Vitest (unit) + Playwright (E2E)      |
+| Temps real    | Socket.io _(previst)_                 |
+| Contenidors   | Docker + Docker Compose               |
 
 ## Posada en marxa (desenvolupament local)
 

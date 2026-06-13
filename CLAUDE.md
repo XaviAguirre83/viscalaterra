@@ -16,20 +16,20 @@ Spec de producto detallada: `viscalaterra_plan.md`
 
 ## Stack técnico
 
-| Capa          | Tecnología                                     |
-| ------------- | ---------------------------------------------- |
-| Frontend      | Vue 3 + Vite + TypeScript                      |
-| Backend       | Node.js + Express + TypeScript                 |
-| Base de datos | PostgreSQL + PostGIS                           |
-| Mapa          | Leaflet.js                                     |
-| Tiempo real   | Socket.io (Trivial multijugador)               |
-| Auth          | JWT + bcrypt                                   |
-| i18n          | Vue I18n (vue-i18n)                            |
-| Contenedores  | Docker + Docker Compose                        |
-| Testing       | Vitest (unit) + Playwright (E2E)               |
-| Linting       | ESLint (oxlint + eslint-plugin-vue) + Prettier |
-| Pre-commit    | Husky + lint-staged                            |
-| CI/CD         | GitHub Actions                                 |
+| Capa          | Tecnología                                                             |
+| ------------- | ---------------------------------------------------------------------- |
+| Frontend      | Vue 3 + Vite + TypeScript                                              |
+| Backend       | Node.js + Express + TypeScript                                         |
+| Base de datos | PostgreSQL + PostGIS                                                   |
+| Mapa          | Leaflet.js                                                             |
+| Tiempo real   | Socket.io (_previsto_, Trivial multijugador online — no instalado aún) |
+| Auth          | JWT + bcrypt                                                           |
+| i18n          | Vue I18n (vue-i18n)                                                    |
+| Contenedores  | Docker + Docker Compose                                                |
+| Testing       | Vitest (unit) + Playwright (E2E)                                       |
+| Linting       | ESLint (oxlint + eslint-plugin-vue) + Prettier                         |
+| Pre-commit    | Husky + lint-staged                                                    |
+| CI/CD         | GitHub Actions                                                         |
 
 ## Comandos de desarrollo
 
@@ -106,7 +106,8 @@ npm workspaces: `frontend` y `backend` son paquetes independientes. Las dependen
 - **Temàtica de colors**: `frontend/src/theme/provincies.ts` — paleta central per província i per vegueria, usada tant per Leaflet (`L.PathOptions`) com pel panell On? (CSS custom properties `--prov-base`, `--prov-parcial`, etc.). Vegeu la secció "Temàtica de colors" més avall.
 - **Routing**: Vue Router con `createWebHistory`. Las rutas se definen en `frontend/src/router/index.ts`. Seccions previstes: `/cerca`, `/agenda`, `/jocs`, `/merchandising`, `/sobre` (les tres últimes sense vista implementada encara).
 - **i18n**: Vue I18n (`frontend/src/i18n/`). Tres idiomes (`ca`/`es`/`en`) amb diccionaris JSON a `i18n/locales/`. L'idioma actiu es desa a `localStorage` (clau `viscalaterra-idioma`); a la primera visita (sense res desat) sempre s'arrenca en **català**, l'idioma principal de la plataforma (no es té en compte l'idioma del navegador). `canviaIdioma()` actualitza també l'atribut `<html lang>`. Els components tradueixen amb `$t('clau')` al template (o `useI18n().t()` a la lògica). **Important**: això tradueix només el text d'**interfície**; el contingut de **dades** (llocs, esdeveniments) es traduirà a nivell de base de dades, no amb i18n. Per afegir un idioma: nou codi a `IDIOMES` + nou JSON a `locales/`.
-- **Componentes**: `frontend/src/components/` para reutilizables, `frontend/src/views/` para páginas completas (una por ruta).
+- **Componentes**: `frontend/src/components/` para reutilizables, `frontend/src/views/` para páginas completas (una por ruta). Composables a `frontend/src/composables/` (p. ex. `useFocusTrap` per a l'accessibilitat dels modals: focus-trap + Esc + retorn de focus).
+- **Mòduls de dades purs** (`frontend/src/data/`, sense Vue, testejables — patró `data/ ↔ stores/`): `temporal.ts` (model del Quan?), `categories.ts` (catàleg Què?), `geofreak.ts` (model del joc), `text.ts` (`normalitza()` — minúscules sense accents, compartit per CercaRapida i la resposta escrita del joc), `articles.ts` (articles catalans de comarques/vegueries: `nomAmbArticle`/`nomAmbDe` → "del Maresme", "de l'Anoia", "d'Osona").
 
 ### Capçalera (`CabeceraApp.vue`)
 
@@ -297,9 +298,12 @@ La funció `temaDeInfo(info)` a `MapaLeaflet.vue` centralitza la resolució del 
 ### Secció Jocs (`/jocs`)
 
 - **`/jocs`** — `JocsView.vue`: menú de jocs disponibles (targetes).
-- **`/jocs/geofreak`** — `GeoFreakView.vue`: primer joc a implementar (abans anomenat GeoMaster; rebatejat 2026-06-11 per col·lisió de nom). Spec completa a `viscalaterra_plan.md` § GeoFreak.
-- **Store**: `stores/geofreak.ts` — estat del joc (nivell, modalitat, demarcacions pendents/encertades, comptadors, cronòmetre). Independent dels stores de cerca.
-- **Mapa en mode joc**: `MapaLeaflet.vue` rep la prop `modeJoc` (`ModeJocMapa`, definida a `stores/mapa.ts`: capa jugada + territori contenidor + codis jugables). En mode joc: el nivell actiu el mana el joc (`nivellEfectiu`), el panell info-territori s'amaga (el hover delataria la resposta), la selecció d'usuari no es pinta, les features fora del contenidor queden atenuades (rentat blanc) i no jugables, i el clic emet `clicJoc(codi, nom)` en lloc de seleccionar. Amb contenidor, la "vista base" del mapa passa del bbox de Catalunya al bbox del contenidor (vegeu § Navegació del mapa).
+- **`/jocs/geofreak`** — `GeoFreakView.vue`: joc d'identificació territorial (abans GeoMaster). Spec completa a `viscalaterra_plan.md` § GeoFreak. Inclou wizard de configuració de 3 passos (jugadors+colors → modalitat → nivell+contenidor, amb 🎲 a l'atzar), compte enrere, HUD, animacions (flaix/confeti/anunci), focus-trap als modals (`composables/useFocusTrap.ts`) i pausa en landscape bloquejat al mòbil.
+- **Store**: `stores/geofreak.ts` — màquina d'estats independent dels stores de cerca. Fases `configuracio → preparacio → partida → resultats`. Dos modes:
+  - **Sol**: cronòmetre global, puntuació individual (`punts`).
+  - **Multijugador conquesta (1–4 locals)**: `jugadors`/`estatJugadors`/`tornActual`; **torns alterns** ronda a ronda; **rellotge per jugador** (`tempsJugadorMs`, `marcaTornMs`: només corre al torn propi); cada conquesta es pinta amb el color del jugador (`colorsConquestes`); `tancaTorn` gestiona el canvi de torn; `resultats` retorna la classificació (per conquestes, desempat per punts).
+  - Comú: 3 intents per ronda + `passaRonda`, pista (`activaPista`; encert amb pista = 0,5), `pausa`/`repren` (congela el rellotge desplaçant els instants de referència). Lògica pura testejable a `data/geofreak.ts` (`creaPartida`, `responClic`, `passaRonda`, `triaDistractors`, `barreja`, `calculaPunts`).
+- **Mapa en mode joc**: `MapaLeaflet.vue` rep la prop `modeJoc` (`ModeJocMapa` a `stores/mapa.ts`): `nivell` (capa jugada) + `contenidor` + `codisPermesos` (jugables) + `codisEncertats` + `colorsEncertats` (color de conquesta per codi, multijugador) + `codiObjectiu` (territori il·luminat a «Com es diu...?») + `codisPista` (4 candidats il·luminats a «On és...?») + `interactiu` (false a la modalitat escrita). En mode joc: el nivell actiu el mana el joc (`nivellEfectiu`), els **tiles passen d'OSM a Carto Positron `light_nolabels`** (sense noms al fons, anti-trampa), el panell info-territori s'amaga, la selecció d'usuari no es pinta, les features fora del contenidor queden atenuades i no jugables, i el clic emet `clicJoc(codi, nom)`. Amb contenidor, la "vista base" del mapa passa del bbox de Catalunya al bbox del contenidor (vegeu § Navegació del mapa). `flaixJoc` (exposat via `defineExpose`) anima la resposta amb interpolació de color per rAF.
 
 ## Disseny responsive (mòbil)
 
