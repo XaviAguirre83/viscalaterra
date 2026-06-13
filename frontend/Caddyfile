@@ -1,0 +1,42 @@
+# Configuració de Caddy — puerta única de la web en producció.
+#
+# {$SITE_ADDRESS} ve del docker-compose.prod.yml:
+#   - En local:  :80              → HTTP sense certificat (simulació)
+#   - Al VPS:    viscalaterra.cat → Caddy treu i RENOVA el certificat HTTPS tot sol
+{$SITE_ADDRESS} {
+	# Compressió dels estàtics (HTML/JS/CSS/GeoJSON via proxy).
+	encode gzip zstd
+
+	# Capçaleres de seguretat per al document que executa tot el JS del client.
+	# (Helmet només cobreix les respostes JSON de l'API; aquí cobrim la SPA.)
+	header {
+		# Content-Security-Policy: la SPA carrega els seus propis assets, tiles
+		# de mapa (OSM + Carto) i fa fetch a la mateixa API. 'unsafe-inline' a
+		# style perquè Leaflet i Vue injecten estils en línia.
+		Content-Security-Policy "default-src 'self'; img-src 'self' data: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; style-src 'self' 'unsafe-inline'; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+		# Clickjacking i sniffing.
+		X-Frame-Options "DENY"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# HSTS (només té efecte sota HTTPS real al VPS; innocu en local HTTP).
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		# No filtrar permisos de dispositiu que la web no fa servir.
+		Permissions-Policy "geolocation=(), camera=(), microphone=()"
+		# Treu la capçalera que delata el servidor.
+		-Server
+	}
+
+	# Crides a l'API → backend per la xarxa interna de Docker.
+	# Inclou /api/geojson, que el backend serveix des de disc amb caché.
+	handle /api/* {
+		reverse_proxy backend:3000
+	}
+
+	# Tota la resta → SPA estàtica. El fallback a index.html fa que les rutes
+	# de Vue Router (/cerca, /jocs...) funcionin en recarregar la pàgina.
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

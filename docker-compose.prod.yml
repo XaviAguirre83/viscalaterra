@@ -1,0 +1,77 @@
+# ================================================================
+# Stack de PRODUCCIÓ — viscalaterra.cat
+#
+# El MATEIX fitxer corre en local (per simular) i al VPS de Hetzner:
+#   Local:  docker compose -f docker-compose.prod.yml up --build
+#   VPS:    docker compose -f docker-compose.prod.yml up -d --build
+#
+# Diferències respecte a docker-compose.yml (desenvolupament):
+#   - Backend i frontend es COMPILEN (no hi ha hot-reload ni bind-mounts de codi).
+#   - Caddy és l'única porta d'entrada (80/443) + HTTPS automàtic + reverse proxy.
+#   - Ni la BD ni el backend exposen ports: només són accessibles per la xarxa interna.
+# ================================================================
+
+# Projecte propi i aïllat: contenidors, xarxa i volums separats del stack de
+# desenvolupament (que usa el projecte per defecte). Així pots tenir tots dos
+# alhora sense que xoquin els noms ni es barregin les dades.
+name: viscalaterra-prod
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./infra/db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER} -d ${DB_NAME}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Sense 'ports': la BD només és accessible per la xarxa interna de Docker.
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - NODE_ENV=production
+    volumes:
+      # Geodades de l'ICC (no són al git): muntades en NOMÉS-LECTURA des del host.
+      - ./backend/data:/app/data:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    # Sense 'ports': només hi accedeix Caddy per la xarxa interna.
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      # En local, sense definir SITE_ADDRESS → ':80' (HTTP).
+      # Al VPS, posa SITE_ADDRESS=viscalaterra.cat al .env → HTTPS automàtic.
+      - SITE_ADDRESS=${SITE_ADDRESS:-:80}
+    ports:
+      # Per defecte 80/443 (correcte al VPS). En local amb Docker rootless, els
+      # ports < 1024 no es poden usar: posa HTTP_PORT=8080 i HTTPS_PORT=8443 al .env.
+      - '${HTTP_PORT:-80}:80'
+      - '${HTTPS_PORT:-443}:443'
+    volumes:
+      # Persisteixen els certificats TLS entre reinicis (no tornar a demanar-los a Let's Encrypt).
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+
+volumes:
+  db_data:
+  caddy_data:
+  caddy_config:

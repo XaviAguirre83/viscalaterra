@@ -1,0 +1,1025 @@
+-- ================================================================
+-- Dades territorials estàtiques de Catalunya (ICGC v2r1, 2024-01-18)
+-- Generat des de la BD ja poblada. S'executa automàticament en crear
+-- el contenidor (després de 02-territorial-schema.sql), de manera que
+-- QUALSEVOL desplegament aixeca la BD ja poblada — sense seed manual.
+--
+-- Només atributs (codi, nom, jerarquia). SENSE geometries: els polígons
+-- es serveixen des dels GeoJSON de disc (/api/geojson). La columna geom
+-- queda NULL. Per regenerar: vegeu backend/src/scripts/seed-geodata.ts.
+-- ================================================================
+
+COPY provincies (codi, nom) FROM stdin;
+08	Barcelona
+17	Girona
+25	Lleida
+43	Tarragona
+\.
+
+COPY vegueries (codi, nom) FROM stdin;
+00	Val d'Aran (entitat territorial singular)
+01	Barcelona
+02	Girona
+03	Lleida
+04	Camp de Tarragona
+05	Terres de l'Ebre
+06	Alt Pirineu
+07	Catalunya Central
+08	Penedès
+\.
+
+COPY comarques (codi, nom, cap) FROM stdin;
+01	Alt Camp	Valls
+02	Alt Empordà	Figueres
+03	Alt Penedès	Vilafranca del Penedès
+04	Alt Urgell	la Seu d'Urgell
+05	Alta Ribagorça	el Pont de Suert
+06	Anoia	Igualada
+07	Bages	Manresa
+08	Baix Camp	Reus
+09	Baix Ebre	Tortosa
+10	Baix Empordà	la Bisbal d'Empordà
+11	Baix Llobregat	Sant Feliu de Llobregat
+12	Baix Penedès	el Vendrell
+13	Barcelonès	Barcelona
+14	Berguedà	Berga
+15	Cerdanya	Puigcerdà
+16	Conca de Barberà	Montblanc
+17	Garraf	Vilanova i la Geltrú
+18	Garrigues	les Borges Blanques
+19	Garrotxa	Olot
+20	Gironès	Girona
+21	Maresme	Mataró
+22	Montsià	Amposta
+23	Noguera	Balaguer
+24	Osona	Vic
+25	Pallars Jussà	Tremp
+26	Pallars Sobirà	Sort
+27	Pla d'Urgell	Mollerussa
+28	Pla de l'Estany	Banyoles
+29	Priorat	Falset
+30	Ribera d'Ebre	Móra d'Ebre
+31	Ripollès	Ripoll
+32	Segarra	Cervera
+33	Segrià	Lleida
+34	Selva	Santa Coloma de Farners
+35	Solsonès	Solsona
+36	Tarragonès	Tarragona
+37	Terra Alta	Gandesa
+38	Urgell	Tàrrega
+39	Val d'Aran	Vielha
+40	Vallès Occidental	Sabadell
+41	Vallès Oriental	Granollers
+42	Moianès	Moià
+43	Lluçanès	Prats de Lluçanès
+\.
+
+COPY municipis (codi, nom, es_cap_comarca, area_m2, comarca_codi, vegueria_codi, provincia_codi) FROM stdin;
+080018	Abrera	f	19.9781	11	01	08
+080023	Aguilar de Segarra	f	43.2198247146	07	07	08
+080039	Alella	f	9.6346	21	01	08
+080044	Alpens	f	13.7788219699	43	07	08
+080057	l'Ametlla del Vallès	f	14.0885	41	01	08
+080060	Arenys de Mar	f	6.4742	21	01	08
+080076	Arenys de Munt	f	21.6815	21	01	08
+080082	Argençola	f	47.3823	06	08	08
+080095	Argentona	f	25.3308	21	01	08
+080109	Artés	f	17.8445338328	07	07	08
+080116	Avià	f	27.1686493369	14	07	08
+080121	Avinyó	f	63.5617329882	07	07	08
+080137	Avinyonet del Penedès	f	29.1805	03	08	08
+080142	Aiguafreda	f	7.9335231301	41	01	08
+080155	Badalona	f	21.0956	13	01	08
+080168	Bagà	f	43.0645	14	07	08
+080174	Balenyà	f	17.2357993936	24	07	08
+080180	Balsareny	f	36.6795294919	07	07	08
+080193	Barcelona	t	101.8261	13	01	08
+080207	Begues	f	50.483	11	01	08
+080214	Bellprat	f	31.1764	06	08	08
+080229	Berga	t	22.3750722334	14	07	08
+080235	Bigues i Riells del Fai	f	28.6218	41	01	08
+080240	Borredà	f	43.3750919392	14	07	08
+080253	el Bruc	f	47.3828	06	08	08
+080266	el Brull	f	41.1556821947	24	07	08
+080272	les Cabanyes	f	1.1531	03	08	08
+080288	Cabrera d'Anoia	f	17.0836533507	06	08	08
+080291	Cabrera de Mar	f	8.9282	21	01	08
+080305	Cabrils	f	6.9608	21	01	08
+080312	Calaf	f	9.242	06	07	08
+080327	Caldes d'Estrac	f	0.8353	21	01	08
+080333	Caldes de Montbui	f	37.5326583132	41	01	08
+080348	Calders	f	32.9912864092	42	07	08
+080351	Calella	f	8.0215	21	01	08
+080364	Calonge de Segarra	f	37.112809119	06	07	08
+080370	Calldetenes	f	5.71533098776	24	07	08
+080386	Callús	f	12.3870204151	07	07	08
+080399	Campins	f	7.3028	41	01	08
+080403	Canet de Mar	f	5.5386	21	01	08
+080410	Canovelles	f	6.7881	41	01	08
+080425	Cànoves i Samalús	f	29.156	41	01	08
+080431	Canyelles	f	14.1091	17	08	08
+080446	Capellades	f	2.92	06	08	08
+080459	Capolat	f	34.3476176542	14	07	08
+080462	Cardedeu	f	12.2668	41	01	08
+080478	Cardona	f	66.3922556445	07	07	08
+080484	Carme	f	11.3250160525	06	08	08
+080497	Casserres	f	29.1767	14	07	08
+080500	Castellar del Riu	f	32.859374345	14	07	08
+080517	Castellar del Vallès	f	45.0705406235	40	01	08
+080522	Castellar de n'Hug	f	46.852409507	14	07	08
+080538	Castellbell i el Vilar	f	28.4658863879	07	07	08
+080543	Castellbisbal	f	30.96	40	01	08
+080556	Castellcir	f	33.9375835966	42	07	08
+080569	Castelldefels	f	12.9108	11	01	08
+080575	Castell de l'Areny	f	24.5985473511	14	07	08
+080581	Castellet i la Gornal	f	46.8715	03	08	08
+080594	Castellfollit del Boix	f	59.3555208186	07	07	08
+080608	Castellfollit de Riubregós	f	26.2785617523	06	07	08
+080615	Castellgalí	f	17.1557	07	07	08
+080620	Castellnou de Bages	f	29.1209672322	07	07	08
+080636	Castellolí	f	25.34	06	08	08
+080641	Castellterçol	f	31.9422677714	42	07	08
+080654	Castellví de la Marca	f	28.6399	03	08	08
+080667	Castellví de Rosanes	f	16.3924153188	11	01	08
+080673	Centelles	f	15.3397763056	24	07	08
+080689	Cervelló	f	24.13	11	01	08
+080692	Collbató	f	18.06	11	01	08
+080706	Collsuspina	f	15.1276006207	42	07	08
+080713	Copons	f	18.69	06	08	08
+080728	Corbera de Llobregat	f	18.297064576	11	01	08
+080734	Cornellà de Llobregat	f	6.9281	11	01	08
+080749	Cubelles	f	13.5814	17	08	08
+080752	Dosrius	f	40.6288	21	01	08
+080765	Esparreguera	f	27.3012519019	11	01	08
+080771	Esplugues de Llobregat	f	4.5114	11	01	08
+080787	l'Espunyola	f	35.684	14	07	08
+080790	l'Estany	f	10.2438076391	42	07	08
+080804	Fígols	f	29.3929115256	14	07	08
+080811	Fogars de Montclús	f	40.249	41	01	08
+080826	Fogars de la Selva	f	32.1689	34	02	08
+080832	Folgueroles	f	10.9284	24	07	08
+080847	Fonollosa	f	52.4795727911	07	07	08
+080850	Font-rubí	f	37.1594	03	08	08
+080863	les Franqueses del Vallès	f	29.3353	41	01	08
+080879	Gallifa	f	16.3286365752	40	01	08
+080885	la Garriga	f	19.007931478	41	01	08
+080898	Gavà	f	30.6145	11	01	08
+080902	Gaià	f	39.3429426555	07	07	08
+080919	Gelida	f	26.4941234401	03	08	08
+080924	Gironella	f	6.8653	14	07	08
+080930	Gisclareny	f	36.7045	14	07	08
+080945	la Granada	f	6.4544	03	08	08
+080958	Granera	f	23.5727063295	42	07	08
+080961	Granollers	t	14.9595	41	01	08
+080977	Gualba	f	23.071	41	01	08
+080983	Sant Salvador de Guardiola	f	37.0936751397	07	07	08
+080996	Guardiola de Berguedà	f	61.7384552836	14	07	08
+081000	Gurb	f	51.129	24	07	08
+081017	l'Hospitalet de Llobregat	f	12.6044	13	01	08
+081022	Igualada	t	8.19987903417	06	08	08
+081038	Jorba	f	31.0491806525	06	08	08
+081043	la Llacuna	f	52.3358780713	06	08	08
+081056	la Llagosta	f	3.0197	41	01	08
+081069	Llinars del Vallès	f	27.6978221802	41	01	08
+081075	Lliçà d'Amunt	f	22.3501	41	01	08
+081081	Lliçà de Vall	f	10.764	41	01	08
+081094	Lluçà	f	53.3637	43	07	08
+081108	Malgrat de Mar	f	8.77122574181	21	01	08
+081115	Malla	f	10.956	24	07	08
+081120	Manlleu	f	17.2339	24	07	08
+081136	Manresa	t	41.6388078338	07	07	08
+081141	Martorell	f	12.7666254992	11	01	08
+081154	Martorelles	f	3.6163	41	01	08
+081167	les Masies de Roda	f	16.1325	24	07	08
+081173	les Masies de Voltregà	f	22.1355	24	07	08
+081189	el Masnou	f	3.465	21	01	08
+081192	Masquefa	f	17.4342066179	06	08	08
+081206	Matadepera	f	25.3505710018	40	01	08
+081213	Mataró	t	22.4178	21	01	08
+081228	Mediona	f	47.9480192493	03	08	08
+081234	Molins de Rei	f	15.7238885825	11	01	08
+081249	Mollet del Vallès	f	10.7926	41	01	08
+081252	Montcada i Reixac	f	23.532	40	01	08
+081265	Montgat	f	2.8417	21	01	08
+081271	Monistrol de Montserrat	f	11.9055280235	07	07	08
+081287	Monistrol de Calders	f	21.9776	42	07	08
+081290	Muntanyola	f	40.4734065748	24	07	08
+081304	Montclar	f	21.9062284433	14	07	08
+081311	Montesquiu	f	4.84379568045	24	07	08
+081326	Montmajor	f	76.3768	14	07	08
+081332	Montmaneu	f	13.5235	06	08	08
+081347	Figaró-Montmany	f	14.8998	41	01	08
+081350	Montmeló	f	3.9335	41	01	08
+081363	Montornès del Vallès	f	10.2773	41	01	08
+081379	Montseny	f	26.5448	41	01	08
+081385	Moià	t	75.535651902	42	07	08
+081398	Mura	f	47.8807763071	07	07	08
+081402	Navarcles	f	5.51449910438	07	07	08
+081419	Navàs	f	80.6239381968	07	07	08
+081424	la Nou de Berguedà	f	25.114194337	14	07	08
+081430	Òdena	f	52.0925772526	06	08	08
+081445	Olvan	f	35.6455	14	07	08
+081458	Olèrdola	f	29.9161	03	08	08
+081461	Olesa de Bonesvalls	f	31.09	03	08	08
+081477	Olesa de Montserrat	f	16.6260056817	11	01	08
+081483	Olivella	f	38.7636	17	08	08
+081496	Olost	f	29.0373	43	07	08
+081509	Orís	f	27.0214948876	24	07	08
+081516	Oristà	f	68.5925	43	07	08
+081521	Orpí	f	15.3009020936	06	08	08
+081537	Òrrius	f	5.5666	21	01	08
+081542	Pacs del Penedès	f	6.1118	03	08	08
+081555	Palafolls	f	16.4834449645	21	01	08
+081568	Palau-solità i Plegamans	f	14.9736	40	01	08
+081574	Pallejà	f	8.4283	11	01	08
+081580	el Papiol	f	8.84747195958	11	01	08
+081593	Parets del Vallès	f	9.125	41	01	08
+081607	Perafita	f	19.7612	43	07	08
+081614	Piera	f	57.1897340926	06	08	08
+081629	els Hostalets de Pierola	f	33.3866	06	08	08
+081635	Pineda de Mar	f	10.179233736	21	01	08
+081640	el Pla del Penedès	f	9.3895	03	08	08
+081653	la Pobla de Claramunt	f	18.54	06	08	08
+081666	la Pobla de Lillet	f	51.5344	14	07	08
+081672	Polinyà	f	8.9952	40	01	08
+081688	Pontons	f	25.7726380537	03	08	08
+081691	el Prat de Llobregat	f	33.4351	11	01	08
+081705	els Prats de Rei	f	26.0130549851	06	07	08
+081712	Prats de Lluçanès	t	13.5442	43	07	08
+081727	Premià de Mar	f	2.1077	21	01	08
+081748	Puigdàlber	f	0.6239	03	08	08
+081751	Puig-reig	f	45.8566603565	14	07	08
+081764	Pujalt	f	31.5053	06	07	08
+081770	la Quar	f	38.0897816038	14	07	08
+081786	Rajadell	f	45.5253753875	07	07	08
+081799	Rellinars	f	17.8301858742	40	01	08
+081803	Ripollet	f	4.3286	40	01	08
+081810	la Roca del Vallès	f	36.9133	41	01	08
+081825	el Pont de Vilomara i Rocafort	f	27.358353498	07	07	08
+081831	Roda de Ter	f	2.23	24	07	08
+081846	Rubí	f	32.2812	40	01	08
+081859	Rubió	f	48	06	08	08
+081878	Sabadell	t	37.8659	40	01	08
+081884	Sagàs	f	44.7663083685	14	07	08
+081897	Sant Pere Sallavinera	f	22.02	06	07	08
+081901	Saldes	f	66.5905	14	07	08
+081918	Sallent	f	65.1703491712	07	07	08
+081923	Santpedor	f	16.7291	07	07	08
+081939	Sant Iscle de Vallalta	f	17.8729267884	21	01	08
+081944	Sant Adrià de Besòs	f	3.8085	13	01	08
+081957	Sant Agustí de Lluçanès	f	13.5721539252	24	07	08
+081960	Sant Andreu de la Barca	f	5.62021956135	11	01	08
+081976	Sant Andreu de Llavaneres	f	11.9104	21	01	08
+081982	Sant Antoni de Vilamajor	f	13.8358	41	01	08
+081995	Sant Bartomeu del Grau	f	34.6332536186	24	07	08
+082009	Sant Boi de Llobregat	f	21.5356	11	01	08
+082016	Sant Boi de Lluçanès	f	20.0389858975	24	07	08
+082021	Sant Celoni	f	65.222	41	01	08
+082037	Sant Cebrià de Vallalta	f	15.7032546731	21	01	08
+082042	Sant Climent de Llobregat	f	10.7819	11	01	08
+082055	Sant Cugat del Vallès	f	48.2427	40	01	08
+082068	Sant Cugat Sesgarrigues	f	6.2831	03	08	08
+082074	Sant Esteve de Palautordera	f	10.6401	41	01	08
+082080	Sant Esteve Sesrovires	f	18.5365506077	11	01	08
+082093	Sant Fost de Campsentelles	f	13.1743	41	01	08
+082107	Sant Feliu de Codines	f	14.9849	41	01	08
+082114	Sant Feliu de Llobregat	t	11.9548	11	01	08
+082129	Sant Feliu Sasserra	f	23.0713	07	07	08
+082135	Sant Fruitós de Bages	f	22.1391	07	07	08
+082140	Vilassar de Dalt	f	9.0125	21	01	08
+082153	Sant Hipòlit de Voltregà	f	0.9194	24	07	08
+082166	Sant Jaume de Frontanyà	f	21.2709718132	14	07	08
+082172	Sant Joan Despí	f	6.2232	11	01	08
+082188	Sant Joan de Vilatorrada	f	16.4245647861	07	07	08
+082191	Vilassar de Mar	f	3.9856	21	01	08
+082205	Sant Julià de Vilatorta	f	16.1837	24	07	08
+082212	Sant Just Desvern	f	7.7758	11	01	08
+082227	Sant Llorenç d'Hortons	f	19.4175190693	03	08	08
+082233	Sant Llorenç Savall	f	41.2834819028	40	01	08
+082248	Sant Martí de Centelles	f	25.8740603272	24	07	08
+082251	Sant Martí d'Albars	f	14.6311	43	07	08
+082264	Sant Martí de Tous	f	38.9411547241	06	08	08
+082270	Sant Martí Sarroca	f	35.2276	03	08	08
+082286	Sant Martí Sesgueioles	f	3.86357486264	06	07	08
+082299	Sant Mateu de Bages	f	102.170565522	07	07	08
+082303	Premià de Dalt	f	6.4649	21	01	08
+082310	Sant Pere de Ribes	f	40.8368	17	08	08
+082325	Sant Pere de Riudebitlles	f	5.3524	03	08	08
+082331	Sant Pere de Torelló	f	54.9573438102	24	07	08
+082346	Sant Pere de Vilamajor	f	34.3433	41	01	08
+082359	Sant Pol de Mar	f	7.459	21	01	08
+082362	Sant Quintí de Mediona	f	13.8079	03	08	08
+082378	Sant Quirze de Besora	f	8.15212318194	24	07	08
+082384	Sant Quirze del Vallès	f	14.0723	40	01	08
+082397	Sant Quirze Safaja	f	25.88	42	07	08
+082401	Sant Sadurní d'Anoia	f	18.9413779026	03	08	08
+082418	Sant Sadurní d'Osormort	f	30.6644638879	24	07	08
+082423	Marganell	f	13.3455158075	07	07	08
+082439	Santa Cecília de Voltregà	f	8.6088	24	07	08
+082444	Santa Coloma de Cervelló	f	7.4047	11	01	08
+082457	Santa Coloma de Gramenet	f	7.0396	13	01	08
+082460	Santa Eugènia de Berga	f	6.97976178751	24	07	08
+082476	Santa Eulàlia de Riuprimer	f	13.8907575921	24	07	08
+082482	Santa Eulàlia de Ronçana	f	14.1295	41	01	08
+082495	Santa Fe del Penedès	f	3.37604440281	03	08	08
+082508	Santa Margarida de Montbui	f	27.6029587565	06	08	08
+082515	Santa Margarida i els Monjos	f	17.4411	03	08	08
+082520	Barberà del Vallès	f	8.2016	40	01	08
+082536	Santa Maria de Besora	f	24.9140051512	24	07	08
+082541	l'Esquirol	f	61.7969	24	07	08
+082554	Santa Maria de Merlès	f	51.2821	14	07	08
+082567	Santa Maria de Martorelles	f	4.4597	41	01	08
+082573	Santa Maria de Miralles	f	25.3206	06	08	08
+082589	Santa Maria d'Oló	f	66.081144735	42	07	08
+082592	Santa Maria de Palautordera	f	16.9822	41	01	08
+082606	Santa Perpètua de Mogoda	f	15.5376	40	01	08
+082613	Santa Susanna	f	12.6355333468	21	01	08
+082628	Sant Vicenç de Castellet	f	17.2984	07	07	08
+082634	Sant Vicenç dels Horts	f	9.2937	11	01	08
+082649	Sant Vicenç de Montalt	f	7.9573	21	01	08
+082652	Sant Vicenç de Torelló	f	6.5877620036	24	07	08
+082665	Cerdanyola del Vallès	f	30.8099	40	01	08
+082671	Sentmenat	f	28.3913	40	01	08
+082687	Cercs	f	47.0173234186	14	07	08
+082690	Seva	f	30.4639	24	07	08
+082704	Sitges	f	43.9235	17	08	08
+082711	Sobremunt	f	13.8398081041	43	07	08
+082726	Sora	f	30.8420504917	24	07	08
+082732	Subirats	f	55.819220069	03	08	08
+082747	Súria	f	23.6007903854	07	07	08
+082750	Tavèrnoles	f	18.8823396293	24	07	08
+082763	Tagamanent	f	43.4705996286	41	01	08
+082779	Talamanca	f	29.302	07	07	08
+082785	Taradell	f	26.5837	24	07	08
+082798	Terrassa	f	70.0731	40	01	08
+082802	Tavertet	f	32.7660677856	24	07	08
+082819	Teià	f	6.6813	21	01	08
+082824	Tiana	f	7.8983	21	01	08
+082830	Tona	f	16.3981	24	07	08
+082845	Tordera	f	84.4389	21	01	08
+082858	Torelló	f	13.5063852418	24	07	08
+082861	la Torre de Claramunt	f	14.94	06	08	08
+082877	Torrelavit	f	23.7626	03	08	08
+082883	Torrelles de Foix	f	37.0236428586	03	08	08
+082896	Torrelles de Llobregat	f	13.5329	11	01	08
+082900	Ullastrell	f	7.42483403404	40	01	08
+082917	Vacarisses	f	40.6264362942	40	01	08
+082922	Vallbona d'Anoia	f	6.43	06	08	08
+082938	Vallcebre	f	28.0452881581	14	07	08
+082943	Vallgorguina	f	22.1298	41	01	08
+082956	Vallirana	f	23.7183242145	11	01	08
+082969	Vallromanes	f	10.5701	41	01	08
+082975	Veciana	f	38.9572298589	06	07	08
+082981	Vic	t	30.9079	24	07	08
+082994	Vilada	f	22.2131251198	14	07	08
+083008	Viladecavalls	f	19.9683	40	01	08
+083015	Viladecans	f	20.347946	11	01	08
+083020	Vilanova del Camí	f	10.4793274315	06	08	08
+083036	Vilanova de Sau	f	57.9842082089	24	07	08
+083041	Vilobí del Penedès	f	9.4169	03	08	08
+083054	Vilafranca del Penedès	t	19.8756	03	08	08
+083067	Vilalba Sasserra	f	5.8411	41	01	08
+083073	Vilanova i la Geltrú	t	34.0721	17	08	08
+083089	Viver i Serrateix	f	67.1702590444	14	07	08
+089019	Rupit i Pruit	f	49.1275	24	07	08
+089024	Vilanova del Vallès	f	15.2049	41	01	08
+089030	Sant Julià de Cerdanyola	f	11.8483	14	07	08
+089045	Badia del Vallès	f	0.93	40	01	08
+089058	la Palma de Cervelló	f	5.38994231783	11	01	08
+170010	Agullana	f	27.4163	02	02	17
+170025	Aiguaviva	f	13.9730210431	20	02	17
+170031	Albanyà	f	94.0292	02	02	17
+170046	Albons	f	11.3212	10	02	17
+170059	el Far d'Empordà	f	9.127	02	02	17
+170062	Alp	f	43.9446	15	06	17
+170078	Amer	f	39.8969504169	34	02	17
+170084	Anglès	f	16.3171	34	02	17
+170097	Arbúcies	f	86.3426056145	34	02	17
+170101	Argelaguer	f	12.62	19	02	17
+170118	l'Armentera	f	5.85	02	02	17
+170123	Avinyonet de Puigventós	f	12.4615	02	02	17
+170139	Begur	f	20.848196016	10	02	17
+170144	la Vajol	f	4.7882	02	02	17
+170157	Banyoles	t	11.01	28	02	17
+170160	Bàscara	f	16.7994496246	02	02	17
+170182	Bellcaire d'Empordà	f	12.6335	10	02	17
+170195	Besalú	f	4.69	19	02	17
+170209	Bescanó	f	36.0886745822	20	02	17
+170216	Beuda	f	36.1712755123	19	02	17
+170221	la Bisbal d'Empordà	t	20.720396072	10	02	17
+170237	Blanes	f	17.7	34	02	17
+170242	Bolvir	f	10.8611	15	06	17
+170255	Bordils	f	6.98763461425	20	02	17
+170268	Borrassà	f	9.4888	02	02	17
+170274	Breda	f	5.01545447237	34	02	17
+170280	Brunyola i Sant Martí Sapresa	f	36.7663	34	02	17
+170293	Boadella i les Escaules	f	10.6877	02	02	17
+170307	Cabanes	f	14.9551	02	02	17
+170314	Cabanelles	f	55.9923540833	02	02	17
+170329	Cadaqués	f	26.3716	02	02	17
+170335	Caldes de Malavella	f	56.9371566485	34	02	17
+170340	Calonge i Sant Antoni	f	33.5633707272	10	02	17
+170353	Camós	f	15.568420349	28	02	17
+170366	Campdevànol	f	32.63	31	02	17
+170372	Campelles	f	18.7	31	02	17
+170388	Campllong	f	8.49	20	02	17
+170391	Camprodon	f	103.495515205	31	02	17
+170405	Canet d'Adri	f	44.62	20	02	17
+170412	Cantallops	f	19.4738	02	02	17
+170427	Capmany	f	26.3093	02	02	17
+170433	Queralbs	f	93.5563368189	31	02	17
+170448	Cassà de la Selva	f	45.3942611388	20	02	17
+170464	Castellfollit de la Roca	f	0.73	19	02	17
+170470	Castelló d'Empúries	f	42.1912	02	02	17
+170486	Castell d'Aro, Platja d'Aro i s'Agaró	f	21.6707881522	10	02	17
+170499	Celrà	f	19.6721279306	20	02	17
+170502	Cervià de Ter	f	10.085849471	20	02	17
+170519	Cistella	f	25.5401	02	02	17
+170524	Siurana	f	10.5072	02	02	17
+170545	Colera	f	24.2267	02	02	17
+170558	Colomers	f	4.2865	10	02	17
+170561	Cornellà del Terri	f	27.83	28	02	17
+170577	Corçà	f	16.1276013886	10	02	17
+170583	Crespià	f	11.31	28	02	17
+170600	Darnius	f	34.8834	02	02	17
+170617	Das	f	14.626	15	06	17
+170622	l'Escala	f	16.2352	02	02	17
+170638	Espinelves	f	17.4853853316	24	07	17
+170643	Espolla	f	43.3438	02	02	17
+170656	Esponellà	f	15.77	28	02	17
+170669	Figueres	t	18.9829	02	02	17
+170675	Flaçà	f	6.94555046195	20	02	17
+170681	Foixà	f	18.3466	10	02	17
+170694	Fontanals de Cerdanya	f	28.6898	15	06	17
+170708	Fontanilles	f	9.4489	10	02	17
+170715	Fontcoberta	f	17.08	28	02	17
+170736	Fornells de la Selva	f	11.6728044526	20	02	17
+170741	Fortià	f	10.7128	02	02	17
+170754	Garrigàs	f	19.8362	02	02	17
+170767	Garrigoles	f	8.9874	10	02	17
+170773	Garriguella	f	20.8914	02	02	17
+170789	Ger	f	32.76	15	06	17
+170792	Girona	t	38.8561727733	20	02	17
+170806	Gombrèn	f	43.27	31	02	17
+170813	Gualta	f	9.0155	10	02	17
+170828	Guils de Cerdanya	f	22.0008	15	06	17
+170834	Hostalric	f	3.3912	34	02	17
+170849	Isòvol	f	10.5034	15	06	17
+170852	Jafre	f	6.6308	10	02	17
+170865	la Jonquera	f	57.5921	02	02	17
+170871	Juià	f	8.30396043925	20	02	17
+170887	Lladó	f	13.6536	02	02	17
+170890	Llagostera	f	77.004835518	20	02	17
+170904	Llambilles	f	14.8783566213	20	02	17
+170911	Llanars	f	24.65	31	02	17
+170926	Llançà	f	27.9415	02	02	17
+170932	Llers	f	21.118	02	02	17
+170947	Llívia	f	12.9783	15	06	17
+170950	Lloret de Mar	f	48.4745668013	34	02	17
+170963	les Llosses	f	114.43	31	02	17
+170979	Madremanya	f	13.5913606882	20	02	17
+170985	Maià de Montcal	f	17.22	19	02	17
+170998	Meranges	f	37.9013	15	06	17
+171002	Masarac	f	12.5788	02	02	17
+171019	Massanes	f	25.8947	34	02	17
+171024	Maçanet de Cabrenys	f	67.6206	02	02	17
+171030	Maçanet de la Selva	f	45.6875	34	02	17
+171058	Mieres	f	26.12	19	02	17
+171061	Mollet de Peralada	f	6.1153	02	02	17
+171077	Molló	f	43.1301332197	31	02	17
+171096	Montagut i Oix	f	93.3898654588	19	02	17
+171100	Mont-ras	f	12.4159	10	02	17
+171117	Navata	f	18.3922	02	02	17
+171122	Ogassa	f	45.43	31	02	17
+171143	Olot	t	29.03	19	02	17
+171156	Ordis	f	8.5173	02	02	17
+171169	Osor	f	51.5831	34	02	17
+171175	Palafrugell	f	26.8951	10	02	17
+171181	Palamós	f	13.9453266249	10	02	17
+171194	Palau de Santa Eulàlia	f	8.6948	02	02	17
+171208	Palau-saverdera	f	16.596	02	02	17
+171215	Palau-sator	f	12.4288	10	02	17
+171236	Palol de Revardit	f	18.0675592247	28	02	17
+171241	Pals	f	25.7503844632	10	02	17
+171254	Pardines	f	31.4	31	02	17
+171267	Parlavà	f	6.21305382579	10	02	17
+171289	Pau	f	10.5608	02	02	17
+171292	Pedret i Marzà	f	8.6156	02	02	17
+171306	la Pera	f	11.9235229101	10	02	17
+171328	Peralada	f	43.9164	02	02	17
+171334	les Planes d'Hostoles	f	37.45	19	02	17
+171349	Planoles	f	18.7403005932	31	02	17
+171352	Pont de Molins	f	8.6401	02	02	17
+171365	Pontós	f	13.4628	02	02	17
+171371	Porqueres	f	33.7064211782	28	02	17
+171387	Portbou	f	9.2427	02	02	17
+171390	les Preses	f	9.39	19	02	17
+171404	el Port de la Selva	f	41.3482	02	02	17
+171411	Puigcerdà	t	18.7082	15	06	17
+171426	Quart	f	38.1070412624	20	02	17
+171432	Rabós	f	45.2338	02	02	17
+171447	Regencós	f	6.27294049577	10	02	17
+171450	Ribes de Freser	f	41.5562996368	31	02	17
+171463	Riells i Viabrea	f	27.067	34	02	17
+171479	Ripoll	t	73.63	31	02	17
+171485	Riudarenes	f	47.488121129	34	02	17
+171498	Riudaura	f	23.52	19	02	17
+171501	Riudellots de la Selva	f	13.2865606114	34	02	17
+171518	Riumors	f	6.5387	02	02	17
+171523	Roses	f	45.8265	02	02	17
+171539	Rupià	f	5.4545	10	02	17
+171544	Sales de Llierca	f	35.79	19	02	17
+171557	Salt	f	6.60915211557	20	02	17
+171576	Sant Andreu Salou	f	5.81542497931	20	02	17
+171582	Sant Climent Sescebes	f	24.2029	02	02	17
+171595	Sant Feliu de Buixalleu	f	62.0482	34	02	17
+171609	Sant Feliu de Guíxols	f	15.852421432	10	02	17
+171616	Sant Feliu de Pallerols	f	33.81	19	02	17
+171621	Sant Ferriol	f	42.29	19	02	17
+171637	Sant Gregori	f	48.8867668811	20	02	17
+171642	Sant Hilari Sacalm	f	82.9978	34	02	17
+171655	Sant Jaume de Llierca	f	6.9	19	02	17
+171668	Sant Jordi Desvalls	f	11.8911	20	02	17
+171674	Sant Joan de les Abadesses	f	53.68	31	02	17
+171680	Sant Joan de Mollet	f	3.22984921334	20	02	17
+171693	Sant Julià de Ramis	f	18.6986980151	20	02	17
+171707	Vallfogona de Ripollès	f	38.96	31	02	17
+171714	Sant Llorenç de la Muga	f	32.4596	02	02	17
+171729	Sant Martí de Llémena	f	42.95	20	02	17
+171735	Sant Martí Vell	f	17.2793680475	20	02	17
+171740	Sant Miquel de Campmajor	f	33.62	28	02	17
+171753	Sant Miquel de Fluvià	f	3.5089	02	02	17
+171766	Sant Mori	f	7.3669	02	02	17
+171772	Sant Pau de Segúries	f	8.78	31	02	17
+171788	Sant Pere Pescador	f	18.189	02	02	17
+171805	Santa Coloma de Farners	t	70.8870508471	34	02	17
+171812	Santa Cristina d'Aro	f	67.7586590287	10	02	17
+171827	Santa Llogaia d'Àlguema	f	1.9516	02	02	17
+171833	Sant Aniol de Finestres	f	48.46	19	02	17
+171848	Santa Pau	f	48.57	19	02	17
+171851	Sant Joan les Fonts	f	31.97	19	02	17
+171864	Sarrià de Ter	f	4.25	20	02	17
+171870	Saus, Camallera i Llampaies	f	11.5354	02	02	17
+171886	la Selva de Mar	f	7.2393	02	02	17
+171899	la Cellera de Ter	f	14.643639573	34	02	17
+171903	Serinyà	f	17.2	28	02	17
+171910	Serra de Daró	f	7.9353	10	02	17
+171925	Setcases	f	48.8960745969	31	02	17
+171931	Sils	f	30.0837065371	34	02	17
+171946	Susqueda	f	50.9126490258	34	02	17
+171959	la Tallada d'Empordà	f	16.6674	10	02	17
+171962	Terrades	f	20.8026	02	02	17
+171978	Torrent	f	7.91013950179	10	02	17
+171984	Torroella de Fluvià	f	16.8698	02	02	17
+171997	Torroella de Montgrí	f	65.7988	10	02	17
+172001	Tortellà	f	11	19	02	17
+172018	Toses	f	57.6725499659	31	02	17
+172023	Tossa de Mar	f	38.013136931	34	02	17
+172039	Ultramort	f	4.3927	10	02	17
+172044	Ullà	f	7.457	10	02	17
+172057	Ullastret	f	11.1065	10	02	17
+172060	Urús	f	17.3588	15	06	17
+172076	la Vall d'en Bas	f	90.57	19	02	17
+172082	la Vall de Bianya	f	93.62	19	02	17
+172095	Vall-llobrega	f	5.48189388235	10	02	17
+172109	Ventalló	f	24.9887	02	02	17
+172116	Verges	f	9.4152	10	02	17
+172121	Vidrà	f	34.47	24	07	17
+172137	Vidreres	f	48.1929	34	02	17
+172142	Vilabertran	f	2.2709	02	02	17
+172155	Vilablareix	f	6.14	20	02	17
+172168	Viladasens	f	15.5160552127	20	02	17
+172174	Viladamat	f	11.8032	02	02	17
+172180	Vilademuls	f	62.17	28	02	17
+172207	Viladrau	f	50.7127452125	24	07	17
+172214	Vilafant	f	8.3042	02	02	17
+172229	Vilaür	f	5.7077	02	02	17
+172235	Vilajuïga	f	13.1865	02	02	17
+172240	Vilallonga de Ter	f	64.28	31	02	17
+172253	Vilamacolum	f	5.5583	02	02	17
+172266	Vilamalla	f	8.8699	02	02	17
+172272	Vilamaniscle	f	5.4867	02	02	17
+172288	Vilanant	f	16.9443	02	02	17
+172305	Vila-sacra	f	6.0584	02	02	17
+172327	Vilopriu	f	16.7059	10	02	17
+172333	Vilobí d'Onyar	f	32.5966416392	34	02	17
+172348	Biure	f	10.0269	02	02	17
+179011	Cruïlles, Monells i Sant Sadurní de l'Heura	f	99.6031057982	10	02	17
+179026	Forallac	f	50.1777863489	10	02	17
+179032	Sant Julià del Llor i Bonmatí	f	9.65391420769	34	02	17
+250019	Abella de la Conca	f	78.1235	25	06	25
+250024	Àger	f	160.2026	23	03	25
+250030	Agramunt	f	79.3595351651	38	03	25
+250045	els Alamús	f	20.3222	33	03	25
+250058	Alàs i Cerc	f	57.4723	04	06	25
+250061	l'Albagés	f	26.12	18	03	25
+250077	Albatàrrec	f	10.6751	33	03	25
+250083	Albesa	f	37.6075	23	03	25
+250096	l'Albi	f	32.71	18	03	25
+250100	Alcanó	f	21.2012	33	03	25
+250117	Alcarràs	f	114.8339	33	03	25
+250122	Alcoletge	f	16.4673	33	03	25
+250138	Alfarràs	f	11.3057	33	03	25
+250143	Alfés	f	32.1162	33	03	25
+250156	Algerri	f	54.4168491555	23	03	25
+250169	Alguaire	f	50.3879	33	03	25
+250175	Alins	f	182.7849	26	06	25
+250194	Almacelles	f	48.9902	33	03	25
+250208	Almatret	f	56.4357	33	03	25
+250215	Almenar	f	66.6621	33	03	25
+250220	Alòs de Balaguer	f	69.0765257985	23	03	25
+250236	Alpicat	f	15.2289	33	03	25
+250241	Alt Àneu	f	218.1011	26	06	25
+250254	Naut Aran	f	255.9585	39	00	25
+250273	Anglesola	f	23.6723575426	38	03	25
+250292	Arbeca	f	58.22	18	03	25
+250306	el Pont de Bar	f	43.8246	04	06	25
+250313	Arres	f	11.5211	39	00	25
+250328	Arsèguel	f	9.6654	04	06	25
+250334	Artesa de Lleida	f	24.2265	33	03	25
+250349	Artesa de Segre	f	176.0455	23	03	25
+250352	la Sentiu de Sió	f	29.5442153226	23	03	25
+250365	Aspa	f	10.1082	33	03	25
+250371	les Avellanes i Santa Linya	f	102.924825179	23	03	25
+250387	Aitona	f	66.8368864604	33	03	25
+250390	Baix Pallars	f	129.3642	26	06	25
+250404	Balaguer	t	57.071597685	23	03	25
+250411	Barbens	f	7.78369022959	27	03	25
+250426	la Baronia de Rialb	f	144.541345376	23	03	25
+250432	la Vall de Boí	f	219.677	05	06	25
+250447	Bassella	f	70.8265	04	06	25
+250450	Bausen	f	17.8563	39	00	25
+250463	Belianes	f	15.7697330105	38	03	25
+250479	Bellcaire d'Urgell	f	31.1602621364	23	03	25
+250485	Bell-lloc d'Urgell	f	35.1622224104	27	03	25
+250498	Bellmunt d'Urgell	f	5.04754079485	23	03	25
+250501	Bellpuig	f	35.0175949616	38	03	25
+250518	Bellver de Cerdanya	f	100.7952	15	06	25
+250523	Bellvís	f	46.413076664	27	03	25
+250539	Benavent de Segrià	f	7.45913376204	33	03	25
+250557	Biosca	f	66.03	35	07	25
+250560	Bovera	f	33.22	18	03	25
+250576	Es Bòrdes	f	21.4727	39	00	25
+250582	les Borges Blanques	t	61.66	18	03	25
+250595	Bossòst	f	27.8703	39	00	25
+250609	Cabanabona	f	14.1599561301	23	03	25
+250616	Cabó	f	79.3552	04	06	25
+250621	Camarasa	f	157.614161834	23	03	25
+250637	Canejan	f	48.24378106	39	00	25
+250642	Castellar de la Ribera	f	60.2616855414	35	07	25
+250674	Castelldans	f	64.32	18	03	25
+250680	Castellnou de Seana	f	16.3091112618	27	03	25
+250693	Castelló de Farfanya	f	52.627371348	23	03	25
+250707	Castellserà	f	15.9756545358	38	03	25
+250714	Cava	f	41.4261	04	06	25
+250729	Cervera	t	55.1981488685	32	03	25
+250735	Cervià de les Garrigues	f	34.04	18	03	25
+250740	Ciutadilla	f	16.47	38	03	25
+250753	Clariana de Cardener	f	41.2691	35	07	25
+250766	el Cogul	f	17.47	18	03	25
+250772	Coll de Nargó	f	152.2705	04	06	25
+250788	Corbins	f	21.2842	33	03	25
+250791	Cubells	f	39.053036029	23	03	25
+250812	l'Espluga Calba	f	21.45	18	03	25
+250827	Espot	f	97.7491	26	06	25
+250851	Estaràs	f	21.1391674125	32	03	25
+250864	Esterri d'Àneu	f	8.334	26	06	25
+250870	Esterri de Cardós	f	16.3327	26	06	25
+250886	Estamariu	f	20.9392	04	06	25
+250899	Farrera	f	61.86	26	06	25
+250925	la Floresta	f	5.61	18	03	25
+250931	Fondarella	f	5.4392	27	03	25
+250946	Foradada	f	28.9070365191	23	03	25
+250962	la Fuliola	f	11.1293899398	38	03	25
+250978	Fulleda	f	16.33	18	03	25
+250984	Gavet de la Conca	f	91.1939	25	06	25
+250997	Golmés	f	16.7211237661	27	03	25
+251001	Gósol	f	56.29	14	07	25
+251018	la Granadella	f	82.9779836837	18	03	25
+251023	la Granja d'Escarp	f	38.3939	33	03	25
+251039	Granyanella	f	23.9752725916	32	03	25
+251044	Granyena de Segarra	f	16.5785635881	32	03	25
+251057	Granyena de les Garrigues	f	20.3	18	03	25
+251095	Guimerà	f	25.3705000209	38	03	25
+251109	Guissona	f	18.3144282371	32	03	25
+251116	Guixers	f	65.6687318779	35	07	25
+251121	Ivars de Noguera	f	26.9577	23	03	25
+251137	Ivars d'Urgell	f	24.1681213666	27	03	25
+251142	Ivorra	f	15.3177670184	32	03	25
+251155	Isona i Conca Dellà	f	139.2469	25	06	25
+251180	Juncosa	f	76.7108699048	18	03	25
+251193	Juneda	f	47.33	18	03	25
+251207	Lleida	t	212.1574	33	03	25
+251214	Les	f	23.0833	39	00	25
+251229	Linyola	f	28.8176324432	27	03	25
+251235	Lladorre	f	147.8495	26	06	25
+251240	Lladurs	f	127.991387913	35	07	25
+251253	Llardecans	f	66.2192	33	03	25
+251266	Llavorsí	f	68.447	26	06	25
+251272	Lles de Cerdanya	f	102.6418	15	06	25
+251288	Llimiana	f	41.5858	25	06	25
+251291	Llobera	f	38.9701	35	07	25
+251305	Maldà	f	31.5337959158	38	03	25
+251312	Massalcoreig	f	13.635	33	03	25
+251327	Massoteres	f	26.1349526622	32	03	25
+251333	Maials	f	57.1310562648	33	03	25
+251348	Menàrguens	f	20.535397944	23	03	25
+251351	Miralcamp	f	14.8905	27	03	25
+251364	la Molsosa	f	26.8392	35	07	25
+251370	Mollerussa	t	7.0064	27	03	25
+251386	Montgai	f	29.1300138839	23	03	25
+251399	Montellà i Martinet	f	52.43	15	06	25
+251403	Montferrer i Castellbò	f	176.7847	04	06	25
+251410	Montoliu de Segarra	f	29.4517014575	32	03	25
+251425	Montoliu de Lleida	f	7.3496	33	03	25
+251431	Montornès de Segarra	f	12.1341689828	32	03	25
+251459	Nalec	f	9.67	38	03	25
+251462	Navès	f	144.9943	35	07	25
+251484	Odèn	f	114.420526826	35	07	25
+251497	Oliana	f	32.0565	04	06	25
+251500	Oliola	f	86.1198539681	23	03	25
+251517	Olius	f	54.4018	35	07	25
+251522	les Oluges	f	19.08	32	03	25
+251538	els Omellons	f	11.01	18	03	25
+251543	els Omells de na Gaia	f	13.0076506572	38	03	25
+251556	Organyà	f	12.6715	04	06	25
+251569	Os de Balaguer	f	136.0013	23	03	25
+251575	Ossó de Sió	f	26.0406888006	38	03	25
+251581	el Palau d'Anglesola	f	12.3433741844	27	03	25
+251615	Conca de Dalt	f	165.72	25	06	25
+251636	la Coma i la Pedra	f	60.7273928216	35	07	25
+251641	Penelles	f	25.4598679431	23	03	25
+251654	Peramola	f	55.9122384766	04	06	25
+251667	Pinell de Solsonès	f	90.5630845758	35	07	25
+251673	Pinós	f	104.237	35	07	25
+251689	el Poal	f	8.86	27	03	25
+251692	la Pobla de Cérvoles	f	61.98	18	03	25
+251706	Bellaguarda	f	20.3773	18	03	25
+251713	la Pobla de Segur	f	33.545	25	06	25
+251728	Ponts	f	31.2768	23	03	25
+251734	el Pont de Suert	t	148.3836	05	06	25
+251749	la Portella	f	12.2034	33	03	25
+251752	Prats i Sansor	f	6.71619517434	15	06	25
+251765	Preixana	f	21.3444646232	38	03	25
+251771	Preixens	f	28.7529376158	23	03	25
+251790	Prullans	f	21.1360396239	15	06	25
+251804	Puiggròs	f	9.83	18	03	25
+251811	Puigverd d'Agramunt	f	21.2220589457	38	03	25
+251826	Puigverd de Lleida	f	12.4148	33	03	25
+251832	Rialp	f	63.1587	26	06	25
+251850	Ribera d'Urgellet	f	106.8462	04	06	25
+251863	Riner	f	47.5771059695	35	07	25
+251898	Rosselló	f	9.9613	33	03	25
+251902	Salàs de Pallars	f	20.6871	25	06	25
+251919	Sanaüja	f	32.9353324993	32	03	25
+251924	Sant Guim de Freixenet	f	25.1480940455	32	03	25
+251930	Sant Llorenç de Morunys	f	4.59412379075	35	07	25
+251945	Sant Ramon	f	18.8602765417	32	03	25
+251961	Sant Esteve de la Sarga	f	92.8936	25	06	25
+251977	Sant Guim de la Plana	f	12.3157072083	32	03	25
+252000	Sarroca de Lleida	f	41.6968	33	03	25
+252017	Sarroca de Bellera	f	87.5452	25	06	25
+252022	Senterada	f	34.5049	25	06	25
+252038	la Seu d'Urgell	t	15.5269	04	06	25
+252043	Seròs	f	85.9637	33	03	25
+252056	Sidamon	f	8.1178	27	03	25
+252069	el Soleràs	f	12.62	18	03	25
+252075	Solsona	t	17.7	35	07	25
+252081	Soriguera	f	106.9995	26	06	25
+252094	Sort	t	104.5341	26	06	25
+252108	Soses	f	30.1588	33	03	25
+252115	Sudanell	f	8.177	33	03	25
+252120	Sunyer	f	12.4908243591	33	03	25
+252154	Talarn	f	28.2453	25	06	25
+252167	Talavera	f	30.605918241	32	03	25
+252173	Tàrrega	t	87.946369247	38	03	25
+252189	Tarrés	f	13.08	18	03	25
+252192	Tarroja de Segarra	f	7.90219671846	32	03	25
+252206	Térmens	f	27.5767782172	23	03	25
+252213	Tírvia	f	8.5817	26	06	25
+252228	Tiurana	f	15.6129925201	23	03	25
+252234	Torà	f	93.3469	35	07	25
+252249	els Torms	f	13.5075	18	03	25
+252252	Tornabous	f	20.0978988963	38	03	25
+252265	Torrebesses	f	27.7809	33	03	25
+252271	la Torre de Cabdella	f	165.4219	25	06	25
+252287	Torrefarrera	f	23.5193	33	03	25
+252304	Torregrossa	f	40.5061	27	03	25
+252311	Torrelameu	f	10.7876	23	03	25
+252326	Torres de Segre	f	50.8304	33	03	25
+252332	Torre-serona	f	5.8819	33	03	25
+252347	Tremp	t	302.2937	25	06	25
+252385	Vallbona de les Monges	f	34.3327740639	38	03	25
+252398	les Valls de Valira	f	170.9726	04	06	25
+252402	Vallfogona de Balaguer	f	27.1067181528	23	03	25
+252424	Verdú	f	35.8425635173	38	03	25
+252430	Vielha e Mijaran	t	211.5941	39	00	25
+252445	Vilagrassa	f	19.6711616683	38	03	25
+252458	Vilaller	f	59.1628	05	06	25
+252477	Vilamòs	f	15.3977	39	00	25
+252483	Vilanova de Bellpuig	f	13.9050701552	27	03	25
+252496	Vilanova de l'Aguda	f	53.3152405128	23	03	25
+252509	Vilanova de Meià	f	104.739157662	23	03	25
+252516	Vilanova de Segrià	f	8.39788976414	33	03	25
+252521	Vila-sana	f	18.987038972	27	03	25
+252537	el Vilosell	f	18.84	18	03	25
+252542	Vilanova de la Barca	f	21.3886	33	03	25
+252555	Vinaixa	f	37.47	18	03	25
+259010	Vall de Cardós	f	56.3989	26	06	25
+259025	Sant Martí de Riucorb	f	34.8274790715	38	03	25
+259031	la Guingueta d'Àneu	f	108.093	26	06	25
+259046	Castell de Mur	f	62.6487	25	06	25
+259059	Ribera d'Ondara	f	54.2487190436	32	03	25
+259062	les Valls d'Aguilar	f	123.5585	04	06	25
+259078	Torrefeta i Florejacs	f	89.0083796091	32	03	25
+259084	Fígols i Alinyà	f	102.0724	04	06	25
+259097	la Vansa i Fórnols	f	106.0452	04	06	25
+259101	Josa i Tuixén	f	68.4501	04	06	25
+259118	els Plans de Sió	f	55.8444336618	32	03	25
+259123	Gimenells i el Pla de la Font	f	55.7057	33	03	25
+259139	Riu de Cerdanya	f	12.34	15	06	25
+430017	Aiguamúrcia	f	72.7437	01	04	43
+430022	Albinyana	f	19.5728	12	08	43
+430038	l'Albiol	f	20.315	08	04	43
+430043	Alcanar	f	46.9123	22	05	43
+430056	Alcover	f	46.2465	01	04	43
+430069	Aldover	f	20.2064	09	05	43
+430075	l'Aleixar	f	26.1091	08	04	43
+430081	Alfara de Carles	f	63.93	09	05	43
+430094	Alforja	f	38.3707	08	04	43
+430108	Alió	f	7.27596433422	01	04	43
+430115	Almoster	f	6.0081	08	04	43
+430120	Altafulla	f	6.8747	36	04	43
+430136	l'Ametlla de Mar	f	67.0246	09	05	43
+430141	Amposta	t	138.4783	22	05	43
+430154	Arbolí	f	20.6897	08	04	43
+430167	l'Arboç	f	14.2888	12	08	43
+430173	l'Argentera	f	9.9425	08	04	43
+430189	Arnes	f	42.756	37	05	43
+430192	Ascó	f	73.5256619612	30	05	43
+430206	Banyeres del Penedès	f	12.232	12	08	43
+430213	Barberà de la Conca	f	26.1881	16	04	43
+430228	Batea	f	128.4673	37	05	43
+430234	Bellmunt del Priorat	f	8.8905226749	29	04	43
+430249	Bellvei	f	8.2871	12	08	43
+430252	Benifallet	f	62.4873	09	05	43
+430265	Benissanet	f	23.1093	30	05	43
+430271	la Bisbal de Falset	f	14.0259	29	04	43
+430287	la Bisbal del Penedès	f	32.3619	12	08	43
+430290	Blancafort	f	14.5340168317	16	04	43
+430304	Bonastre	f	24.9436	12	08	43
+430311	les Borges del Camp	f	8.3318	08	04	43
+430326	Bot	f	34.6773	37	05	43
+430332	Botarell	f	11.9533	08	04	43
+430347	Bràfim	f	6.3457039452	01	04	43
+430350	Cabacés	f	31.2498	29	04	43
+430363	Cabra del Camp	f	27.0057	01	04	43
+430379	Calafell	f	20.3036	12	08	43
+430385	Cambrils	f	35.2115648495	08	04	43
+430398	Capafonts	f	13.3536407301	08	04	43
+430402	Capçanes	f	22.2295	29	04	43
+430419	Caseres	f	42.5211	37	05	43
+430424	Castellvell del Camp	f	5.17133012486	08	04	43
+430430	el Catllar	f	26.34	36	04	43
+430445	la Sénia	f	108.8745	22	05	43
+430458	Colldejou	f	14.4218	08	04	43
+430461	Conesa	f	29.0404162446	16	04	43
+430477	Constantí	f	31.0358939621	36	04	43
+430483	Corbera d'Ebre	f	53.0774786506	37	05	43
+430496	Cornudella de Montsant	f	62.9168	29	04	43
+430509	Creixell	f	10.3621	36	04	43
+430516	Cunit	f	9.7707	12	08	43
+430521	Xerta	f	32.4206	09	05	43
+430537	Duesaigües	f	13.631	08	04	43
+430542	l'Espluga de Francolí	f	56.4147	16	04	43
+430555	Falset	t	31.9088	29	04	43
+430568	la Fatarella	f	56.6806233989	37	05	43
+430574	la Febró	f	16.0564117846	08	04	43
+430580	la Figuera	f	18.9172	29	04	43
+430593	Figuerola del Camp	f	22.454	01	04	43
+430607	Flix	f	116.6356	30	05	43
+430614	Forès	f	16.1481260486	16	04	43
+430629	Freginals	f	17.4346	22	05	43
+430635	la Galera	f	27.4057	22	05	43
+430640	Gandesa	t	71.3023	37	05	43
+430653	Garcia	f	52.2487	30	05	43
+430666	els Garidells	f	3.00758946725	01	04	43
+430672	Ginestar	f	15.6136227944	30	05	43
+430688	Godall	f	33.9048	22	05	43
+430691	Gratallops	f	13.494	29	04	43
+430705	els Guiamets	f	11.8907	29	04	43
+430712	Horta de Sant Joan	f	119.2287	37	05	43
+430727	el Lloar	f	6.6665	29	04	43
+430733	Llorac	f	23.1375743953	16	04	43
+430748	Llorenç del Penedès	f	4.678	12	08	43
+430751	Margalef	f	34.7588	29	04	43
+430764	Marçà	f	16.1211	29	04	43
+430770	Mas de Barberans	f	78.881	22	05	43
+430786	Masdenverge	f	14.6754	22	05	43
+430799	Masllorenç	f	6.5262	12	08	43
+430803	la Masó	f	3.46121953236	01	04	43
+430810	Maspujols	f	3.59781128756	08	04	43
+430825	el Masroig	f	15.5349528796	29	04	43
+430831	el Milà	f	4.1648425829	01	04	43
+430846	Miravet	f	32.5942	30	05	43
+430859	el Molar	f	22.7488	29	04	43
+430862	Montblanc	t	91.0786	16	04	43
+430884	Montbrió del Camp	f	10.5505	08	04	43
+430897	Montferri	f	19.3392	01	04	43
+430901	el Montmell	f	72.5246	12	08	43
+430918	Mont-ral	f	34.4977	01	04	43
+430923	Mont-roig del Camp	f	63.2696	08	04	43
+430939	Móra d'Ebre	t	45.3646	30	05	43
+430944	Móra la Nova	f	15.6437	30	05	43
+430957	el Morell	f	5.959	36	04	43
+430960	la Morera de Montsant	f	53.3314	29	04	43
+430976	la Nou de Gaià	f	4.2977	36	04	43
+430982	Nulles	f	10.6474	01	04	43
+430995	la Palma d'Ebre	f	38.0766342255	30	05	43
+431009	els Pallaresos	f	5.023	36	04	43
+431016	Passanant i Belltall	f	27.7667280405	16	04	43
+431021	Paüls	f	43.7717	09	05	43
+431037	Perafort	f	9.7226	36	04	43
+431042	el Perelló	f	100.7042	09	05	43
+431055	les Piles de Gaià	f	22.5734407102	16	04	43
+431068	el Pinell de Brai	f	57.1677	37	05	43
+431074	Pira	f	8.57514902308	16	04	43
+431080	el Pla de Santa Maria	f	35.083538044	01	04	43
+431093	la Pobla de Mafumet	f	6.0817	36	04	43
+431107	la Pobla de Massaluca	f	43.188	37	05	43
+431114	la Pobla de Montornès	f	12.3183	36	04	43
+431129	Poboleda	f	13.7904153405	29	04	43
+431135	el Pont d'Armentera	f	21.6274	01	04	43
+431140	Porrera	f	28.6176	29	04	43
+431153	Pradell de la Teixeta	f	21.985549506	29	04	43
+431166	Prades	f	32.6036	08	04	43
+431172	Prat de Comte	f	26.3518	37	05	43
+431188	Pratdip	f	35.7256	08	04	43
+431191	Puigpelat	f	9.5318	01	04	43
+431205	Querol	f	72.0238	01	04	43
+431212	Rasquera	f	51.0283	30	05	43
+431227	Renau	f	8.32150856439	36	04	43
+431233	Reus	t	52.9030932707	08	04	43
+431248	la Riba	f	8.0448	01	04	43
+431251	Riba-roja d'Ebre	f	99.3764	30	05	43
+431264	la Riera de Gaià	f	8.7747	36	04	43
+431270	Riudecanyes	f	17.0334	08	04	43
+431286	Riudecols	f	19.5164	08	04	43
+431299	Riudoms	f	32.3740144579	08	04	43
+431303	Rocafort de Queralt	f	8.43815314051	16	04	43
+431310	Roda de Berà	f	16.4563	36	04	43
+431325	Rodonyà	f	8.3842	01	04	43
+431331	Roquetes	f	137.1046	09	05	43
+431346	el Rourell	f	2.3157306056	01	04	43
+431359	Salomó	f	12.3812	36	04	43
+431362	la Ràpita	f	52.8289	22	05	43
+431378	Sant Jaume dels Domenys	f	24.5171	12	08	43
+431384	Santa Bàrbara	f	28.1346	22	05	43
+431397	Santa Coloma de Queralt	f	33.994	16	04	43
+431401	Santa Oliva	f	9.4825	12	08	43
+431418	Pontils	f	67.5689	16	04	43
+431423	Sarral	f	52.4474	16	04	43
+431439	Savallà del Comtat	f	14.6318251741	16	04	43
+431444	la Secuita	f	17.7941118452	36	04	43
+431457	la Selva del Camp	f	35.3367	08	04	43
+431460	Senan	f	11.88	16	04	43
+431476	Solivella	f	21.3281	16	04	43
+431482	Tarragona	t	58.7759794637	36	04	43
+431495	Tivenys	f	53.6097	09	05	43
+431508	Tivissa	f	209.9583	30	05	43
+431515	la Torre de Fontaubella	f	7.1641	29	04	43
+431520	la Torre de l'Espanyol	f	27.9265	30	05	43
+431536	Torredembarra	f	8.7464	36	04	43
+431541	Torroja del Priorat	f	13.1712	29	04	43
+431554	Tortosa	t	218.4638	09	05	43
+431567	Ulldecona	f	126.78	22	05	43
+431573	Ulldemolins	f	38.0386	29	04	43
+431589	Vallclara	f	13.45	16	04	43
+431592	Vallfogona de Riucorb	f	10.93	16	04	43
+431606	Vallmoll	f	16.6429	01	04	43
+431613	Valls	t	55.6281	01	04	43
+431628	Vandellòs i l'Hospitalet de l'Infant	f	102.7481	08	04	43
+431634	el Vendrell	t	36.9463	12	08	43
+431649	Vespella de Gaià	f	18.0577	36	04	43
+431652	Vilabella	f	18.1171	01	04	43
+431665	Vilallonga del Camp	f	9.1255	36	04	43
+431671	Vilanova d'Escornalbou	f	17.2629	08	04	43
+431687	Vilanova de Prades	f	21.64	16	04	43
+431690	Vilaplana	f	23.1011	08	04	43
+431704	Vila-rodona	f	33.0317	01	04	43
+431711	Vila-seca	f	21.6557988759	36	04	43
+431726	Vilaverd	f	12.6149	16	04	43
+431732	la Vilella Alta	f	5.1196	29	04	43
+431747	la Vilella Baixa	f	5.5045	29	04	43
+431750	Vilalba dels Arcs	f	67.2457	37	05	43
+431763	Vimbodí i Poblet	f	66.2203	16	04	43
+431779	Vinebre	f	26.5081	30	05	43
+431785	Vinyols i els Arcs	f	10.91244011	08	04	43
+439018	Deltebre	f	106.100948962	09	05	43
+439023	Sant Jaume d'Enveja	f	59.3772	22	05	43
+439039	Camarles	f	25.1947	09	05	43
+439044	l'Aldea	f	35.273	09	05	43
+439057	Salou	f	15.1247558168	36	04	43
+439060	l'Ampolla	f	35.6388	09	05	43
+439076	la Canonja	f	7.35279329953	36	04	43
+\.

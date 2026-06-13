@@ -1,0 +1,6 @@
+# El context de build no ha d'arrossegar artefactes locals ni secrets.
+node_modules
+dist
+data
+.env
+*.log
