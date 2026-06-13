@@ -229,6 +229,11 @@
     "somhi": "¡Vamos!",
     "preguntaOnEs": "¿Dónde está...",
     "escriuNom": "Escribe el nombre…",
+    "a11y": {
+      "encert": "¡Correcto!",
+      "error": "Incorrecto, inténtalo de nuevo.",
+      "salt": "Incorrecto. Esta ronda se salta."
+    },
     "pista": "Pista",
     "passa": "Pasar",
     "intentsRonda": "Intentos restantes de la ronda",

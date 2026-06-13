@@ -79,12 +79,17 @@ export const useGeofreakStore = defineStore('geofreak', () => {
   const tornActual = ref(0)
   // Inici del segment de torn en curs (per al rellotge per jugador).
   const marcaTornMs = ref(0)
-  // Codis de la partida en curs (per re-jugar amb la mateixa configuració).
-  let codisPartida: string[] = []
 
   // Cronòmetre global (un sol jugador) i tancament de la partida.
   const tempsIniciMs = ref(0)
   const tempsFiMs = ref(0)
+
+  // Pausa (p. ex. mentre l'app està bloquejada en landscape al mòbil): el
+  // rellotge no ha de córrer. En reprendre, els instants de referència es
+  // desplacen cap endavant per la durada pausada, de manera que els deltes
+  // de temps transcorregut no es veuen afectats.
+  const pausada = ref(false)
+  const pausaIniciMs = ref(0)
 
   const esMultijugador = computed(() => jugadors.value.length > 1)
   const jugadorActual = computed(() => estatJugadors.value[tornActual.value] ?? null)
@@ -178,7 +183,6 @@ export const useGeofreakStore = defineStore('geofreak', () => {
   // la vista hi mostra el compte enrere i crida arrencaPartida en acabar.
   function preparaPartida(codis: string[]) {
     if (!configCompleta.value || codis.length === 0) return
-    codisPartida = codis
     tornActual.value = 0
     estatJugadors.value = jugadors.value.map((j) => ({
       ...j,
@@ -293,10 +297,21 @@ export const useGeofreakStore = defineStore('geofreak', () => {
     tancaTorn()
   }
 
-  // Re-juga amb la mateixa configuració i jugadors.
-  function tornaAJugar(codis: string[]) {
-    fase.value = 'configuracio'
-    comencaPartida(codis.length > 0 ? codis : codisPartida)
+  // Pausa el cronòmetre (només en partida). Idempotent.
+  function pausa() {
+    if (fase.value !== 'partida' || pausada.value) return
+    pausada.value = true
+    pausaIniciMs.value = Date.now()
+  }
+
+  // Reprèn després d'una pausa, desplaçant els instants de referència perquè
+  // el temps pausat no compti. Idempotent.
+  function repren() {
+    if (!pausada.value) return
+    const delta = Date.now() - pausaIniciMs.value
+    tempsIniciMs.value += delta
+    marcaTornMs.value += delta
+    pausada.value = false
   }
 
   // Torna al wizard conservant la configuració (per retocar-la i repetir).
@@ -312,6 +327,7 @@ export const useGeofreakStore = defineStore('geofreak', () => {
     configuracio.value = configuracioBuida()
     partida.value = null
     pista.value = null
+    pausada.value = false
     jugadors.value = [{ nom: '', color: '' }]
     estatJugadors.value = []
     tornActual.value = 0
@@ -323,6 +339,7 @@ export const useGeofreakStore = defineStore('geofreak', () => {
     partida,
     pista,
     ratxa,
+    pausada,
     jugadors,
     estatJugadors,
     tornActual,
@@ -348,7 +365,8 @@ export const useGeofreakStore = defineStore('geofreak', () => {
     activaPista,
     clicDemarcacio,
     passaRonda,
-    tornaAJugar,
+    pausa,
+    repren,
     tornaAConfiguracio,
     reinicia,
   }

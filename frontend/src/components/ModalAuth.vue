@@ -1,9 +1,15 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useFocusTrap } from '@/composables/useFocusTrap'
 
 const emit = defineEmits<{ tanca: [] }>()
 const auth = useAuthStore()
+
+// El modal sempre està obert mentre el component existeix (el pare el munta
+// i el desmunta). Focus-trap + Esc per tancar + retorn del focus.
+const caixaRef = ref<HTMLElement | null>(null)
+useFocusTrap(caixaRef, ref(true), () => emit('tanca'))
 
 type Mode = 'entra' | 'registra'
 const mode = ref<Mode>('entra')
@@ -22,7 +28,7 @@ function enviar() {
 
 <template>
   <div class="modal-auth" @click.self="emit('tanca')">
-    <div class="modal-auth__caixa" role="dialog" aria-modal="true">
+    <div ref="caixaRef" class="modal-auth__caixa" role="dialog" aria-modal="true">
       <button
         type="button"
         class="modal-auth__tancar"

@@ -12,9 +12,11 @@ import {
   MODALITATS,
   NIVELLS,
   triaDistractors,
+  type ResultatClic,
   type TipusDemarcacio,
 } from '@/data/geofreak'
 import { normalitza } from '@/data/text'
+import { useFocusTrap } from '@/composables/useFocusTrap'
 import {
   articleComarca,
   articleVegueria,
@@ -35,18 +37,41 @@ const geofreak = useGeofreakStore()
 const mapaRef = ref<InstanceType<typeof MapaLeaflet> | null>(null)
 
 // Cronòmetre visual: el store guarda els instants; aquí només es fa el tic-tac.
+// Mentre la partida està pausada no s'actualitza (el rellotge mostrat es
+// congela; el store ja no compta el temps pausat).
 const araMs = ref(Date.now())
 let ticker: ReturnType<typeof setInterval> | null = null
 
+// Bloqueig en landscape (mateixa media query que l'overlay "Gira el dispositiu"
+// a App.vue): mentre l'app està bloquejada, la partida es pausa.
+const mqLandscape =
+  typeof window !== 'undefined'
+    ? window.matchMedia('(orientation: landscape) and (max-height: 600px)')
+    : null
+
+function aplicaPausaLandscape() {
+  if (mqLandscape?.matches) geofreak.pausa()
+  else geofreak.repren()
+}
+
 onMounted(() => {
   territoris.carregaArbre()
-  ticker = setInterval(() => (araMs.value = Date.now()), 500)
+  ticker = setInterval(() => {
+    if (!geofreak.pausada) araMs.value = Date.now()
+  }, 500)
+  mqLandscape?.addEventListener('change', aplicaPausaLandscape)
 })
 // En sortir del joc (navegar a una altra secció) la configuració es reinicia.
 onUnmounted(() => {
   if (ticker) clearInterval(ticker)
+  mqLandscape?.removeEventListener('change', aplicaPausaLandscape)
   geofreak.reinicia()
 })
+
+// Estat de càrrega / error de les dades territorials (la partida no es pot
+// configurar sense l'arbre). La vista del wizard ho reflecteix.
+const dadesCarregant = computed(() => territoris.carregant || territoris.arbre === null)
+const dadesError = computed(() => territoris.error !== null && territoris.arbre === null)
 
 // El nom oficial d'alguna demarcació porta un aclariment entre parèntesis
 // ("Val d'Aran (entitat territorial singular)") — al joc només volem el nom.
@@ -370,12 +395,27 @@ function escNeteja() {
   indexSuggeriment.value = -1
 }
 
+// Missatge per a lectors de pantalla (aria-live): el feedback d'acert/error
+// es comunica també per text, no només per color i animació.
+const anunciResultat = ref('')
+function anunciaResultat(resultat: ResultatClic) {
+  if (resultat === 'encert') anunciaA11y(t('geofreak.a11y.encert'))
+  else if (resultat === 'salt') anunciaA11y(t('geofreak.a11y.salt'))
+  else if (resultat === 'error') anunciaA11y(t('geofreak.a11y.error'))
+}
+function anunciaA11y(text: string) {
+  // Es reassigna a buit primer perquè el lector reanunciï un missatge repetit.
+  anunciResultat.value = ''
+  void nextTick(() => (anunciResultat.value = text))
+}
+
 // Respon una ronda (clic al mapa o resposta escrita) amb feedback visual:
 // flaix al mapa i, a la resposta escrita errònia, sacseig de l'input.
 function gestionaClicJoc(codi: string) {
   const resultat = geofreak.clicDemarcacio(codi)
   if (resultat === 'encert') mapaRef.value?.flaixJoc(codi, 'encert')
   else if (resultat === 'error' || resultat === 'salt') mapaRef.value?.flaixJoc(codi, 'error')
+  anunciaResultat(resultat)
 }
 
 function respon(codi: string) {
@@ -385,6 +425,7 @@ function respon(codi: string) {
     sacsejant.value = false
     requestAnimationFrame(() => (sacsejant.value = true))
   }
+  anunciaResultat(resultat)
   textResposta.value = ''
   respostaInput.value?.focus()
 }
@@ -584,6 +625,25 @@ const resumPartida = computed(() => {
   if (nom) parts.push(nom)
   return parts.join(' · ')
 })
+
+// ── Accessibilitat dels modals (focus-trap + Esc) ──────────────────────────
+const modalConfigRef = ref<HTMLElement | null>(null)
+const modalResultatsRef = ref<HTMLElement | null>(null)
+
+// Al wizard, Esc retrocedeix un pas (no hi ha "tancar": és la porta d'entrada).
+useFocusTrap(
+  modalConfigRef,
+  computed(() => geofreak.fase === 'configuracio'),
+  () => {
+    if (pasWizard.value > 1) pasWizard.value--
+  }
+)
+// Al modal de resultats, Esc torna al wizard de configuració.
+useFocusTrap(
+  modalResultatsRef,
+  computed(() => geofreak.fase === 'resultats'),
+  () => obreConfiguracio()
+)
 </script>
 
 <template>
@@ -620,141 +680,164 @@ const resumPartida = computed(() => {
     <div class="gf-cos">
       <MapaLeaflet ref="mapaRef" :mode-joc="modeJocMapa" @clic-joc="gestionaClicJoc" />
 
+      <!-- Feedback per a lectors de pantalla (no només color/animació) -->
+      <p class="gf-sr-only" role="status" aria-live="assertive">{{ anunciResultat }}</p>
+
       <!-- ── Modal de configuració de la partida ─────────────────────────── -->
       <div v-if="geofreak.fase === 'configuracio'" class="gf-modal-fons">
-        <div class="gf-modal" role="dialog" aria-modal="true" aria-labelledby="gf-titol">
+        <div
+          ref="modalConfigRef"
+          class="gf-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="gf-titol"
+        >
           <h2 id="gf-titol" class="gf-modal__titol">GeoFreak</h2>
           <p class="gf-modal__sub">{{ $t('geofreak.titolModal') }}</p>
 
-          <div class="gf-passos" aria-hidden="true">
-            <span
-              v-for="p in 3"
-              :key="p"
-              class="gf-passos__pas"
-              :class="{ 'gf-passos__pas--actiu': p === pasWizard }"
-            ></span>
+          <!-- Sense dades territorials no es pot configurar la partida -->
+          <div v-if="dadesError" class="gf-estat" role="alert">
+            <p>{{ $t('mapa.error') }}</p>
+            <button type="button" class="gf-somhi" @click="territoris.carregaArbre()">
+              {{ $t('comu.reintenta') }}
+            </button>
+          </div>
+          <div v-else-if="dadesCarregant" class="gf-estat" role="status" aria-live="polite">
+            <span class="gf-estat__spinner" aria-hidden="true"></span>
+            <p>{{ $t('mapa.carregant') }}</p>
           </div>
 
-          <!-- Pas 1: jugadors (amb un de sol no calen noms) -->
-          <template v-if="pasWizard === 1">
-            <div class="gf-camp">
-              <label>{{ $t('geofreak.wizard.jugadors') }}</label>
-              <div class="gf-jugadors">
-                <button
-                  v-for="n in 4"
-                  :key="n"
-                  type="button"
-                  class="gf-jugadors__opcio"
-                  :class="{ 'gf-jugadors__opcio--actiu': numJugadors === n }"
-                  @click="numJugadors = n"
-                >
-                  {{ n }}
-                </button>
-              </div>
+          <template v-else>
+            <div class="gf-passos" aria-hidden="true">
+              <span
+                v-for="p in 3"
+                :key="p"
+                class="gf-passos__pas"
+                :class="{ 'gf-passos__pas--actiu': p === pasWizard }"
+              ></span>
             </div>
-            <div v-if="numJugadors > 1" class="gf-camp">
-              <div v-for="n in numJugadors" :key="n" class="gf-jugador-fila">
-                <input
-                  v-model="nomsJugadors[n - 1]"
-                  type="text"
-                  class="gf-jugadors__nom"
-                  autocomplete="off"
-                  :placeholder="$t('geofreak.jugadorN', { n })"
-                />
-                <div class="gf-colors">
+
+            <!-- Pas 1: jugadors (amb un de sol no calen noms) -->
+            <template v-if="pasWizard === 1">
+              <div class="gf-camp">
+                <label>{{ $t('geofreak.wizard.jugadors') }}</label>
+                <div class="gf-jugadors">
                   <button
-                    v-for="c in COLORS_JUGADOR"
-                    :key="c"
+                    v-for="n in 4"
+                    :key="n"
                     type="button"
-                    class="gf-colors__opcio"
-                    :class="{ 'gf-colors__opcio--actiu': colorsJugadors[n - 1] === c }"
-                    :style="{ background: c }"
-                    :aria-label="c"
-                    @click="triaColor(n - 1, c)"
-                  ></button>
+                    class="gf-jugadors__opcio"
+                    :class="{ 'gf-jugadors__opcio--actiu': numJugadors === n }"
+                    @click="numJugadors = n"
+                  >
+                    {{ n }}
+                  </button>
                 </div>
               </div>
-            </div>
-          </template>
+              <div v-if="numJugadors > 1" class="gf-camp">
+                <div v-for="n in numJugadors" :key="n" class="gf-jugador-fila">
+                  <input
+                    v-model="nomsJugadors[n - 1]"
+                    type="text"
+                    class="gf-jugadors__nom"
+                    autocomplete="off"
+                    :placeholder="$t('geofreak.jugadorN', { n })"
+                  />
+                  <div class="gf-colors">
+                    <button
+                      v-for="c in COLORS_JUGADOR"
+                      :key="c"
+                      type="button"
+                      class="gf-colors__opcio"
+                      :class="{ 'gf-colors__opcio--actiu': colorsJugadors[n - 1] === c }"
+                      :style="{ background: c }"
+                      :aria-label="c"
+                      @click="triaColor(n - 1, c)"
+                    ></button>
+                  </div>
+                </div>
+              </div>
+            </template>
 
-          <!-- Pas 2: modalitat -->
-          <div v-else-if="pasWizard === 2" class="gf-camp">
-            <label for="gf-modalitat">{{ $t('geofreak.modalitat') }}</label>
-            <select id="gf-modalitat" v-model="modalitatSeleccionada">
-              <option value="" disabled>{{ $t('geofreak.triaOpcio') }}</option>
-              <option v-for="m in MODALITATS" :key="m" :value="m">
-                {{ $t(`geofreak.modalitats.${m}`) }}
-              </option>
-            </select>
-            <p v-if="geofreak.configuracio.modalitat" class="gf-desc">
-              {{ $t(`geofreak.modalitats.${geofreak.configuracio.modalitat}Desc`) }}
-            </p>
-          </div>
-
-          <!-- Pas 3: nivell i territori (amb tria a l'atzar) -->
-          <template v-else>
-            <div class="gf-camp">
-              <label for="gf-nivell">{{ $t('geofreak.nivell') }}</label>
-              <select id="gf-nivell" v-model="nivellSeleccionat">
+            <!-- Pas 2: modalitat -->
+            <div v-else-if="pasWizard === 2" class="gf-camp">
+              <label for="gf-modalitat">{{ $t('geofreak.modalitat') }}</label>
+              <select id="gf-modalitat" v-model="modalitatSeleccionada">
                 <option value="" disabled>{{ $t('geofreak.triaOpcio') }}</option>
-                <option v-for="n in NIVELLS" :key="n.id" :value="n.id">
-                  {{ n.id }} · {{ $t(`geofreak.nivells.n${n.id}`)
-                  }}{{ quantitatNivell(n.id) ? ` (${quantitatNivell(n.id)})` : '' }}
+                <option v-for="m in MODALITATS" :key="m" :value="m">
+                  {{ $t(`geofreak.modalitats.${m}`) }}
                 </option>
               </select>
+              <p v-if="geofreak.configuracio.modalitat" class="gf-desc">
+                {{ $t(`geofreak.modalitats.${geofreak.configuracio.modalitat}Desc`) }}
+              </p>
             </div>
 
-            <div v-if="tipusContenidor" class="gf-camp">
-              <label for="gf-contenidor">{{
-                $t(`geofreak.triaContenidor.${tipusContenidor}`)
-              }}</label>
-              <div class="gf-contenidor-fila">
-                <select id="gf-contenidor" v-model="contenidorSeleccionat">
+            <!-- Pas 3: nivell i territori (amb tria a l'atzar) -->
+            <template v-else>
+              <div class="gf-camp">
+                <label for="gf-nivell">{{ $t('geofreak.nivell') }}</label>
+                <select id="gf-nivell" v-model="nivellSeleccionat">
                   <option value="" disabled>{{ $t('geofreak.triaOpcio') }}</option>
-                  <option v-for="o in opcionsContenidor" :key="o.codi" :value="o.codi">
-                    {{ o.nom }}
+                  <option v-for="n in NIVELLS" :key="n.id" :value="n.id">
+                    {{ n.id }} · {{ $t(`geofreak.nivells.n${n.id}`)
+                    }}{{ quantitatNivell(n.id) ? ` (${quantitatNivell(n.id)})` : '' }}
                   </option>
                 </select>
-                <button
-                  type="button"
-                  class="gf-atzar"
-                  :disabled="!opcionsContenidor.length"
-                  @click="triaContenidorAleatori"
-                >
-                  🎲 {{ $t('geofreak.wizard.aleatori') }}
-                </button>
               </div>
+
+              <div v-if="tipusContenidor" class="gf-camp">
+                <label for="gf-contenidor">{{
+                  $t(`geofreak.triaContenidor.${tipusContenidor}`)
+                }}</label>
+                <div class="gf-contenidor-fila">
+                  <select id="gf-contenidor" v-model="contenidorSeleccionat">
+                    <option value="" disabled>{{ $t('geofreak.triaOpcio') }}</option>
+                    <option v-for="o in opcionsContenidor" :key="o.codi" :value="o.codi">
+                      {{ o.nom }}
+                    </option>
+                  </select>
+                  <button
+                    type="button"
+                    class="gf-atzar"
+                    :disabled="!opcionsContenidor.length"
+                    @click="triaContenidorAleatori"
+                  >
+                    🎲 {{ $t('geofreak.wizard.aleatori') }}
+                  </button>
+                </div>
+              </div>
+            </template>
+
+            <div class="gf-wizard-nav">
+              <button
+                v-if="pasWizard > 1"
+                type="button"
+                class="gf-wizard-nav__enrere"
+                @click="pasWizard--"
+              >
+                {{ $t('geofreak.wizard.enrere') }}
+              </button>
+              <button
+                v-if="pasWizard < 3"
+                type="button"
+                class="gf-somhi gf-wizard-nav__seguent"
+                :disabled="!pasValid"
+                @click="pasWizard++"
+              >
+                {{ $t('geofreak.wizard.seguent') }}
+              </button>
+              <button
+                v-else
+                type="button"
+                class="gf-somhi gf-wizard-nav__seguent"
+                :disabled="!geofreak.configCompleta"
+                @click="confirmaISomhi"
+              >
+                {{ $t('geofreak.somhi') }}
+              </button>
             </div>
           </template>
-
-          <div class="gf-wizard-nav">
-            <button
-              v-if="pasWizard > 1"
-              type="button"
-              class="gf-wizard-nav__enrere"
-              @click="pasWizard--"
-            >
-              {{ $t('geofreak.wizard.enrere') }}
-            </button>
-            <button
-              v-if="pasWizard < 3"
-              type="button"
-              class="gf-somhi gf-wizard-nav__seguent"
-              :disabled="!pasValid"
-              @click="pasWizard++"
-            >
-              {{ $t('geofreak.wizard.seguent') }}
-            </button>
-            <button
-              v-else
-              type="button"
-              class="gf-somhi gf-wizard-nav__seguent"
-              :disabled="!geofreak.configCompleta"
-              @click="confirmaISomhi"
-            >
-              {{ $t('geofreak.somhi') }}
-            </button>
-          </div>
         </div>
       </div>
 
@@ -908,7 +991,7 @@ const resumPartida = computed(() => {
         <div class="gf-confeti" aria-hidden="true">
           <span v-for="n in 14" :key="n" :style="{ '--gf-i': String(n) }"></span>
         </div>
-        <div class="gf-modal gf-resultats" role="dialog" aria-modal="true">
+        <div ref="modalResultatsRef" class="gf-modal gf-resultats" role="dialog" aria-modal="true">
           <h2 class="gf-modal__titol">{{ $t('geofreak.resultats.titol') }}</h2>
           <p class="gf-modal__sub">{{ resumPartida }}</p>
 
@@ -984,6 +1067,51 @@ const resumPartida = computed(() => {
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+}
+
+/* Només per a lectors de pantalla (fora de la vista però accessible) */
+.gf-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Estat de càrrega / error de les dades al modal de configuració */
+.gf-estat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 0;
+  text-align: center;
+  color: var(--color-text-secundari, #737373);
+}
+
+.gf-estat__spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #e2e6ea;
+  border-top-color: #2d6a2d;
+  border-radius: 50%;
+  animation: gf-spin 0.7s linear infinite;
+}
+
+@keyframes gf-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gf-estat__spinner {
+    animation-duration: 1.8s;
+  }
 }
 
 .gf-cos {
@@ -1704,19 +1832,44 @@ const resumPartida = computed(() => {
   background: #f7c948;
 }
 
-/* En mòbil: els marcadors poden partir-se en dues files sense desbordar,
-   i la caixa de resposta baixa per quedar sempre per sota seu */
+/* En mòbil: els marcadors es queden en UNA sola fila (scroll horitzontal si
+   no caben) per tenir alçada fixa i no solapar-se amb la caixa de resposta,
+   que es col·loca just a sota. Targets tàctils a 44px. */
 @media (max-width: 768px) {
-  .gf-pregunta {
-    top: 96px;
-    font-size: 0.95rem;
-    padding: 8px 14px;
+  .gf-xip--dreta {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    max-width: calc(100% - 16px);
+    overflow-x: auto;
+    scrollbar-width: none;
   }
 
-  .gf-xip--dreta {
-    flex-wrap: wrap;
-    justify-content: center;
-    max-width: calc(100% - 16px);
+  .gf-xip--dreta::-webkit-scrollbar {
+    display: none;
+  }
+
+  .gf-pregunta {
+    top: 70px;
+    font-size: 0.95rem;
+    padding: 8px 14px;
+    width: min(340px, calc(100% - 16px));
+  }
+
+  /* Mínim tàctil de 44px (botons del HUD i de l'autocomplete/pista) */
+  .gf-xip__pista,
+  .gf-xip__surt {
+    min-height: 44px;
+    padding: 6px 14px;
+  }
+
+  .gf-suggeriments button,
+  .gf-opcions button {
+    min-height: 44px;
+  }
+
+  .gf-colors__opcio {
+    width: 30px;
+    height: 30px;
   }
 }
 

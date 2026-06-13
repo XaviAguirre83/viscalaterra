@@ -229,6 +229,11 @@
     "somhi": "Som-hi!",
     "preguntaOnEs": "On és...",
     "escriuNom": "Escriu el nom…",
+    "a11y": {
+      "encert": "Correcte!",
+      "error": "Incorrecte, torna-ho a provar.",
+      "salt": "Incorrecte. Aquesta ronda se salta."
+    },
     "pista": "Pista",
     "passa": "Passa",
     "intentsRonda": "Intents restants de la ronda",

@@ -176,16 +176,32 @@ describe('geofreak — rondes de partida', () => {
     expect(g.partida!.errors).toBe(3)
   })
 
-  it('tornaAJugar rellança una partida nova amb la mateixa configuració', () => {
+  it('pausa congela el cronòmetre i repren el reactiva sense comptar el temps pausat', async () => {
     const g = configuraNivell0()
     g.comencaPartida(['a', 'b'])
-    while (g.fase === 'partida') g.clicDemarcacio(g.partida!.objectiu!)
-    expect(g.fase).toBe('resultats')
+    const iniciAbans = g.tempsIniciMs
 
-    g.tornaAJugar(['a', 'b'])
-    expect(g.fase).toBe('partida')
-    expect(g.partida!.encertades).toEqual([])
-    expect(g.partida!.errors).toBe(0)
+    g.pausa()
+    expect(g.pausada).toBe(true)
+    // Mentre pausat, una segona crida és idempotent.
+    g.pausa()
+    expect(g.pausada).toBe(true)
+
+    await new Promise((r) => setTimeout(r, 20))
+    g.repren()
+    expect(g.pausada).toBe(false)
+    // L'instant d'inici s'ha desplaçat cap endavant (el temps pausat no compta).
+    expect(g.tempsIniciMs).toBeGreaterThan(iniciAbans)
+    // Reprendre sense pausa prèvia no fa res.
+    const iniciDespres = g.tempsIniciMs
+    g.repren()
+    expect(g.tempsIniciMs).toBe(iniciDespres)
+  })
+
+  it('no es pot pausar fora de partida', () => {
+    const g = configuraNivell0()
+    g.pausa()
+    expect(g.pausada).toBe(false)
   })
 
   it('defineixJugadors només accepta d’1 a 4 jugadors', () => {

@@ -229,6 +229,11 @@
     "somhi": "Let's go!",
     "preguntaOnEs": "Where is...",
     "escriuNom": "Type the name…",
+    "a11y": {
+      "encert": "Correct!",
+      "error": "Incorrect, try again.",
+      "salt": "Incorrect. This round is skipped."
+    },
     "pista": "Hint",
     "passa": "Skip",
     "intentsRonda": "Attempts left this round",

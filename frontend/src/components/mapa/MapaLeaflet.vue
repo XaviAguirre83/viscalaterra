@@ -493,7 +493,14 @@ const ROIG_ERROR = '#d8402f'
 const ROIG_ERROR_VORA = '#8f1d10'
 
 function hexARgb(hex: string): [number, number, number] {
-  const n = parseInt(hex.slice(1), 16)
+  // Accepta #rgb i #rrggbb (expandeix la forma curta a llarga).
+  let h = hex.replace('#', '')
+  if (h.length === 3)
+    h = h
+      .split('')
+      .map((c) => c + c)
+      .join('')
+  const n = parseInt(h, 16)
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
 }
 
@@ -1048,6 +1055,14 @@ onUnmounted(() => {
   }
   mapa?.remove()
   mapa = null
+  // Neteja defensiva: tot i que en `<script setup>` aquestes estructures són
+  // per-instància, buidar-les en desmuntar evita estats penjats en escenaris
+  // d'edge (HMR en desenvolupament, o un futur <keep-alive>) i ajuda el GC.
+  Object.keys(cacheLayers).forEach((k) => delete cacheLayers[k])
+  ;(Object.keys(capesActives) as NivellTerritorial[]).forEach((n) => (capesActives[n] = null))
+  tilesBase = null
+  tilesJoc = null
+  mascaraCatalunya = null
 })
 
 // Quan la selecció canvia des del panell On?, re-aplica colors a totes les capes.
