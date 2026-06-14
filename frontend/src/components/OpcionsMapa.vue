@@ -43,8 +43,9 @@ const opcions = useMapaOpcionsStore()
 <style scoped>
 .opcions {
   position: absolute;
-  right: 12px;
-  bottom: 12px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   z-index: 1200;
   width: 232px;
   padding: 12px 14px 14px;
@@ -111,8 +112,6 @@ const opcions = useMapaOpcionsStore()
 
 @media (max-width: 768px) {
   .opcions {
-    right: 8px;
-    bottom: 8px;
     width: min(232px, calc(100vw - 16px));
   }
 
@@ -131,7 +130,7 @@ const opcions = useMapaOpcionsStore()
 .opcions-enter-from,
 .opcions-leave-to {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translate(-50%, -46%);
 }
 
 @media (prefers-reduced-motion: reduce) {

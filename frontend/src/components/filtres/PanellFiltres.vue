@@ -54,60 +54,77 @@ watch(
   <div class="panell-filtres">
     <!-- ── Barra horitzontal ──────────────────────────────────────────── -->
     <nav class="barra">
-      <div class="barra__fila-1">
-        <button
-          class="btn-menu"
-          :class="{ 'btn-menu--obert': menuObert }"
-          type="button"
-          :aria-label="$t('nav.menuPrincipal')"
-          :aria-expanded="menuObert"
-          @click="menuObert = !menuObert"
-        >
-          <span /><span /><span />
-        </button>
+      <div class="barra__fila-1" :class="{ 'barra__fila-1--cerca': esCerca }">
+        <div class="barra__zona barra__zona--esq">
+          <button
+            class="btn-menu"
+            :class="{ 'btn-menu--obert': menuObert }"
+            type="button"
+            :aria-label="$t('nav.menuPrincipal')"
+            :aria-expanded="menuObert"
+            @click="menuObert = !menuObert"
+          >
+            <span /><span /><span />
+          </button>
+        </div>
 
         <template v-if="esCerca">
-          <div class="separador-v" />
-          <div class="tabs">
-            <button
-              type="button"
-              :class="{ activa: tabActiva === 'on' }"
-              :aria-expanded="tabActiva === 'on'"
-              @click="toggleTab('on')"
-            >
-              {{ $t('nav.tabs.on') }}
-            </button>
-            <button
-              type="button"
-              :class="{ activa: tabActiva === 'que' }"
-              :aria-expanded="tabActiva === 'que'"
-              @click="toggleTab('que')"
-            >
-              {{ $t('nav.tabs.que') }}
-            </button>
-            <button
-              type="button"
-              :class="{ activa: tabActiva === 'quan' }"
-              :aria-expanded="tabActiva === 'quan'"
-              @click="toggleTab('quan')"
-            >
-              {{ $t('nav.tabs.quan') }}
-            </button>
-          </div>
-          <div class="separador-v separador-v--cerca" />
-          <div class="barra__cerca-fila">
-            <CercaRapida />
-            <button
-              type="button"
-              class="btn-opcions"
-              :class="{ 'btn-opcions--actiu': mapaOpcions.panelObert }"
-              :title="$t('opcionsMapa.titol')"
-              :aria-label="$t('opcionsMapa.titol')"
-              :aria-expanded="mapaOpcions.panelObert"
-              @click="mapaOpcions.alterna()"
-            >
-              ⚙
-            </button>
+          <!-- Bloc tabs + cercador: ample = recuadre info-territori (W) -->
+          <div class="barra__centre">
+            <div class="tabs">
+              <button
+                type="button"
+                :class="{ activa: tabActiva === 'on' }"
+                :aria-expanded="tabActiva === 'on'"
+                @click="toggleTab('on')"
+              >
+                {{ $t('nav.tabs.on') }}
+              </button>
+              <button
+                type="button"
+                :class="{ activa: tabActiva === 'que' }"
+                :aria-expanded="tabActiva === 'que'"
+                @click="toggleTab('que')"
+              >
+                {{ $t('nav.tabs.que') }}
+              </button>
+              <button
+                type="button"
+                :class="{ activa: tabActiva === 'quan' }"
+                :aria-expanded="tabActiva === 'quan'"
+                @click="toggleTab('quan')"
+              >
+                {{ $t('nav.tabs.quan') }}
+              </button>
+            </div>
+            <div class="barra__cerca-fila">
+              <CercaRapida />
+              <button
+                type="button"
+                class="btn-opcions"
+                :class="{ 'btn-opcions--actiu': mapaOpcions.panelObert }"
+                :title="$t('opcionsMapa.titol')"
+                :aria-label="$t('opcionsMapa.titol')"
+                :aria-expanded="mapaOpcions.panelObert"
+                @click="mapaOpcions.alterna()"
+              >
+                <svg
+                  class="btn-opcions__icona"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="3" />
+                  <path
+                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
         </template>
 
@@ -172,31 +189,85 @@ watch(
   align-items: center;
   height: 48px;
   padding: 0 12px;
+  gap: 12px;
+  position: relative; /* àncora del ⚙️ (absolut en desktop) */
 }
 
-/* Cercador + engranatge d'opcions. Ordre DOM: cercador → ⚙️ (desktop: ⚙️ a la
-   dreta del cercador). En mòbil s'inverteix amb `order` (⚙️ a l'esquerra). */
+.barra__zona {
+  display: flex;
+  align-items: center;
+}
+
+/* En Cerca: la zona esquerra té l'amplada justa perquè el bloc central (tabs +
+   cercador) quedi alineat amb el cantó esquerre del recuadre info-territori
+   (width W = min(760px, 100vw-24px), centrat). */
+.barra__fila-1--cerca .barra__zona--esq {
+  flex: 0 0 auto;
+  width: calc((100vw - min(760px, 100vw - 24px)) / 2 - 24px);
+}
+
+/* Bloc central: mateix ample que el recuadre → "On?" al cantó esquerre i el
+   botó "CERCA" al cantó dret del recuadre. El ⚙️ queda fora, a la cantonada. */
+.barra__centre {
+  flex: 0 0 auto;
+  width: min(760px, 100vw - 24px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.barra__centre .tabs {
+  flex: 0 0 auto;
+}
+
+.barra__centre .barra__cerca-fila {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Cercador + engranatge d'opcions. Ordre DOM: cercador → ⚙️. */
 .barra__cerca-fila {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
+.barra__cerca-fila .cerca-rapida {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* El ⚙️ s'àncora a la cantonada dreta de la barra (fora del recuadre). En
+   mòbil torna al flux normal (vegeu el media query). */
+.barra__fila-1--cerca .btn-opcions {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
 .btn-opcions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   width: 36px;
   height: 36px;
   border: 1px solid #d8d8d4;
   border-radius: 8px;
   background: #fafaf8;
-  font-size: 1.1rem;
-  line-height: 1;
   color: #555;
   cursor: pointer;
   transition:
     background 0.15s,
     color 0.15s,
     border-color 0.15s;
+}
+
+.btn-opcions__icona {
+  width: 19px;
+  height: 19px;
 }
 
 .btn-opcions:hover {
@@ -218,14 +289,45 @@ watch(
     padding: 6px 12px;
   }
 
-  .separador-v--cerca {
-    display: none;
+  /* En mòbil es desfà el centrat: menú compacte, tabs ocupen la 1a fila i el
+     cercador passa a una 2a fila a tota l'amplada. El bloc central es dissol
+     perquè tabs i cercador es reparteixin en dues files. */
+  .barra__centre {
+    display: contents;
   }
 
-  .barra__cerca-fila {
-    flex-basis: 100%;
-    /* Alinea amb l'inici del tab "On?": botó menú (44px) + separador (21px) */
-    padding: 0 4px 8px 65px;
+  .barra__fila-1--cerca .barra__zona--esq {
+    flex: 0 0 auto;
+    width: auto;
+  }
+
+  .barra__fila-1--cerca .tabs {
+    flex: 1 1 auto;
+  }
+
+  .barra__fila-1--cerca .barra__cerca-fila {
+    flex: 1 1 100%;
+    /* gap 12 = mateixa separació que ☰↔On?: així "Cerca per nom" arrenca
+       alineat sota "On?" (i el ⚙️ sota el ☰). */
+    gap: 12px;
+    padding: 0 4px 8px 0;
+  }
+
+  /* Línia divisòria vertical que separa la columna esquerra (☰ / ⚙️) de la
+     dreta (On?… / Cerca per nom), de dalt a baix de la barra de dues files. */
+  .barra__fila-1--cerca {
+    position: relative;
+  }
+
+  .barra__fila-1--cerca::after {
+    content: '';
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    left: 62px;
+    width: 1px;
+    background: #e0e0dc;
+    pointer-events: none;
   }
 
   /* El cercador ocupa l'espai i el ⚙️ es mou a l'esquerra */
@@ -234,7 +336,10 @@ watch(
     order: 1;
   }
 
-  .btn-opcions {
+  /* El ⚙️ torna al flux (2a fila), a l'esquerra, sota el ☰ */
+  .barra__fila-1--cerca .btn-opcions {
+    position: static;
+    transform: none;
     order: 0;
     width: 44px;
     height: 44px;
@@ -288,16 +393,6 @@ watch(
 }
 .btn-menu--obert span:nth-child(3) {
   transform: translateY(-7px) rotate(-45deg);
-}
-
-/* ── Separador vertical ─────────────────────────────────────────────────── */
-
-.separador-v {
-  width: 1px;
-  height: 24px;
-  background: #e0e0dc;
-  flex-shrink: 0;
-  margin: 0 10px;
 }
 
 /* ── Tabs On?/Què?/Quan? ────────────────────────────────────────────────── */

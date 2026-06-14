@@ -295,6 +295,8 @@ function escTanca() {
 }
 
 .cerca-input {
+  flex: 1;
+  min-width: 0;
   height: 36px;
   padding: 0 12px;
   border: 1px solid #d8d8d4;
@@ -303,7 +305,6 @@ function escTanca() {
   color: #333;
   background: #fafaf8;
   outline: none;
-  width: 180px;
   transition:
     border-color 0.15s,
     box-shadow 0.15s;
@@ -311,8 +312,6 @@ function escTanca() {
 
 @media (max-width: 768px) {
   .cerca-input {
-    flex: 1;
-    width: auto;
     height: 44px;
   }
 }

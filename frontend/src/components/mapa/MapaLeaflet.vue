@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch, ref, computed } from 'vue'
+import { onMounted, onUnmounted, watch, ref, computed, nextTick } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useTerritorisStore } from '@/stores/territoris'
@@ -56,8 +56,6 @@ function esEncertada(info: InfoFeature): boolean {
 
 let mapa: L.Map | null = null
 let mascaraCatalunya: L.Polygon | null = null
-// Capa de marcadors d'escut/bandera (panell d'opcions del mapa, secció Cerca).
-let capaImatges: L.LayerGroup | null = null
 
 // ── Tiles: base OSM en mode normal, Carto Positron SENSE ETIQUETES en mode
 // joc — cap nom de municipi o ciutat al fons (anti-trampa d'arrel) i el
@@ -132,6 +130,7 @@ interface InfoFeature {
 
 interface InfoHover {
   nivell: NivellTerritorial
+  codi: string
   nom: string
   nomProvincia?: string
   nomsProvincia?: string[]
@@ -141,6 +140,10 @@ interface InfoHover {
 }
 
 const hoverInfo = ref<InfoHover | null>(null)
+
+// Territori del qual mostrar escut/bandera abaix-centre: el del hover (desktop)
+// o, si no n'hi ha, l'últim clicat (mòbil, sense hover). Vegeu `destacat`.
+const clicInfo = ref<{ nivell: NivellTerritorial; codi: string; nom: string } | null>(null)
 
 // Indicador de càrrega: actiu mentre es descarreguen els GeoJSON de les capes.
 const carregant = ref(false)
@@ -178,6 +181,52 @@ const filesHover = computed(() => {
     vegueries,
     comarca: nivell === 'comarques' || nivell === 'municipis' ? (nomComarca ?? '—') : '—',
     municipi: nivell === 'municipis' ? nom : '—',
+  }
+})
+
+// Referència al panell info-territori per ajustar el carrusel (mòbil).
+const infoTerritoriEl = ref<HTMLElement | null>(null)
+
+// En mòbil el valor es mostra a la dreta de l'etiqueta; si no hi cap, fa
+// marquee (vaivé) en lloc de truncar. Mesura cada valor i activa/desactiva
+// l'animació segons si desborda la seva cel·la.
+function ajustaCarrusel() {
+  const arrel = infoTerritoriEl.value
+  if (!arrel) return
+  const mobil = window.matchMedia('(max-width: 768px)').matches
+  arrel.querySelectorAll<HTMLElement>('.info-territori__val-cel').forEach((cel) => {
+    const inner = cel.querySelector<HTMLElement>('.info-territori__val-inner')
+    if (!inner) return
+    const sobra = inner.scrollWidth - cel.clientWidth
+    if (mobil && sobra > 2) {
+      cel.classList.add('info-territori__val-cel--scroll')
+      cel.style.setProperty('--marquee-dist', `-${sobra}px`)
+      cel.style.setProperty('--marquee-dur', `${Math.max(2, sobra / 25)}s`)
+    } else {
+      cel.classList.remove('info-territori__val-cel--scroll')
+      cel.style.removeProperty('--marquee-dist')
+      cel.style.removeProperty('--marquee-dur')
+    }
+  })
+}
+
+watch(filesHover, () => void nextTick(ajustaCarrusel))
+onMounted(() => window.addEventListener('resize', ajustaCarrusel))
+onUnmounted(() => window.removeEventListener('resize', ajustaCarrusel))
+
+// Escut/bandera abaix-centre: del territori en hover (desktop) o, si no n'hi
+// ha, de l'últim clicat (mòbil). Filtrat pels toggles del panell d'opcions.
+// Mai en mode joc.
+const imatgesDestacat = computed<{ escut?: string; bandera?: string } | null>(() => {
+  if (props.modeJoc) return null
+  if (!mapaOpcions.mostraEscut && !mapaOpcions.mostraBandera) return null
+  const d = hoverInfo.value ?? clicInfo.value
+  if (!d) return null
+  const e = enriquiment.busca(d.nivell, d.codi, d.nom)
+  if (!e) return null
+  return {
+    escut: mapaOpcions.mostraEscut && e.escut ? imatgeCommons(e.escut, 96) : undefined,
+    bandera: mapaOpcions.mostraBandera && e.bandera ? imatgeCommons(e.bandera, 96) : undefined,
   }
 })
 
@@ -642,6 +691,8 @@ defineExpose({ flaixJoc })
 function gestionaClicFeature(feature: GeoJSON.Feature, nivell: NivellTerritorial) {
   const info = codiDeFeature(feature, nivell)
   if (!info) return
+  // Per a l'escut/bandera abaix-centre al mòbil (sense hover): l'últim clicat.
+  clicInfo.value = { nivell, codi: info.codi, nom: info.nom ?? '' }
   switch (nivell) {
     case 'municipis': {
       const ja = territoris.municipisSeleccionats.has(info.codi)
@@ -898,6 +949,7 @@ async function carregaCapa(nivell: NivellTerritorial, zoom: number) {
             pathLayer.setStyle(estilHoverPerFeature(feature, nivell))
             hoverInfo.value = {
               nivell,
+              codi: info.codi,
               nom: info.nom ?? '',
               nomProvincia: info.nomProvincia,
               nomsProvincia: info.nomsProvincia,
@@ -965,7 +1017,6 @@ async function carregaTotesCapes(zoom: number) {
     // El z-order el determinen els panes (PANE_Z_INDEX); no cal bringToFront/Back.
     // Apliquem la interactivitat al pane segons quin nivell és l'actiu.
     actualitzaInteractivitatPanes()
-    actualitzaImatges()
   } catch (err) {
     console.error('Error carregant les capes del mapa', err)
     errorMapa.value = true
@@ -991,64 +1042,23 @@ function actualitzaEstilsTotes() {
   )
 }
 
-// ── Capa d'escut/bandera (panell d'opcions, secció Cerca) ──────────────────
-//
-// Marcadors d'imatge centrats al polígon del nivell actiu, només per a les
-// demarcacions que tenen escut/bandera i dins del viewport. Als municipis
-// (947) només a partir de zoom 10 i amb un sostre de marcadors, per no saturar.
-
-const MAX_MARCADORS_IMATGE = 250
-
-function actualitzaImatges() {
-  if (!mapa || !capaImatges) return
-  capaImatges.clearLayers()
-  // No en mode joc; la capa d'imatges és exclusiva de la secció Cerca.
-  if (props.modeJoc) return
-  const escut = mapaOpcions.mostraEscut
-  const bandera = mapaOpcions.mostraBandera
-  if (!escut && !bandera) return
-  // Carrega l'enriquiment sota demanda i reintenta quan estigui.
-  if (!enriquiment.dades) {
-    void enriquiment.carrega().then(actualitzaImatges)
-    return
-  }
-
-  const nivell = nivellEfectiu.value
-  if (nivell === 'municipis' && mapa.getZoom() < 10) return
-  const capa = capesActives[nivell]
-  if (!capa) return
-
-  const vista = mapa.getBounds()
-  let comptador = 0
-  capa.eachLayer((layer) => {
-    if (comptador >= MAX_MARCADORS_IMATGE) return
-    const geo = layer as L.Polygon & { feature?: GeoJSON.Feature }
-    if (!geo.feature) return
-    const centre = geo.getBounds().getCenter()
-    if (!vista.contains(centre)) return
-    const info = codiDeFeature(geo.feature, nivell)
-    if (!info) return
-    const e = enriquiment.busca(nivell, info.codi, info.nom ?? '')
-    if (!e) return
-    const imgs: string[] = []
-    if (escut && e.escut) imgs.push(`<img src="${imatgeCommons(e.escut, 48)}" alt="" />`)
-    if (bandera && e.bandera) imgs.push(`<img src="${imatgeCommons(e.bandera, 48)}" alt="" />`)
-    if (imgs.length === 0) return
-    const icon = L.divIcon({
-      className: 'marcador-imatge',
-      html: `<div class="mi">${imgs.join('')}</div>`,
-      iconSize: [0, 0],
-      iconAnchor: [0, 0],
-    })
-    L.marker(centre, { icon, interactive: false, keyboard: false }).addTo(capaImatges!)
-    comptador++
-  })
-}
+// Carrega l'enriquiment quan s'activa algun toggle (l'escut/bandera abaix-centre
+// el consumeix via `imatgesDestacat`); lazy, només quan cal.
+watch(
+  () => mapaOpcions.mostraEscut || mapaOpcions.mostraBandera,
+  (actiu) => {
+    if (actiu) void enriquiment.carrega()
+  },
+  { immediate: true }
+)
 
 // ── Lifecycle ──────────────────────────────────────────────────────────────
 
 onMounted(() => {
-  zoomInicial = mapaStore.zoom
+  // En mòbil la pantalla és més estreta: cal un nivell més de zoom out perquè
+  // tota Catalunya càpiga a la vista inicial (en refrescar) i com a mínim.
+  const mobil = window.matchMedia('(max-width: 768px)').matches
+  zoomInicial = mapaStore.zoom - (mobil ? 1 : 0)
   centreInicial = mapaStore.centre
   zoomBase = zoomInicial
   centreBase = centreInicial
@@ -1104,10 +1114,7 @@ onMounted(() => {
   mapa.on('moveend', () => {
     const { lat, lng } = mapa!.getCenter()
     mapaStore.actualitzaCentre(lat, lng)
-    actualitzaImatges()
   })
-
-  capaImatges = L.layerGroup().addTo(mapa)
 
   carregaMascaraCatalunya()
   carregaTotesCapes(mapaStore.zoom)
@@ -1131,7 +1138,6 @@ onUnmounted(() => {
   }
   mapa?.remove()
   mapa = null
-  capaImatges = null
   // Neteja defensiva: tot i que en `<script setup>` aquestes estructures són
   // per-instància, buidar-les en desmuntar evita estats penjats en escenaris
   // d'edge (HMR en desenvolupament, o un futur <keep-alive>) i ajuda el GC.
@@ -1156,13 +1162,10 @@ watch(
     if (props.modeJoc) return
     actualitzaEstilsTotes()
     actualitzaInteractivitatPanes()
-    actualitzaImatges()
+    clicInfo.value = null
     hoverInfo.value = null
   }
 )
-
-// Toggles del panell d'opcions (escut/bandera) → re-pinta la capa d'imatges.
-watch([() => mapaOpcions.mostraEscut, () => mapaOpcions.mostraBandera], actualitzaImatges)
 
 // Entrada/sortida del mode joc: redefineix la vista base i els estils.
 // Si només canvien els encertats (mateixa capa i contenidor — passa a cada
@@ -1192,7 +1195,7 @@ watch(
 <template>
   <div id="mapa-contenidor" class="mapa-contenidor">
     <!-- Panell ocult en mode joc: mostrar el nom en hover faria trivial el GeoFreak -->
-    <div v-if="!modeJoc" class="info-territori">
+    <div v-if="!modeJoc" ref="infoTerritoriEl" class="info-territori">
       <div class="info-territori__grid" role="radiogroup" :aria-label="$t('mapa.nivellAria')">
         <div class="info-territori__cel">
           <button
@@ -1206,15 +1209,17 @@ watch(
             {{ $t('nivells.provincia') }}
           </button>
           <div class="info-territori__val-cel">
-            <template v-if="filesHover?.provincies.length">
-              <span
-                v-for="(p, i) in filesHover.provincies"
-                :key="p"
-                :class="{ 'info-territori__val--secundari': i > 0 }"
-                >{{ p }}</span
-              >
-            </template>
-            <span v-else class="info-territori__val--buit">—</span>
+            <div class="info-territori__val-inner">
+              <template v-if="filesHover?.provincies.length">
+                <span
+                  v-for="(p, i) in filesHover.provincies"
+                  :key="p"
+                  :class="{ 'info-territori__val--secundari': i > 0 }"
+                  >{{ i > 0 ? `, ${p}` : p }}</span
+                >
+              </template>
+              <span v-else class="info-territori__val--buit">—</span>
+            </div>
           </div>
         </div>
         <div class="info-territori__cel">
@@ -1229,15 +1234,17 @@ watch(
             {{ $t('nivells.vegueria') }}
           </button>
           <div class="info-territori__val-cel">
-            <template v-if="filesHover?.vegueries.length">
-              <span
-                v-for="(v, i) in filesHover.vegueries"
-                :key="v"
-                :class="{ 'info-territori__val--secundari': i > 0 }"
-                >{{ v }}</span
-              >
-            </template>
-            <span v-else class="info-territori__val--buit">—</span>
+            <div class="info-territori__val-inner">
+              <template v-if="filesHover?.vegueries.length">
+                <span
+                  v-for="(v, i) in filesHover.vegueries"
+                  :key="v"
+                  :class="{ 'info-territori__val--secundari': i > 0 }"
+                  >{{ i > 0 ? `, ${v}` : v }}</span
+                >
+              </template>
+              <span v-else class="info-territori__val--buit">—</span>
+            </div>
           </div>
         </div>
         <div class="info-territori__cel">
@@ -1251,10 +1258,14 @@ watch(
           >
             {{ $t('nivells.comarca') }}
           </button>
-          <span
-            :class="{ 'info-territori__val--buit': !filesHover || filesHover.comarca === '—' }"
-            >{{ filesHover?.comarca ?? '—' }}</span
-          >
+          <div class="info-territori__val-cel">
+            <div class="info-territori__val-inner">
+              <span
+                :class="{ 'info-territori__val--buit': !filesHover || filesHover.comarca === '—' }"
+                >{{ filesHover?.comarca ?? '—' }}</span
+              >
+            </div>
+          </div>
         </div>
         <div class="info-territori__cel">
           <button
@@ -1267,12 +1278,32 @@ watch(
           >
             {{ $t('nivells.municipi') }}
           </button>
-          <span
-            :class="{ 'info-territori__val--buit': !filesHover || filesHover.municipi === '—' }"
-            >{{ filesHover?.municipi ?? '—' }}</span
-          >
+          <div class="info-territori__val-cel">
+            <div class="info-territori__val-inner">
+              <span
+                :class="{ 'info-territori__val--buit': !filesHover || filesHover.municipi === '—' }"
+                >{{ filesHover?.municipi ?? '—' }}</span
+              >
+            </div>
+          </div>
         </div>
       </div>
+    </div>
+
+    <!-- Escut/bandera del territori en hover (desktop) o clicat (mòbil),
+         abaix-centre, segons els toggles del panell d'opcions. -->
+    <div
+      v-if="imatgesDestacat && (imatgesDestacat.escut || imatgesDestacat.bandera)"
+      class="emblemes"
+      aria-hidden="true"
+    >
+      <img v-if="imatgesDestacat.escut" :src="imatgesDestacat.escut" class="emblemes__img" alt="" />
+      <img
+        v-if="imatgesDestacat.bandera"
+        :src="imatgesDestacat.bandera"
+        class="emblemes__img"
+        alt=""
+      />
     </div>
 
     <div v-if="carregant" class="mapa-carregant" role="status" aria-live="polite">
@@ -1300,6 +1331,7 @@ watch(
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
+  width: min(760px, calc(100vw - 24px));
   background: white;
   padding: 8px 12px;
   border-radius: 6px;
@@ -1309,9 +1341,10 @@ watch(
   pointer-events: none;
 }
 
+/* Quatre columnes del mateix ample (Província/Vegueria/Comarca/Municipi) */
 .info-territori__grid {
   display: grid;
-  grid-template-columns: 100px 160px 150px 240px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   column-gap: 16px;
   pointer-events: auto;
 }
@@ -1352,30 +1385,82 @@ watch(
   border-bottom-color: #1a1a1a;
 }
 
-.info-territori__cel > span,
 .info-territori__val-cel span {
   color: #1a1a1a;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .info-territori__val-cel {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Valor en una sola línia; els valors múltiples (comarques transfrontereres)
+   es mostren separats per coma. Si no hi cap, … en desktop / marquee en mòbil. */
+.info-territori__val-inner {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 @media (max-width: 768px) {
+  /* Enganxat a la barra de navegació, a tota l'amplada, sense marge ni cantons */
   .info-territori {
-    width: calc(100vw - 80px);
-    max-width: 340px;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: none;
+    transform: none;
+    border-radius: 0;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
   }
 
+  /* 4 columnes: [etiqueta · valor] × 2. Les columnes "auto" igualen l'ample de
+     les etiquetes, així els valors de Província/Comarca (i Vegueria/Municipi)
+     queden alineats verticalment entre les dues files. */
   .info-territori__grid {
-    grid-template-columns: 1fr 1fr;
-    column-gap: 12px;
+    grid-template-columns: auto 1fr auto 1fr;
+    align-items: baseline;
+    column-gap: 8px;
     row-gap: 8px;
+  }
+
+  /* La cel·la es dissol: etiqueta i valor passen a ser items directes del grid */
+  .info-territori__cel {
+    display: contents;
+  }
+
+  /* Una mica més d'aire entre la parella esquerra i la dreta */
+  .info-territori__cel:nth-child(2) .info-territori__cap,
+  .info-territori__cel:nth-child(4) .info-territori__cap {
+    padding-left: 8px;
+  }
+
+  /* En mòbil el valor pot fer marquee: cal ample natural (inline-block) i que
+     el recort el faci la finestra (.info-territori__val-cel), no l'inner. */
+  .info-territori__val-inner {
+    display: inline-block;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .info-territori__val-cel--scroll .info-territori__val-inner {
+    animation: info-marquee var(--marquee-dur, 4s) linear infinite alternate;
+  }
+}
+
+@keyframes info-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(var(--marquee-dist, 0));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .info-territori__val-cel--scroll .info-territori__val-inner {
+    animation: none;
   }
 }
 
@@ -1385,7 +1470,36 @@ watch(
 
 .info-territori__val--secundari {
   color: #888;
-  font-size: 0.8rem;
+}
+
+/* ── Escut/bandera abaix-centre (panell d'opcions) ─────────────────────── */
+.emblemes {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1100;
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+}
+
+.emblemes__img {
+  height: 64px;
+  width: auto;
+  max-width: 120px;
+  object-fit: contain;
+}
+
+@media (max-width: 768px) {
+  .emblemes__img {
+    height: 48px;
+  }
 }
 
 /* ── Indicador de càrrega ──────────────────────────────────────────────── */
@@ -1489,25 +1603,5 @@ watch(
   .leaflet-control-zoom {
     display: none;
   }
-}
-
-/* Marcadors d'escut/bandera (panell d'opcions). No interactius: els clics i el
-   hover travessen cap al territori de sota. Centrats al punt amb translate. */
-.marcador-imatge {
-  width: 0;
-  height: 0;
-}
-
-.marcador-imatge .mi {
-  display: flex;
-  gap: 3px;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-}
-
-.marcador-imatge img {
-  height: 26px;
-  width: auto;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
 }
 </style>
