@@ -15,7 +15,7 @@ la resta del territori espanyol en color més tenue (inspirat en meteo.cat).
 
 **Sense intencionalitat política de cap mena.** El projecte neix per diversió, per conèixer millor la terra i per al gaudi de qui vulgui fer-la servir. Que el focus sigui Catalunya no implica cap biaix nacionalista ni ideològic.
 
-**Fet amb passió.** El creador i es col·laboradors ho fan per gaudir-lo de creae quelcom nou i poder compartir-lo.
+**Fet amb passió.** El creador i els col·laboradors ho fan per gaudir de crear quelcom nou i poder compartir-lo.
 
 ## Idiomes
 
