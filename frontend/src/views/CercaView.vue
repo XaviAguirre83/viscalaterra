@@ -3,6 +3,7 @@ import { onMounted } from 'vue'
 import MapaLeaflet from '@/components/mapa/MapaLeaflet.vue'
 import PanellFiltres from '@/components/filtres/PanellFiltres.vue'
 import FitxaTerritori from '@/components/FitxaTerritori.vue'
+import OpcionsMapa from '@/components/OpcionsMapa.vue'
 import { useTerritorisStore } from '@/stores/territoris'
 import { useFitxaStore } from '@/stores/fitxa'
 
@@ -16,6 +17,7 @@ onMounted(() => territoris.carregaArbre())
     <PanellFiltres />
     <div class="cerca-cos">
       <MapaLeaflet @obre-fitxa="fitxa.obre($event)" />
+      <OpcionsMapa />
       <FitxaTerritori />
     </div>
   </div>

@@ -49,6 +49,12 @@
     "viquipedia": "Viquipèdia",
     "senseInfo": "Encara no hi ha informació d'aquest territori."
   },
+  "opcionsMapa": {
+    "titol": "Opcions del mapa",
+    "escut": "Mostra escuts",
+    "bandera": "Mostra banderes",
+    "nota": "Es mostren al nivell territorial actiu, només on n'hi ha."
+  },
   "cerca": {
     "placeholder": "Cerca per nom…",
     "boto": "Cerca",

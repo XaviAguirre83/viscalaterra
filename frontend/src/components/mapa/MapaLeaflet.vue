@@ -4,6 +4,8 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useTerritorisStore } from '@/stores/territoris'
 import { useMapaStore, type ModeJocMapa, type NivellTerritorial } from '@/stores/mapa'
+import { useMapaOpcionsStore } from '@/stores/mapaOpcions'
+import { useEnriquimentStore, imatgeCommons } from '@/stores/enriquiment'
 import {
   temaPerProvincia,
   temaPerVegueria,
@@ -15,6 +17,8 @@ import {
 
 const territoris = useTerritorisStore()
 const mapaStore = useMapaStore()
+const mapaOpcions = useMapaOpcionsStore()
+const enriquiment = useEnriquimentStore()
 
 // ── Mode joc (GeoFreak) ────────────────────────────────────────────────────
 // Quan `modeJoc` arriba informat, el mapa serveix el joc: el nivell actiu el
@@ -52,6 +56,8 @@ function esEncertada(info: InfoFeature): boolean {
 
 let mapa: L.Map | null = null
 let mascaraCatalunya: L.Polygon | null = null
+// Capa de marcadors d'escut/bandera (panell d'opcions del mapa, secció Cerca).
+let capaImatges: L.LayerGroup | null = null
 
 // ── Tiles: base OSM en mode normal, Carto Positron SENSE ETIQUETES en mode
 // joc — cap nom de municipi o ciutat al fons (anti-trampa d'arrel) i el
@@ -959,6 +965,7 @@ async function carregaTotesCapes(zoom: number) {
     // El z-order el determinen els panes (PANE_Z_INDEX); no cal bringToFront/Back.
     // Apliquem la interactivitat al pane segons quin nivell és l'actiu.
     actualitzaInteractivitatPanes()
+    actualitzaImatges()
   } catch (err) {
     console.error('Error carregant les capes del mapa', err)
     errorMapa.value = true
@@ -982,6 +989,60 @@ function actualitzaEstilsTotes() {
       })
     }
   )
+}
+
+// ── Capa d'escut/bandera (panell d'opcions, secció Cerca) ──────────────────
+//
+// Marcadors d'imatge centrats al polígon del nivell actiu, només per a les
+// demarcacions que tenen escut/bandera i dins del viewport. Als municipis
+// (947) només a partir de zoom 10 i amb un sostre de marcadors, per no saturar.
+
+const MAX_MARCADORS_IMATGE = 250
+
+function actualitzaImatges() {
+  if (!mapa || !capaImatges) return
+  capaImatges.clearLayers()
+  // No en mode joc; la capa d'imatges és exclusiva de la secció Cerca.
+  if (props.modeJoc) return
+  const escut = mapaOpcions.mostraEscut
+  const bandera = mapaOpcions.mostraBandera
+  if (!escut && !bandera) return
+  // Carrega l'enriquiment sota demanda i reintenta quan estigui.
+  if (!enriquiment.dades) {
+    void enriquiment.carrega().then(actualitzaImatges)
+    return
+  }
+
+  const nivell = nivellEfectiu.value
+  if (nivell === 'municipis' && mapa.getZoom() < 10) return
+  const capa = capesActives[nivell]
+  if (!capa) return
+
+  const vista = mapa.getBounds()
+  let comptador = 0
+  capa.eachLayer((layer) => {
+    if (comptador >= MAX_MARCADORS_IMATGE) return
+    const geo = layer as L.Polygon & { feature?: GeoJSON.Feature }
+    if (!geo.feature) return
+    const centre = geo.getBounds().getCenter()
+    if (!vista.contains(centre)) return
+    const info = codiDeFeature(geo.feature, nivell)
+    if (!info) return
+    const e = enriquiment.busca(nivell, info.codi, info.nom ?? '')
+    if (!e) return
+    const imgs: string[] = []
+    if (escut && e.escut) imgs.push(`<img src="${imatgeCommons(e.escut, 48)}" alt="" />`)
+    if (bandera && e.bandera) imgs.push(`<img src="${imatgeCommons(e.bandera, 48)}" alt="" />`)
+    if (imgs.length === 0) return
+    const icon = L.divIcon({
+      className: 'marcador-imatge',
+      html: `<div class="mi">${imgs.join('')}</div>`,
+      iconSize: [0, 0],
+      iconAnchor: [0, 0],
+    })
+    L.marker(centre, { icon, interactive: false, keyboard: false }).addTo(capaImatges!)
+    comptador++
+  })
 }
 
 // ── Lifecycle ──────────────────────────────────────────────────────────────
@@ -1043,7 +1104,10 @@ onMounted(() => {
   mapa.on('moveend', () => {
     const { lat, lng } = mapa!.getCenter()
     mapaStore.actualitzaCentre(lat, lng)
+    actualitzaImatges()
   })
+
+  capaImatges = L.layerGroup().addTo(mapa)
 
   carregaMascaraCatalunya()
   carregaTotesCapes(mapaStore.zoom)
@@ -1067,6 +1131,7 @@ onUnmounted(() => {
   }
   mapa?.remove()
   mapa = null
+  capaImatges = null
   // Neteja defensiva: tot i que en `<script setup>` aquestes estructures són
   // per-instància, buidar-les en desmuntar evita estats penjats en escenaris
   // d'edge (HMR en desenvolupament, o un futur <keep-alive>) i ajuda el GC.
@@ -1091,9 +1156,13 @@ watch(
     if (props.modeJoc) return
     actualitzaEstilsTotes()
     actualitzaInteractivitatPanes()
+    actualitzaImatges()
     hoverInfo.value = null
   }
 )
+
+// Toggles del panell d'opcions (escut/bandera) → re-pinta la capa d'imatges.
+watch([() => mapaOpcions.mostraEscut, () => mapaOpcions.mostraBandera], actualitzaImatges)
 
 // Entrada/sortida del mode joc: redefineix la vista base i els estils.
 // Si només canvien els encertats (mateixa capa i contenidor — passa a cada
@@ -1420,5 +1489,25 @@ watch(
   .leaflet-control-zoom {
     display: none;
   }
+}
+
+/* Marcadors d'escut/bandera (panell d'opcions). No interactius: els clics i el
+   hover travessen cap al territori de sota. Centrats al punt amb translate. */
+.marcador-imatge {
+  width: 0;
+  height: 0;
+}
+
+.marcador-imatge .mi {
+  display: flex;
+  gap: 3px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.marcador-imatge img {
+  height: 26px;
+  width: auto;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
 }
 </style>

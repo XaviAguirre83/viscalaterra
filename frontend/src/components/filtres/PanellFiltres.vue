@@ -5,6 +5,9 @@ import TabOn from './TabOn.vue'
 import TabQue from './TabQue.vue'
 import TabQuan from './TabQuan.vue'
 import CercaRapida from './CercaRapida.vue'
+import { useMapaOpcionsStore } from '@/stores/mapaOpcions'
+
+const mapaOpcions = useMapaOpcionsStore()
 
 type Tab = 'on' | 'que' | 'quan'
 
@@ -92,8 +95,19 @@ watch(
             </button>
           </div>
           <div class="separador-v separador-v--cerca" />
-          <div class="barra__cerca-wrap">
+          <div class="barra__cerca-fila">
             <CercaRapida />
+            <button
+              type="button"
+              class="btn-opcions"
+              :class="{ 'btn-opcions--actiu': mapaOpcions.panelObert }"
+              :title="$t('opcionsMapa.titol')"
+              :aria-label="$t('opcionsMapa.titol')"
+              :aria-expanded="mapaOpcions.panelObert"
+              @click="mapaOpcions.alterna()"
+            >
+              ⚙
+            </button>
           </div>
         </template>
 
@@ -160,9 +174,40 @@ watch(
   padding: 0 12px;
 }
 
-.barra__cerca-wrap {
+/* Cercador + engranatge d'opcions. Ordre DOM: cercador → ⚙️ (desktop: ⚙️ a la
+   dreta del cercador). En mòbil s'inverteix amb `order` (⚙️ a l'esquerra). */
+.barra__cerca-fila {
   display: flex;
   align-items: center;
+  gap: 6px;
+}
+
+.btn-opcions {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #d8d8d4;
+  border-radius: 8px;
+  background: #fafaf8;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: #555;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.btn-opcions:hover {
+  background: #f0f4f0;
+  color: #2d6a2d;
+}
+
+.btn-opcions--actiu {
+  background: #eef4ee;
+  border-color: #2d6a2d;
+  color: #2d6a2d;
 }
 
 @media (max-width: 768px) {
@@ -177,10 +222,22 @@ watch(
     display: none;
   }
 
-  .barra__cerca-wrap {
+  .barra__cerca-fila {
     flex-basis: 100%;
-    /* Alinea el cercador amb l'inici del tab "On?": botó menú (44px) + separador (21px) */
+    /* Alinea amb l'inici del tab "On?": botó menú (44px) + separador (21px) */
     padding: 0 4px 8px 65px;
+  }
+
+  /* El cercador ocupa l'espai i el ⚙️ es mou a l'esquerra */
+  .barra__cerca-fila .cerca-rapida {
+    flex: 1;
+    order: 1;
+  }
+
+  .btn-opcions {
+    order: 0;
+    width: 44px;
+    height: 44px;
   }
 }
 

@@ -49,6 +49,12 @@
     "viquipedia": "Wikipedia",
     "senseInfo": "No information for this territory yet."
   },
+  "opcionsMapa": {
+    "titol": "Map options",
+    "escut": "Show coats of arms",
+    "bandera": "Show flags",
+    "nota": "Shown at the active territorial level, only where available."
+  },
   "cerca": {
     "placeholder": "Search by name…",
     "boto": "Search",

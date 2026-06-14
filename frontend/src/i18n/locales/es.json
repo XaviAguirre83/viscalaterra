@@ -49,6 +49,12 @@
     "viquipedia": "Wikipedia",
     "senseInfo": "Aún no hay información de este territorio."
   },
+  "opcionsMapa": {
+    "titol": "Opciones del mapa",
+    "escut": "Mostrar escudos",
+    "bandera": "Mostrar banderas",
+    "nota": "Se muestran en el nivel territorial activo, solo donde los hay."
+  },
   "cerca": {
     "placeholder": "Busca por nombre…",
     "boto": "Buscar",
