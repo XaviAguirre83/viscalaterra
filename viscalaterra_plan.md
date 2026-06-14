@@ -15,11 +15,12 @@ la resta del territori espanyol en color més tenue (inspirat en meteo.cat).
 
 **Sense intencionalitat política de cap mena.** El projecte neix per diversió, per conèixer millor la terra i per al gaudi de qui vulgui fer-la servir. Que el focus sigui Catalunya no implica cap biaix nacionalista ni ideològic.
 
-**Fet amb passió.** El creador el fa per gaudir-lo fent-lo, i per compartir-lo.
+**Fet amb passió.** El creador i es col·laboradors ho fan per gaudir-lo de creae quelcom nou i poder compartir-lo.
 
 ## Idiomes
 
 - **V1:** Català exclusivament (requisit per al domini `.cat`)
+- **V2:** Castellà, anglès
 - **Futur:** Castellà, anglès, gallec, basc i altres _(sense límit definit)_
 - **Visió a llarg termini:** Versió "Països Catalans" ampliant a Comunitat Valenciana i Illes Balears — descartada per ara, apuntada per si hi ha èxit
 
