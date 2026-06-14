@@ -5,9 +5,11 @@ import { useTerritorisStore } from '@/stores/territoris'
 import { useFiltresStore } from '@/stores/filtres'
 import { TEMES } from '@/data/categories'
 import { normalitza } from '@/data/text'
+import { useFitxaStore } from '@/stores/fitxa'
 
 const territoris = useTerritorisStore()
 const filtres = useFiltresStore()
+const fitxa = useFitxaStore()
 const { t } = useI18n()
 
 const queryBruta = ref('') // lligat a l'input (s'actualitza a cada tecla)
@@ -158,6 +160,21 @@ function selecciona(r: Resultat) {
   obert.value = false
 }
 
+// Nivells amb fitxa d'informació (enllaços). Les vegueries i les categories no.
+function teFitxa(tipus: Resultat['tipus']): boolean {
+  return tipus === 'provincies' || tipus === 'comarques' || tipus === 'municipis'
+}
+
+// Obre la fitxa del territori SENSE seleccionar-lo al mapa.
+function obreFitxa(r: Resultat) {
+  if (!teFitxa(r.tipus)) return
+  fitxa.obre({
+    nivell: r.tipus as 'provincies' | 'comarques' | 'municipis',
+    codi: r.codi,
+    nom: r.nom,
+  })
+}
+
 function tancaEnBlur(e: FocusEvent) {
   // Deixa temps perquè el click al resultat es processi primer
   const related = e.relatedTarget as HTMLElement | null
@@ -182,9 +199,7 @@ function mouSeleccio(delta: number) {
   obert.value = true
   indexActiu.value = (indexActiu.value + delta + n) % n
   void nextTick(() => {
-    document
-      .querySelector('.cerca-rapida .cerca-resultat--actiu')
-      ?.scrollIntoView({ block: 'nearest' })
+    document.querySelector('.cerca-rapida .cerca-fila--actiu')?.scrollIntoView({ block: 'nearest' })
   })
 }
 
@@ -227,18 +242,28 @@ function escTanca() {
     <div v-if="obert && grups.length > 0" class="cerca-rapida__dropdown">
       <div v-for="grup in grups" :key="grup.tipus" class="cerca-grup">
         <div class="cerca-grup__titol">{{ grup.etiqueta }}</div>
-        <button
+        <div
           v-for="r in grup.items"
           :key="r.codi"
-          type="button"
-          class="cerca-resultat"
-          :class="{ 'cerca-resultat--actiu': llistaPlana[indexActiu] === r }"
-          @mousedown.prevent
-          @click="selecciona(r)"
+          class="cerca-fila"
+          :class="{ 'cerca-fila--actiu': llistaPlana[indexActiu] === r }"
         >
-          <span class="cerca-resultat__nom">{{ r.nom }}</span>
-          <span v-if="r.context" class="cerca-resultat__context">{{ r.context }}</span>
-        </button>
+          <button type="button" class="cerca-resultat" @mousedown.prevent @click="selecciona(r)">
+            <span class="cerca-resultat__nom">{{ r.nom }}</span>
+            <span v-if="r.context" class="cerca-resultat__context">{{ r.context }}</span>
+          </button>
+          <button
+            v-if="teFitxa(r.tipus)"
+            type="button"
+            class="cerca-resultat__info"
+            :aria-label="$t('fitxa.webOficial')"
+            title="ⓘ"
+            @mousedown.prevent
+            @click.stop="obreFitxa(r)"
+          >
+            ⓘ
+          </button>
+        </div>
       </div>
       <div v-if="municipisOcults > 0" class="cerca-rapida__mes">
         {{ $t('cerca.mesMunicipis', { n: municipisOcults }) }}
@@ -366,22 +391,46 @@ function escTanca() {
   color: var(--color-text-secundari, #737373);
 }
 
+/* Fila: el resultat seleccionable + la ⓘ d'informació, costat a costat */
+.cerca-fila {
+  display: flex;
+  align-items: stretch;
+}
+
+.cerca-fila:hover,
+.cerca-fila--actiu {
+  background: #f4f7f4;
+}
+
 .cerca-resultat {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   padding: 9px 14px;
   background: none;
   border: none;
   text-align: left;
   cursor: pointer;
-  transition: background 0.1s;
 }
 
-.cerca-resultat:hover,
-.cerca-resultat--actiu {
-  background: #f4f7f4;
+.cerca-resultat__info {
+  flex-shrink: 0;
+  width: 40px;
+  border: none;
+  background: none;
+  color: var(--color-text-secundari, #737373);
+  font-size: 1rem;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.cerca-resultat__info:hover {
+  background: #eef4ee;
+  color: #2d6a2d;
 }
 
 .cerca-resultat__nom {

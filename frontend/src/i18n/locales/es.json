@@ -44,6 +44,11 @@
     "comarca": "Comarca",
     "municipi": "Municipio"
   },
+  "fitxa": {
+    "webOficial": "Web oficial",
+    "viquipedia": "Wikipedia",
+    "senseInfo": "Aún no hay información de este territorio."
+  },
   "cerca": {
     "placeholder": "Busca por nombre…",
     "boto": "Buscar",

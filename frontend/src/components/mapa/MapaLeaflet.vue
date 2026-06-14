@@ -23,7 +23,10 @@ const mapaStore = useMapaStore()
 // seleccionar, i si hi ha territori contenidor el mapa s'hi enquadra i no se'n
 // pot sortir.
 const props = defineProps<{ modeJoc?: ModeJocMapa | null }>()
-const emit = defineEmits<{ clicJoc: [codi: string, nom: string] }>()
+const emit = defineEmits<{
+  clicJoc: [codi: string, nom: string]
+  obreFitxa: [objectiu: { nivell: NivellTerritorial; codi: string; nom: string }]
+}>()
 
 // Nivell que mana al mapa: el del joc en mode joc, el del selector altrament.
 const nivellEfectiu = computed<NivellTerritorial>(
@@ -913,6 +916,15 @@ async function carregaCapa(nivell: NivellTerritorial, zoom: number) {
               return
             }
             gestionaClicFeature(feature, nivell)
+          },
+          contextmenu(e: L.LeafletMouseEvent) {
+            // Clic dret (desktop) / long-press (mòbil) sobre el territori del
+            // nivell actiu → fitxa amb enllaços. No en mode joc.
+            if (props.modeJoc || nivell !== nivellEfectiu.value) return
+            e.originalEvent?.preventDefault?.()
+            const info = codiDeFeature(feature, nivell)
+            if (!info) return
+            emit('obreFitxa', { nivell, codi: info.codi, nom: info.nom ?? '' })
           },
         })
       },
