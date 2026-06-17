@@ -4,7 +4,7 @@
 > `viscalaterra_plan.md` (visió de producte) i `CLAUDE.md` (referència tècnica del codi), aquí
 > s'ordenen els **propers passos de desenvolupament** i es deixa constància de les decisions preses.
 
-Última actualització: 2026-06-04
+Última actualització: 2026-06-17
 
 ---
 
@@ -273,7 +273,74 @@ usuaris
 
 ---
 
+### Secció 4.5 — Beta tancada per invitació (vouching) — _disseny, sense implementar_
+
+Mecanisme per controlar qui entra a **staging** (i, més endavant, a la beta de producció):
+creixement orgànic però controlat, on **cada usuari nou ve avalat per un d'existent**
+(patró "vouching", estil invitacions de Gmail / Lobste.rs). Encaixa amb la filosofia
+de "gent real darrere" (anti-spam/anti-fake) i amb el sistema de contribucions (4.4).
+
+#### Flux (exemple)
+
+1. **Arrel**: el propietari afegeix a mà uns quants contactes de confiança a la llista
+   blanca (p. ex. Oriol, Alex, David, Julia) → es poden registrar.
+2. **Sol·licitud**: un nou (Josep) que ha vist la plataforma de part d'Oriol omple un
+   **formulari de sol·licitud** (a la secció "Contacte"): el seu email + l'email de qui
+   l'avala (oriol@…). Es crea una **invitació pendent** a la BD.
+3. **Aval per enllaç**: la plataforma envia un email a Oriol amb dos botons,
+   **"Sí, l'avalo" / "No"** (enllaços amb token únic, sense haver de respondre el correu).
+4. **Acceptació**: si Oriol clica "Sí" → Josep entra a la llista blanca i rep un email amb
+   el seu **enllaç de registre**. Un cop registrat, Josep també pot avalar nous usuaris.
+5. **Arbre de referits**: cada usuari guarda qui l'ha avalat (`referit_per`) → mapa de
+   procedència (creixement, súper-connectors, podar branques problemàtiques, gamificar).
+
+> **Decisió de disseny clau** [usuari + Claude, 2026-06-17]: l'aval es fa amb **enllaç
+> tokenitzat** (botó "Sí/No" al correu), **no** llegint/parsejant correus entrants — molt
+> més robust i menys codi. El "Contacte" passa a ser un **formulari estructurat**, no un
+> email lliure.
+
+#### Aportacions i promoció staging → producció
+
+- Els usuaris de la beta **ja poden aportar** (publicar `llocs` nous, validar els existents
+  — font d'aigua, zona d'escalada, banc de pícnic…), tot a la BD de staging.
+- En llançar producció, la idea és **promoure usuaris (amb la seva reputació) i dades** de
+  staging → els beta-testers passen a ser _founding users_ amb les seves aportacions. Bon
+  incentiu per aportar de debò durant la beta.
+- ⚠️ Promoure dades de forma **selectiva/revisada**, no un bolcat automàtic (evitar
+  contaminar producció amb soroll de proves). Decisió per a més endavant.
+
+#### Esquema previst
+
+Sobre la taula `usuaris` (ja existent amb auth real): afegir `referit_per`; nova taula
+`invitacions` (sol·licitant_email, referent_email, estat pendent/aprovada/rebutjada, token,
+dates); la **llista blanca** = invitacions aprovades + arrels. Comprovació a `/registre` i
+`/google`: un email no autoritzat no es pot registrar ni entrar.
+
+#### Fases
+
+- **Fase 1 — Llista blanca + comprovació**: rebutjar registre/login d'emails no autoritzats;
+  arrels a mà. Dona la beta tancada **ja**, sense dependre de l'email. _Cimentació._
+- **Fase 2 — Vouching complet**: formulari de sol·licitud + taula `invitacions` + emails amb
+  enllaços d'aval. **Requereix servei d'email transaccional.**
+- **Fase 3 (futur)** — promoció staging → producció.
+
+#### Pendent de decidir abans d'implementar
+
+- **Servei d'email transaccional** (Resend / Postmark / Brevo / Amazon SES…; free tier per a
+  staging) + configurar el domini (SPF/DKIM). Dependència nova.
+- Privacitat (RGPD lleu): consentiment en registrar-se + permetre esborrat (es guarden emails
+  i un graf social de qui ha avalat qui).
+- Límits anti-abús (nre. d'invitacions per usuari) — a futur, no per a l'MVP.
+
+---
+
 ## 5. Decisions preses (registre)
+
+- **2026-06-17** — Beta de staging per **invitació amb aval (vouching)**: cada usuari nou
+  l'avala un d'existent; arrels a mà; aval via **enllaç tokenitzat** (botó Sí/No al correu),
+  no parsejant correus; "Contacte" = formulari de sol·licitud. Aportacions de beta + usuaris
+  promocionables a producció (selectiu). Per fases (llista blanca → vouching amb email →
+  promoció). Pendent: servei d'email. Disseny detallat a la secció 4.5. **Sense implementar.**
 
 - **2026-06-11** — Primer pas cap a l'MVP de staging: implementar el **primer joc** (rebatejat
   GeoMaster → **GeoFreak**, per col·lisió de nom a les app stores) **abans** de l'auth real —
