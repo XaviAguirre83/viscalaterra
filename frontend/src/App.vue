@@ -1,5 +1,11 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import CabeceraApp from '@/components/CabeceraApp.vue'
+import { useAuthStore } from '@/stores/auth'
+
+// En arrencar, restaura la sessió si hi ha un token vàlid desat.
+const auth = useAuthStore()
+onMounted(() => auth.carregaJo())
 </script>
 
 <template>

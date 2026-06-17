@@ -5,6 +5,7 @@ import compression from 'compression'
 import rateLimit from 'express-rate-limit'
 import territorisRouter from './routes/territoris'
 import geojsonRouter from './routes/geojson'
+import authRouter from './routes/auth'
 
 const app = express()
 const port = process.env.PORT ?? 3000
@@ -42,6 +43,7 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', project: 'viscalaterra' })
 })
 
+app.use('/api/auth', authRouter)
 app.use('/api/territoris', territorisRouter)
 app.use('/api/geojson', geojsonRouter)
 

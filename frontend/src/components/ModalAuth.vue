@@ -1,10 +1,18 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useFocusTrap } from '@/composables/useFocusTrap'
 
 const emit = defineEmits<{ tanca: [] }>()
 const auth = useAuthStore()
+const { t, te } = useI18n()
+
+// Tradueix el codi d'error del backend; si no hi ha clau, missatge genèric.
+function missatgeError(codi: string): string {
+  const clau = `auth.errors.${codi}`
+  return te(clau) ? t(clau) : t('auth.errors.generic')
+}
 
 // El modal sempre està obert mentre el component existeix (el pare el munta
 // i el desmunta). Focus-trap + Esc per tancar + retorn del focus.
@@ -16,14 +24,85 @@ const mode = ref<Mode>('entra')
 const nom = ref('')
 const email = ref('')
 const contrasenya = ref('')
+const error = ref('')
 
-function enviar() {
-  // ⚠️ MOCK: simulem el login fins que hi hagi backend (JWT). No valida res.
-  const base =
-    mode.value === 'registra' && nom.value.trim() ? nom.value : (email.value.split('@')[0] ?? '')
-  auth.entra(base)
-  emit('tanca')
+function canviaMode(m: Mode) {
+  mode.value = m
+  error.value = ''
 }
+
+async function enviar() {
+  error.value = ''
+  try {
+    if (mode.value === 'registra') {
+      await auth.registra(nom.value, email.value, contrasenya.value)
+    } else {
+      await auth.entra(email.value, contrasenya.value)
+    }
+    emit('tanca')
+  } catch (e) {
+    error.value = missatgeError((e as Error).message)
+  }
+}
+
+// ── Login amb Google (Google Identity Services) ───────────────────────────
+// El Client ID es configura a frontend/.env.local (VITE_GOOGLE_CLIENT_ID). Sense
+// ell, el botó no es mostra (la resta del modal funciona igual).
+const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined
+const googleBtnRef = ref<HTMLElement | null>(null)
+
+interface GoogleId {
+  accounts: {
+    id: {
+      initialize(cfg: { client_id: string; callback: (r: { credential: string }) => void }): void
+      renderButton(el: HTMLElement, opts: Record<string, unknown>): void
+    }
+  }
+}
+type FinestraGoogle = Window & { google?: GoogleId }
+
+function carregaScriptGoogle(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (document.getElementById('gsi-script')) return resolve()
+    const s = document.createElement('script')
+    s.src = 'https://accounts.google.com/gsi/client'
+    s.async = true
+    s.defer = true
+    s.id = 'gsi-script'
+    s.onload = () => resolve()
+    s.onerror = () => reject(new Error('Google no disponible'))
+    document.head.appendChild(s)
+  })
+}
+
+async function onCredentialGoogle(resp: { credential: string }) {
+  error.value = ''
+  try {
+    await auth.entraAmbGoogle(resp.credential)
+    emit('tanca')
+  } catch (e) {
+    error.value = missatgeError((e as Error).message)
+  }
+}
+
+onMounted(async () => {
+  if (!CLIENT_ID) return
+  try {
+    await carregaScriptGoogle()
+    const g = (window as FinestraGoogle).google
+    if (!g || !googleBtnRef.value) return
+    g.accounts.id.initialize({ client_id: CLIENT_ID, callback: onCredentialGoogle })
+    g.accounts.id.renderButton(googleBtnRef.value, {
+      theme: 'outline',
+      size: 'large',
+      width: 320,
+      text: 'continue_with',
+      shape: 'pill',
+    })
+  } catch {
+    /* si Google falla, la resta del modal segueix funcionant */
+  }
+})
 </script>
 
 <template>
@@ -39,10 +118,14 @@ function enviar() {
       </button>
 
       <div class="modal-auth__tabs">
-        <button type="button" :class="{ actiu: mode === 'entra' }" @click="mode = 'entra'">
+        <button type="button" :class="{ actiu: mode === 'entra' }" @click="canviaMode('entra')">
           {{ $t('capcalera.entra') }}
         </button>
-        <button type="button" :class="{ actiu: mode === 'registra' }" @click="mode = 'registra'">
+        <button
+          type="button"
+          :class="{ actiu: mode === 'registra' }"
+          @click="canviaMode('registra')"
+        >
           {{ $t('capcalera.registra') }}
         </button>
       </div>
@@ -65,10 +148,20 @@ function enviar() {
             required
           />
         </label>
-        <button type="submit" class="modal-auth__enviar">
+
+        <p v-if="error" class="modal-auth__error" role="alert">{{ error }}</p>
+
+        <button type="submit" class="modal-auth__enviar" :disabled="auth.carregant">
           {{ mode === 'entra' ? $t('capcalera.entra') : $t('capcalera.registra') }}
         </button>
       </form>
+
+      <!-- Login amb Google -->
+      <div class="modal-auth__separador">
+        <span>{{ $t('auth.o') }}</span>
+      </div>
+      <div v-if="CLIENT_ID" ref="googleBtnRef" class="modal-auth__google"></div>
+      <p v-else class="modal-auth__nota">{{ $t('auth.googlePendent') }}</p>
     </div>
   </div>
 </template>
@@ -186,6 +279,51 @@ function enviar() {
 
 .modal-auth__enviar:hover {
   background: var(--color-marca-fosc, #1e4e1e);
+}
+
+.modal-auth__enviar:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.modal-auth__error {
+  margin: 0;
+  padding: 9px 12px;
+  background: #fdecec;
+  border: 1px solid #f5c2c2;
+  border-radius: 8px;
+  font-size: var(--text-sm);
+  color: #b3261e;
+}
+
+.modal-auth__separador {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0 14px;
+  color: #aaa;
+  font-size: var(--text-sm);
+}
+
+.modal-auth__separador::before,
+.modal-auth__separador::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #ececec;
+}
+
+.modal-auth__google {
+  display: flex;
+  justify-content: center;
+  min-height: 40px;
+}
+
+.modal-auth__nota {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-xs);
+  color: var(--color-text-secundari, #737373);
 }
 
 @media (max-width: 768px) {
