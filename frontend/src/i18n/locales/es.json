@@ -17,13 +17,30 @@
   "auth": {
     "nom": "Nombre",
     "email": "Correo electrónico",
-    "contrasenya": "Contraseña"
+    "contrasenya": "Contraseña",
+    "o": "o",
+    "googlePendent": "Login con Google: pendiente de configurar el Client ID",
+    "errors": {
+      "generic": "Ha habido un error. Inténtalo de nuevo.",
+      "nom_obligatori": "El nombre es obligatorio",
+      "email_no_valid": "El correo electrónico no es válido",
+      "contrasenya_curta": "La contraseña debe tener 8 caracteres o más",
+      "email_duplicat": "Ya existe una cuenta con este correo",
+      "credencials_incorrectes": "Correo o contraseña incorrectos",
+      "google_no_configurat": "El acceso con Google no está configurado",
+      "google_falta_credential": "No se ha recibido la credencial de Google",
+      "google_token_no_valid": "El token de Google no es válido",
+      "google_no_verificat": "La cuenta de Google no está verificada",
+      "no_autenticat": "Debes iniciar sesión",
+      "token_no_valid": "La sesión ha caducado; vuelve a entrar",
+      "usuari_no_trobat": "Usuario no encontrado"
+    }
   },
   "nav": {
     "menuPrincipal": "Menú principal",
     "seccions": {
-      "cerca": "Buscar",
-      "agenda": "Agenda Cultural",
+      "llocs": "Lugares",
+      "agenda": "Agenda",
       "anuncis": "Tablón de anuncios",
       "fetALaTerra": "Hecho en 'la terra'",
       "jocs": "Juegos",
@@ -264,7 +281,8 @@
   "mapa": {
     "carregant": "Cargando el mapa…",
     "error": "No se han podido cargar los datos del mapa.",
-    "nivellAria": "Nivel territorial activo"
+    "nivellAria": "Nivel territorial activo",
+    "amplia": "Ampliar la imagen"
   },
   "orientacio": {
     "gira": "Gira el dispositivo",
