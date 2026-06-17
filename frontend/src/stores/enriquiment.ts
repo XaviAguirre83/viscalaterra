@@ -9,11 +9,22 @@ import type { NivellTerritorial } from '@/stores/mapa'
 // compartit per la fitxa de territori (stores/fitxa) i la capa d'imatges del
 // mapa (escut/bandera). Una sola font, una sola descàrrega.
 
+// Atribució d'una imatge (escut/bandera) descarregada de Wikimedia Commons.
+export interface Credit {
+  autor?: string
+  llicencia?: string
+  pagina?: string
+}
+
 export interface Enriquiment {
   web?: string
   wiki?: string
+  // escut/bandera són rutes locals servides des de /emblemes/ (les baixa l'script
+  // backend/src/scripts/baixa-emblemes.ts; vegeu .gitignore).
   escut?: string
   bandera?: string
+  escutCredit?: Credit
+  banderaCredit?: Credit
 }
 
 interface DadesEnriquiment {
@@ -23,12 +34,6 @@ interface DadesEnriquiment {
 }
 
 const BUIT: DadesEnriquiment = { municipis: {}, comarques: {}, provincies: {} }
-
-// Converteix una imatge de Commons (http://…/Special:FilePath/…) a https i la
-// dimensiona amb ?width per no baixar-la a mida completa.
-export function imatgeCommons(url: string, width: number): string {
-  return `${url.replace(/^http:/, 'https:')}?width=${width}`
-}
 
 export const useEnriquimentStore = defineStore('enriquiment', () => {
   const dades = ref<DadesEnriquiment | null>(null)

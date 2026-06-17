@@ -66,8 +66,15 @@ Thumbs.db
 backend/data/geojson/
 
 # ================================
+# Emblemes (escuts/banderes) — no al repo: es regeneren des de Wikimedia Commons
+# amb `npm --prefix backend run baixa-emblemes` (les rutes sí són al JSON).
+# ================================
+frontend/public/emblemes/
+
+# ================================
 # Documentació privada
 # ================================
 docs/ownership_document_viscalaterra.cat.pdf
 docs/developer_notes.md
 docs/Monetitzacio.md
+docs/privat

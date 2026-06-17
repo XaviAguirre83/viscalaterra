@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css'
 import { useTerritorisStore } from '@/stores/territoris'
 import { useMapaStore, type ModeJocMapa, type NivellTerritorial } from '@/stores/mapa'
 import { useMapaOpcionsStore } from '@/stores/mapaOpcions'
-import { useEnriquimentStore, imatgeCommons } from '@/stores/enriquiment'
+import { useEnriquimentStore, type Credit } from '@/stores/enriquiment'
 import {
   temaPerProvincia,
   temaPerVegueria,
@@ -211,24 +211,54 @@ function ajustaCarrusel() {
 }
 
 watch(filesHover, () => void nextTick(ajustaCarrusel))
-onMounted(() => window.addEventListener('resize', ajustaCarrusel))
-onUnmounted(() => window.removeEventListener('resize', ajustaCarrusel))
+onMounted(() => {
+  window.addEventListener('resize', ajustaCarrusel)
+  window.addEventListener('keydown', onTeclaEsc)
+})
+onUnmounted(() => {
+  window.removeEventListener('resize', ajustaCarrusel)
+  window.removeEventListener('keydown', onTeclaEsc)
+})
 
 // Escut/bandera abaix-centre: del territori en hover (desktop) o, si no n'hi
 // ha, de l'últim clicat (mòbil). Filtrat pels toggles del panell d'opcions.
 // Mai en mode joc.
-const imatgesDestacat = computed<{ escut?: string; bandera?: string } | null>(() => {
-  if (props.modeJoc) return null
-  if (!mapaOpcions.mostraEscut && !mapaOpcions.mostraBandera) return null
-  const d = hoverInfo.value ?? clicInfo.value
-  if (!d) return null
-  const e = enriquiment.busca(d.nivell, d.codi, d.nom)
-  if (!e) return null
-  return {
-    escut: mapaOpcions.mostraEscut && e.escut ? imatgeCommons(e.escut, 96) : undefined,
-    bandera: mapaOpcions.mostraBandera && e.bandera ? imatgeCommons(e.bandera, 96) : undefined,
+interface ImatgeDestacada {
+  src: string
+  tipus: 'escut' | 'bandera'
+  credit?: Credit
+}
+const imatgesDestacat = computed<{ escut?: ImatgeDestacada; bandera?: ImatgeDestacada } | null>(
+  () => {
+    if (props.modeJoc) return null
+    if (!mapaOpcions.mostraEscut && !mapaOpcions.mostraBandera) return null
+    const d = hoverInfo.value ?? clicInfo.value
+    if (!d) return null
+    const e = enriquiment.busca(d.nivell, d.codi, d.nom)
+    if (!e) return null
+    return {
+      escut:
+        mapaOpcions.mostraEscut && e.escut
+          ? { src: e.escut, tipus: 'escut', credit: e.escutCredit }
+          : undefined,
+      bandera:
+        mapaOpcions.mostraBandera && e.bandera
+          ? { src: e.bandera, tipus: 'bandera', credit: e.banderaCredit }
+          : undefined,
+    }
   }
-})
+)
+
+// Lightbox: imatge (escut/bandera) ampliada al centre en clicar-la. Tanca amb
+// clic fora, ✕ o Esc.
+const ampliada = ref<ImatgeDestacada | null>(null)
+function textCredit(c?: Credit): string {
+  if (!c) return ''
+  return [c.autor, c.llicencia].filter(Boolean).join(' · ') || 'Wikimedia Commons'
+}
+function onTeclaEsc(e: KeyboardEvent) {
+  if (e.key === 'Escape' && ampliada.value) ampliada.value = null
+}
 
 function codiDeFeature(
   feature: GeoJSON.Feature | undefined,
@@ -1291,20 +1321,61 @@ watch(
     </div>
 
     <!-- Escut/bandera del territori en hover (desktop) o clicat (mòbil),
-         abaix-centre, segons els toggles del panell d'opcions. -->
+         abaix-centre. Fons transparent amb halo blanc; clic → ampliar. -->
     <div
       v-if="imatgesDestacat && (imatgesDestacat.escut || imatgesDestacat.bandera)"
       class="emblemes"
-      aria-hidden="true"
     >
-      <img v-if="imatgesDestacat.escut" :src="imatgesDestacat.escut" class="emblemes__img" alt="" />
-      <img
+      <button
+        v-if="imatgesDestacat.escut"
+        type="button"
+        class="emblemes__bto"
+        :aria-label="$t('mapa.amplia')"
+        @click="ampliada = imatgesDestacat.escut"
+      >
+        <img :src="imatgesDestacat.escut.src" class="emblemes__img" alt="" />
+      </button>
+      <button
         v-if="imatgesDestacat.bandera"
-        :src="imatgesDestacat.bandera"
-        class="emblemes__img"
-        alt=""
-      />
+        type="button"
+        class="emblemes__bto"
+        :aria-label="$t('mapa.amplia')"
+        @click="ampliada = imatgesDestacat.bandera"
+      >
+        <img :src="imatgesDestacat.bandera.src" class="emblemes__img" alt="" />
+      </button>
     </div>
+
+    <!-- Lightbox: emblema ampliat al centre, sobre recuadre blanc -->
+    <Transition name="lightbox">
+      <div v-if="ampliada" class="lightbox" @click.self="ampliada = null">
+        <div class="lightbox__caixa">
+          <button
+            type="button"
+            class="lightbox__tancar"
+            :aria-label="$t('comu.tanca')"
+            @click="ampliada = null"
+          >
+            ✕
+          </button>
+          <img
+            :src="ampliada.src"
+            class="lightbox__img"
+            :class="`lightbox__img--${ampliada.tipus}`"
+            alt=""
+          />
+          <a
+            v-if="ampliada.credit"
+            class="lightbox__credit"
+            :href="ampliada.credit.pagina"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {{ textCredit(ampliada.credit) }} · Wikimedia Commons <span aria-hidden="true">↗</span>
+          </a>
+        </div>
+      </div>
+    </Transition>
 
     <div v-if="carregant" class="mapa-carregant" role="status" aria-live="polite">
       <span class="mapa-carregant__spinner" aria-hidden="true"></span>
@@ -1481,12 +1552,19 @@ watch(
   z-index: 1100;
   display: flex;
   align-items: flex-end;
-  gap: 14px;
-  padding: 8px 14px;
-  background: rgba(255, 255, 255, 0.92);
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  gap: 32px;
+  /* Sense recuadre: fons transparent. El contrast el dona el halo blanc de
+     l'.emblemes__img. Només els botons capturen el clic; la resta passa al mapa. */
   pointer-events: none;
+}
+
+.emblemes__bto {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  pointer-events: auto;
+  line-height: 0;
 }
 
 .emblemes__img {
@@ -1494,11 +1572,117 @@ watch(
   width: auto;
   max-width: 120px;
   object-fit: contain;
+  /* Halo/glow blanc perquè l'emblema ressalti sobre qualsevol fons del mapa. */
+  filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 2px #fff) drop-shadow(0 0 4px #fff)
+    drop-shadow(0 1px 3px rgba(0, 0, 0, 0.35));
+  transition: transform 0.12s ease;
+}
+
+.emblemes__bto:hover .emblemes__img {
+  transform: scale(1.06);
 }
 
 @media (max-width: 768px) {
   .emblemes__img {
     height: 48px;
+  }
+}
+
+/* ── Lightbox d'emblema ampliat ────────────────────────────────────────── */
+/* Absolut: es centra dins del MAPA (no de tota la finestra). La mida de la
+   imatge és fixa per tipus i prou acotada per no tapar el recuadre P/V/C/M de
+   dalt ni el d'escut/bandera de baix. */
+.lightbox {
+  position: absolute;
+  inset: 0;
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(26, 38, 53, 0.5);
+}
+
+.lightbox__caixa {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: min(440px, 90vw);
+  padding: 26px 28px 16px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+}
+
+.lightbox__tancar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  font-size: 1.05rem;
+  color: #888;
+  cursor: pointer;
+}
+
+.lightbox__tancar:hover {
+  background: #f0f0ec;
+  color: #333;
+}
+
+/* Mida fixa per tipus → tots els escuts iguals, totes les banderes iguals.
+   Acotada (px + vh) perquè el modal càpiga entre els dos recuadres. */
+.lightbox__img {
+  object-fit: contain;
+}
+
+.lightbox__img--escut {
+  height: min(300px, 38vh);
+  width: auto;
+  max-width: min(300px, 78vw);
+}
+
+.lightbox__img--bandera {
+  width: min(340px, 78vw);
+  height: auto;
+  max-height: min(220px, 30vh);
+}
+
+.lightbox__credit {
+  font-size: var(--text-xs);
+  color: var(--color-text-secundari, #737373);
+  text-decoration: none;
+  text-align: center;
+}
+
+.lightbox__credit:hover {
+  color: #2d6a2d;
+  text-decoration: underline;
+}
+
+.lightbox-enter-active,
+.lightbox-leave-active {
+  transition: opacity 0.15s ease;
+}
+
+.lightbox-enter-from,
+.lightbox-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lightbox-enter-active,
+  .lightbox-leave-active {
+    transition: none;
+  }
+
+  .emblemes__img {
+    transition: none;
   }
 }
 

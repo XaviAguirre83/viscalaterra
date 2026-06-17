@@ -17,13 +17,6 @@ const clauNivell = computed(() =>
   fitxa.objectiu ? CLAU_NIVELL[fitxa.objectiu.nivell] : 'nivells.municipi'
 )
 
-// Les imatges de Commons venen com a http://; cal https:// (mixed content) i
-// es dimensionen amb ?width per no baixar l'SVG/PNG a mida completa.
-function imatge(url: string, width = 160): string {
-  return `${url.replace(/^http:/, 'https:')}?width=${width}`
-}
-
-const escutSrc = computed(() => (fitxa.enriquiment?.escut ? imatge(fitxa.enriquiment.escut) : null))
 const teEnllacos = computed(() => !!(fitxa.enriquiment?.web || fitxa.enriquiment?.wiki))
 
 const caixaRef = ref<HTMLElement | null>(null)
@@ -54,7 +47,6 @@ useFocusTrap(
         </button>
 
         <div class="fitxa__cap">
-          <img v-if="escutSrc" :src="escutSrc" class="fitxa__escut" alt="" />
           <div class="fitxa__titol-grup">
             <h2 class="fitxa__titol">{{ fitxa.objectiu?.nom }}</h2>
             <p class="fitxa__tipus">{{ $t(clauNivell) }}</p>
@@ -82,7 +74,8 @@ useFocusTrap(
             rel="noopener noreferrer"
             class="fitxa__enllac"
           >
-            📖 {{ $t('fitxa.viquipedia') }} <span aria-hidden="true">↗</span>
+            <span class="fitxa__ico-wiki" aria-hidden="true">W</span>
+            {{ $t('fitxa.viquipedia') }} <span aria-hidden="true">↗</span>
           </a>
         </div>
 
@@ -140,13 +133,6 @@ useFocusTrap(
   padding-right: 28px;
 }
 
-.fitxa__escut {
-  width: 54px;
-  height: 54px;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-
 .fitxa__titol {
   font-size: 1.25rem;
   font-weight: 800;
@@ -197,6 +183,20 @@ useFocusTrap(
   color: var(--color-text-secundari, #737373);
   text-align: center;
   padding: 8px 0;
+}
+
+/* Icona "W" de Viquipèdia (estil serif del wordmark, prou reconeixible). */
+.fitxa__ico-wiki {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  font-family: 'Linux Libertine', 'Hoefler Text', Georgia, 'Times New Roman', serif;
+  font-size: 1.2rem;
+  font-weight: 400;
+  line-height: 1;
+  color: #1a2635;
 }
 
 .fitxa__estat {
