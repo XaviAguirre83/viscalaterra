@@ -6,11 +6,14 @@ const placeholder = () => import('@/views/VistaPlaceholder.vue')
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    { path: '/', redirect: '/cerca' },
-    { path: '/cerca', name: 'cerca', component: () => import('@/views/CercaView.vue') },
+    { path: '/', redirect: '/llocs' },
+    // Llocs (atemporal: On?/Què?) i Agenda (temporal: On?/Què?/Quan?) comparteixen
+    // vista (mapa + filtres); el panell decideix si mostra el tab Quan? segons la secció.
+    { path: '/llocs', name: 'llocs', component: () => import('@/views/ExploradorView.vue') },
+    { path: '/agenda', name: 'agenda', component: () => import('@/views/ExploradorView.vue') },
+    { path: '/cerca', redirect: '/llocs' }, // compatibilitat amb enllaços antics
 
     // Seccions que requereixen el mapa (en construcció)
-    { path: '/agenda', name: 'agenda', component: placeholder, props: { ambMapa: true } },
     { path: '/anuncis', name: 'anuncis', component: placeholder, props: { ambMapa: true } },
     {
       path: '/fet-a-la-terra',

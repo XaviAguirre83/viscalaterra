@@ -19,7 +19,7 @@ const menuObert = ref(false)
 
 // grup 1: seccions amb mapa · grup 2: Merchandising · grup 3: meta (sense mapa)
 const SECCIONS = [
-  { id: 'cerca', clau: 'nav.seccions.cerca', ruta: '/cerca', grup: 1 },
+  { id: 'llocs', clau: 'nav.seccions.llocs', ruta: '/llocs', grup: 1 },
   { id: 'agenda', clau: 'nav.seccions.agenda', ruta: '/agenda', grup: 1 },
   { id: 'anuncis', clau: 'nav.seccions.anuncis', ruta: '/anuncis', grup: 1 },
   { id: 'fet-a-la-terra', clau: 'nav.seccions.fetALaTerra', ruta: '/fet-a-la-terra', grup: 1 },
@@ -31,7 +31,12 @@ const SECCIONS = [
 ]
 
 const seccioActiva = computed(() => SECCIONS.find((s) => route.path.startsWith(s.ruta)))
-const esCerca = computed(() => seccioActiva.value?.id === 'cerca')
+// Llocs i Agenda mostren el mapa amb filtres; només Agenda té el tab Quan?
+// (els llocs són atemporals).
+const mostraFiltres = computed(
+  () => seccioActiva.value?.id === 'llocs' || seccioActiva.value?.id === 'agenda'
+)
+const mostraQuan = computed(() => seccioActiva.value?.id === 'agenda')
 
 function navegaA(ruta: string) {
   router.push(ruta)
@@ -54,7 +59,7 @@ watch(
   <div class="panell-filtres">
     <!-- ── Barra horitzontal ──────────────────────────────────────────── -->
     <nav class="barra">
-      <div class="barra__fila-1" :class="{ 'barra__fila-1--cerca': esCerca }">
+      <div class="barra__fila-1" :class="{ 'barra__fila-1--cerca': mostraFiltres }">
         <div class="barra__zona barra__zona--esq">
           <button
             class="btn-menu"
@@ -68,7 +73,7 @@ watch(
           </button>
         </div>
 
-        <template v-if="esCerca">
+        <template v-if="mostraFiltres">
           <!-- Bloc tabs + cercador: ample = recuadre info-territori (W) -->
           <div class="barra__centre">
             <div class="tabs">
@@ -89,6 +94,7 @@ watch(
                 {{ $t('nav.tabs.que') }}
               </button>
               <button
+                v-if="mostraQuan"
                 type="button"
                 :class="{ activa: tabActiva === 'quan' }"
                 :aria-expanded="tabActiva === 'quan'"
@@ -159,7 +165,7 @@ watch(
 
     <!-- ── Contingut del tab actiu ───────────────────────────────────── -->
     <Transition name="desplega">
-      <div v-if="tabActiva && esCerca" class="desplegable">
+      <div v-if="tabActiva && mostraFiltres" class="desplegable">
         <TabOn v-if="tabActiva === 'on'" />
         <TabQue v-else-if="tabActiva === 'que'" />
         <TabQuan v-else-if="tabActiva === 'quan'" />
