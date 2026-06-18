@@ -334,7 +334,88 @@ dates); la **llista blanca** = invitacions aprovades + arrels. Comprovació a `/
 
 ---
 
+### Secció 4.6 — Verificació per email i gestió de credencials — _pendent_
+
+Necessari per seguretat i RGPD. Depèn del **servei d'email** (vegeu 4.5).
+
+- **Confirmació de registre**: en registrar-se manualment, enviar un email amb enllaç de
+  verificació; el compte no s'activa (o no pot publicar) fins a confirmar-lo. Tanca el forat
+  actual — ara qualsevol pot registrar un email que no és seu amb una contrasenya inventada.
+- **Recuperació de contrasenya** ("he oblidat la contrasenya"): enllaç tokenitzat per email.
+- **Establir contrasenya en comptes de Google**: avui un compte creat amb Google no té
+  contrasenya i no se'n pot afegir → queda "atrapat" en només-Google. Cal un flux per posar-ne.
+- **Risc d'account-linking**: la vinculació automàtica Google↔local pel mateix email només és
+  segura si el registre local verifica l'email; per això aquesta tasca el desbloqueja.
+
+### Secció 4.7 — Espai d'usuari (/espai) — _pendent_
+
+Avui `/espai` és un placeholder buit. Seccions previstes (idea de l'Xavi, 2026-06-18):
+
+- **Dades personals**: veure/editar nom, email (amb re-verificació), canviar/establir contrasenya.
+- **Pausar compte**: desactivació temporal (camp `estat` actiu/pausat; el login la rebutja; reactivable).
+- **Cancel·lar compte**: supressió RGPD (esborrat o anonimització de les dades).
+- **Rànquings**: posicions als jocs (GeoFreak…). _Depèn de persistir puntuacions a BD (no fet)._
+- **Llocs guardats**: favorits. _Depèn de tenir `llocs` (cerca real, no feta)._
+- **Aportacions**: llocs publicats / validacions. _Depèn del sistema de contribucions (4.4, no fet)._
+
+**Factible ARA** (només amb l'auth existent): dades personals + pausar + cancel·lar compte. La
+resta (rànquings, llocs guardats, aportacions) esperen les seves dades → de moment "properament".
+Recomanació: començar per la **gestió de compte** (base + RGPD + desbloqueja el cas Google sense
+contrasenya).
+
+### Secció 4.8 — Legalitat i protecció de dades (RGPD) — _pendent_
+
+⚠️ _No és assessorament jurídic._ En tenir usuaris reals, cal complir RGPD + LOPDGDD (Espanya) i
+LSSI. La **política de privacitat ha d'existir ABANS de recollir dades**.
+
+**Documents (apartat "Legal", enllaçats al peu):**
+
+- **Avís legal** (LSSI, Llei 34/2002): qui hi ha al darrere (nom/NIF, contacte, domicili).
+  Necessari sobretot amb activitat econòmica (merchandising).
+- **Política de privacitat** (RGPD): quines dades, finalitat, base legal, conservació,
+  destinataris (tercers), drets i com exercir-los. **Obligatòria des del primer email.**
+- **Política de cookies** + banner: només si hi ha cookies/tracking **no essencials** (analítica).
+  El token de sessió a `localStorage` és essencial → exempt; avui no cal banner.
+- **Condicions d'ús**: claus pel **contingut d'usuaris** (aportacions, esdeveniments, tauler):
+  regles, llicència que cedeixen sobre el que publiquen, responsabilitat, moderació, edat mínima.
+
+**Com funciona (resum):** ets el **responsable del tractament**; cada tractament necessita base
+legal (servei per als comptes; consentiment per a màrqueting). Principis: minimització,
+transparència, seguretat. Drets: accés/rectificació/**supressió**/oposició/portabilitat/limitació
+(per això cal el "cancel·lar compte"). Els **tercers** (Google, servei d'email, Hetzner,
+Carto/OSM) són encarregats → convé el seu **DPA**. Edat mínima de consentiment a Espanya: **14**.
+
+**Dades que ja es tracten:** email, nom, hash de contrasenya, google_id, IP/logs; i el **graf de
+referits** del vouching (4.5).
+
+**Quan / com:** per a la beta tancada, mínim **avís legal + política de privacitat**; abans del
+públic, el pack complet **revisat per un professional**. No improvisar els textos: guies/plantilles
+de l'**AEPD**, o advocat. Claude pot fer **esborranys** ajustats al que fa la plataforma, a validar.
+
+**Marca (™ / ®):** el **©** és automàtic (no cal registrar res); el **™** només senyalitza que es
+reclama el nom i **no atorga protecció pròpia a Espanya/UE** (on mana el registre). La protecció de
+veritat ve de **registrar la marca "viscalaterra"** a l'**OEPM** (Espanya, de l'ordre de ~150 €/classe)
+o **EUIPO** (UE, ~850 €/classe). **Pagament únic en sol·licitar; protecció 10 anys, renovable cada
+10 anys — NO és tarifa anual** (això són les patents). Fer-ho **quan el projecte agafi tracció,
+abans de difusió pública / monetització**
+(és quan algú podria "segrestar" el nom). Sense registre, defenses parcials però cares d'exercir: ús
+previ demostrable (domini `.cat`, dates) + nul·litat de la marca del tercer per **mala fe**.
+
+---
+
 ## 5. Decisions preses (registre)
+
+- **2026-06-18** — Registrar la **marca "viscalaterra"** (OEPM / EUIPO) quan el projecte agafi
+  tracció, abans de difusió pública o monetització. El ™ no protegeix per si sol a Espanya/UE; la
+  protecció ve del registre (®) o de l'ús previ demostrable + mala fe del tercer. Vegeu 4.8.
+
+- **2026-06-18** — Cal un apartat **Legal/RGPD** (avís legal, política de privacitat, cookies si
+  cal, condicions d'ús) — la política de privacitat abans de recollir dades. Esborranys IA +
+  revisió professional. Detall a 4.8.
+- **2026-06-18** — Cal **verificació per email** (confirmació de registre, recuperació de
+  contrasenya i establir contrasenya en comptes Google) i un **espai d'usuari** (/espai) amb dades
+  personals, pausar i cancel·lar compte (RGPD); rànquings/llocs guardats/aportacions quan hi hagi
+  dades. Detall a 4.6 i 4.7. Començar per la gestió de compte. Pendent: servei d'email.
 
 - **2026-06-17** — Beta de staging per **invitació amb aval (vouching)**: cada usuari nou
   l'avala un d'existent; arrels a mà; aval via **enllaç tokenitzat** (botó Sí/No al correu),

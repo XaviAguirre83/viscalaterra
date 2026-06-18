@@ -26,6 +26,13 @@ la resta del territori espanyol en color més tenue (inspirat en meteo.cat).
 
 **Implicació tècnica important:** cal construir la plataforma amb i18n (internacionalització) des del primer dia, encara que inicialment només hi hagi català. Afegir-ho a posteriori és molt més costós que preveure-ho des de l'inici.
 
+**Aranès — compromís de futur** _(idea de l'Xavi, 2026-06-18)_: l'aranès (variant de l'occità gascó, llengua oficial a Catalunya) hauria de formar part de la plataforma sense cap dubte — encaixa de ple amb l'esperit de "la terra". Cal planejar com fer-ho:
+
+- **Tècnicament és trivial:** un codi de locale nou (p. ex. `oc-aranes`) + un JSON de traduccions; la base i18n ja admet afegir idiomes.
+- **El repte és la qualitat, no el codi:** el corpus d'aranès és petit i té normativa pròpia (Institut d'Estudis Aranesi – Acadèmia aranesa dera lengua occitana), amb trets distintius (articles `eth`/`era`, etc.). Una IA pot fer un **esborrany**, però **cal validació d'un parlant nadiu / l'IEA** abans de publicar; un aranès mediocre seria contraproduent amb aquesta comunitat.
+- **Topònims:** els noms oficials en aranès s'han de prendre de font fiable, no generar-los.
+- **Via probable:** esborrany (IA) + **col·laboració altruista** d'algú aranès, o conveni amb una entitat de la Vall d'Aran (Conselh Generau d'Aran / IEA) per revisar-ho.
+
 ## Públic objectiu
 
 _(pendent de definir)_
