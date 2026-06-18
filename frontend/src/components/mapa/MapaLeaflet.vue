@@ -91,26 +91,31 @@ const capesActives: Record<NivellTerritorial, L.GeoJSON | null> = {
 // Cache de capes carregades per (nivell, resolució) — evita re-fetch en canviar zoom.
 const cacheLayers: Record<string, L.GeoJSON> = {}
 
-// ── Sistema de nivells ─────────────────────────────────────────────────────
-// El selector del mapa determina el "Nivell 1" (capa activa, interactiva, més
-// prominent). La resta de nivells es distribueixen segons la matriu del pla:
-//   Selector → ordre de prominència [Nivell 1, 2, 3, 4]
-const NIVELLS_ORDRE: Record<NivellTerritorial, NivellTerritorial[]> = {
-  provincies: ['provincies', 'vegueries', 'comarques', 'municipis'],
-  vegueries: ['vegueries', 'provincies', 'comarques', 'municipis'],
-  comarques: ['comarques', 'provincies', 'vegueries', 'municipis'],
-  municipis: ['municipis', 'provincies', 'vegueries', 'comarques'],
+// ── Sistema de delimitacions ───────────────────────────────────────────────
+// Cada nivell té una línia FIXA (gruix + opacitat). Només es mostren les línies
+// del nivell actiu i les dels seus CONTENIDORS (jerarquia província ⊃ vegueria ⊃
+// comarca ⊃ municipi). El contorn de Catalunya (comunitat) sempre és visible
+// (gruix 5, vegeu carregaMascaraCatalunya).
+const ESTIL_DELIMITACIO: Record<NivellTerritorial, { weight: number; opacity: number }> = {
+  provincies: { weight: 4, opacity: 0.8 },
+  vegueries: { weight: 3, opacity: 0.6 },
+  comarques: { weight: 2, opacity: 0.4 },
+  municipis: { weight: 1, opacity: 0.2 },
 }
 
-const ESTIL_NIVELL: Record<number, { weight: number; opacity: number }> = {
-  1: { weight: 2, opacity: 1.0 },
-  2: { weight: 1.5, opacity: 0.6 },
-  3: { weight: 1, opacity: 0.4 },
-  4: { weight: 0.5, opacity: 0.4 },
+// Ordre de contenció: índex més baix = més contenidor. Es veuen les línies amb
+// índex ≤ el del nivell actiu (el triat i tots els seus contenidors).
+const ORDRE_CONTENCIO: NivellTerritorial[] = ['provincies', 'vegueries', 'comarques', 'municipis']
+
+function liniaVisible(capa: NivellTerritorial): boolean {
+  return ORDRE_CONTENCIO.indexOf(capa) <= ORDRE_CONTENCIO.indexOf(nivellEfectiu.value)
 }
 
-function nivellNumero(capa: NivellTerritorial): number {
-  return NIVELLS_ORDRE[nivellEfectiu.value].indexOf(capa) + 1
+// Línia d'una capa: gruix fix; opacitat fixa si és visible al nivell actiu, o 0
+// (amagada) si és un nivell més fi que l'actiu.
+function estilLinia(nivell: NivellTerritorial): { weight: number; opacity: number } {
+  const base = ESTIL_DELIMITACIO[nivell]
+  return { weight: base.weight, opacity: liniaVisible(nivell) ? base.opacity : 0 }
 }
 
 // ── Extracció de codis ─────────────────────────────────────────────────────
@@ -364,6 +369,10 @@ const PANE_Z_INDEX: Record<NivellTerritorial, number> = {
   municipis: 440,
 }
 
+// Pane del contorn de Catalunya (comunitat): per sobre dels territoris (és el
+// marc exterior més gruixut, sempre visible).
+const PANE_COMUNITAT = 'territori-comunitat'
+
 // Un renderer Canvas per nivell (un <canvas> per pane). Leaflet agrupa totes
 // les features del nivell en un sol canvas i coalesça les crides a setStyle()
 // en un únic requestAnimationFrame — molt més ràpid que 947 operacions SVG DOM.
@@ -383,6 +392,9 @@ function creaPanesTerritorials() {
       pane.style.zIndex = String(PANE_Z_INDEX[nivell])
     }
   })
+  if (!mapa.getPane(PANE_COMUNITAT)) {
+    mapa.createPane(PANE_COMUNITAT).style.zIndex = '445'
+  }
 }
 
 function actualitzaInteractivitatPanes() {
@@ -405,8 +417,9 @@ function estilPerFeature(
   nivell: NivellTerritorial
 ): L.PathOptions {
   const info = codiDeFeature(feature, nivell)
-  const num = nivellNumero(nivell)
-  const { weight, opacity } = ESTIL_NIVELL[num]!
+  // Mode joc: línies de context fines (com abans). Normal: gruix fix per nivell
+  // i opacitat 0 si el nivell és més fi que l'actiu (no es dibuixa la línia).
+  const { weight, opacity } = props.modeJoc ? { weight: 1, opacity: 0.45 } : estilLinia(nivell)
 
   // Estil base: vora gris, sense farcit. La interactivitat la gestiona el pane.
   const baseEstil: L.PathOptions = {
@@ -532,8 +545,6 @@ function estilHoverPerFeature(
   const info = codiDeFeature(feature, nivell)
   if (!info) return {}
 
-  const num = nivellNumero(nivell)
-  const { opacity } = ESTIL_NIVELL[num]!
   const tema = temaDeInfo(info)
 
   // Mode joc: hover amb el to parcial del tema sobre el tile sense etiquetes.
@@ -545,12 +556,12 @@ function estilHoverPerFeature(
   if (nivell === 'municipis') {
     const estaSeleccionat = estatSeleccioFeature(info, nivell) !== 'cap'
     if (estaSeleccionat) {
-      return { color: tema.vora, weight: 3, opacity, fillOpacity: 0.85 }
+      return { color: tema.vora, weight: 3, opacity: 1, fillOpacity: 0.85 }
     }
     return {
       color: tema.vora,
       weight: 2.5,
-      opacity,
+      opacity: 1,
       fillColor: tema.parcial,
       fillOpacity: 0.55,
     }
@@ -909,6 +920,16 @@ async function carregaMascaraCatalunya() {
       fillColor: '#ffffff',
       fillOpacity: props.modeJoc ? OPACITAT_MASCARA_JOC : OPACITAT_MASCARA,
       interactive: false,
+    }).addTo(mapa)
+
+    // Contorn de Catalunya (gruix 5, opacitat 100%): marc exterior sempre
+    // visible, reaprofitant el mateix GeoJSON de la comunitat. No cal desar la
+    // referència: es crea un cop (guard de dalt) i mapa.remove() el neteja.
+    L.geoJSON(dades, {
+      ...({ renderer: L.canvas({ pane: PANE_COMUNITAT }) } as L.GeoJSONOptions),
+      pane: PANE_COMUNITAT,
+      interactive: false,
+      style: { color: '#555', weight: 5, opacity: 1, fillOpacity: 0 },
     }).addTo(mapa)
   } catch (err) {
     console.error('Error carregant la màscara de Catalunya', err)
