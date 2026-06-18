@@ -33,8 +33,10 @@ const emit = defineEmits<{
 }>()
 
 // Nivell que mana al mapa: el del joc en mode joc, el del selector altrament.
-const nivellEfectiu = computed<NivellTerritorial>(
-  () => props.modeJoc?.nivell ?? mapaStore.nivellActiu
+// Capa interactiva: en joc la marca el joc; en normal, la més fina visible
+// (pot ser null si no n'hi ha cap de visible).
+const nivellEfectiu = computed<NivellTerritorial | null>(
+  () => props.modeJoc?.nivell ?? mapaStore.nivellInteractiu
 )
 
 // Features jugables (Set per a cerca O(1)); null = totes les del nivell.
@@ -60,24 +62,48 @@ let mascaraCatalunya: L.Polygon | null = null
 // ── Tiles: base OSM en mode normal, Carto Positron SENSE ETIQUETES en mode
 // joc — cap nom de municipi o ciutat al fons (anti-trampa d'arrel) i el
 // relleu/trama urbana es veu net sota el joc.
-const URL_TILES_BASE = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+// Basemap "atlas" net (Positron) per a la vista general: deixa que les
+// delimitacions destaquin. A partir de ZOOM_DETALL es passa a un basemap amb
+// més detall de carrers (Voyager), quan ja es mira un municipi de prop i la
+// perspectiva territorial ja no és l'important.
+const URL_TILES_BASE = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+const URL_TILES_DETALL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
 const URL_TILES_JOC = 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png'
+const ZOOM_DETALL = 13
 let tilesBase: L.TileLayer | null = null
+let tilesDetall: L.TileLayer | null = null
 let tilesJoc: L.TileLayer | null = null
+
+function craftTiles(url: string): L.TileLayer {
+  return L.tileLayer(url, {
+    attribution: '© OpenStreetMap contributors © CARTO',
+    subdomains: 'abcd',
+    maxZoom: 19,
+  })
+}
+
+// En mode normal, tria el basemap segons el zoom: Positron (atlas) a la vista
+// general, Voyager (més detall) a partir de ZOOM_DETALL.
+function actualitzaTilesNormal(zoom: number) {
+  if (!mapa || props.modeJoc) return
+  tilesBase ??= craftTiles(URL_TILES_BASE)
+  tilesDetall ??= craftTiles(URL_TILES_DETALL)
+  const vol = zoom >= ZOOM_DETALL ? tilesDetall : tilesBase
+  const fora = zoom >= ZOOM_DETALL ? tilesBase : tilesDetall
+  if (mapa.hasLayer(fora)) mapa.removeLayer(fora)
+  if (!mapa.hasLayer(vol)) vol.addTo(mapa)
+}
 
 function activaTilesJoc(actiu: boolean) {
   if (!mapa) return
   if (actiu) {
-    tilesJoc ??= L.tileLayer(URL_TILES_JOC, {
-      attribution: '© OpenStreetMap contributors © CARTO',
-      subdomains: 'abcd',
-      maxZoom: 19,
-    })
+    tilesJoc ??= craftTiles(URL_TILES_JOC)
     if (tilesBase && mapa.hasLayer(tilesBase)) mapa.removeLayer(tilesBase)
+    if (tilesDetall && mapa.hasLayer(tilesDetall)) mapa.removeLayer(tilesDetall)
     if (!mapa.hasLayer(tilesJoc)) tilesJoc.addTo(mapa)
   } else {
     if (tilesJoc && mapa.hasLayer(tilesJoc)) mapa.removeLayer(tilesJoc)
-    if (tilesBase && !mapa.hasLayer(tilesBase)) tilesBase.addTo(mapa)
+    actualitzaTilesNormal(mapa.getZoom())
   }
 }
 
@@ -92,23 +118,20 @@ const capesActives: Record<NivellTerritorial, L.GeoJSON | null> = {
 const cacheLayers: Record<string, L.GeoJSON> = {}
 
 // ── Sistema de delimitacions ───────────────────────────────────────────────
-// Cada nivell té una línia FIXA (gruix + opacitat). Només es mostren les línies
-// del nivell actiu i les dels seus CONTENIDORS (jerarquia província ⊃ vegueria ⊃
-// comarca ⊃ municipi). El contorn de Catalunya (comunitat) sempre és visible
-// (gruix 5, vegeu carregaMascaraCatalunya).
+// Cada nivell té una línia FIXA (gruix + opacitat). La visibilitat és LLIURE:
+// es mostren les capes que l'usuari activa al panell (qualsevol combinació). El
+// contorn de Catalunya (comunitat) sempre és visible (gruix 4, vegeu
+// carregaMascaraCatalunya).
 const ESTIL_DELIMITACIO: Record<NivellTerritorial, { weight: number; opacity: number }> = {
-  provincies: { weight: 4, opacity: 0.8 },
-  vegueries: { weight: 3, opacity: 0.6 },
-  comarques: { weight: 2, opacity: 0.4 },
-  municipis: { weight: 1, opacity: 0.2 },
+  provincies: { weight: 4, opacity: 0.85 },
+  vegueries: { weight: 3, opacity: 0.7 },
+  comarques: { weight: 2, opacity: 0.55 },
+  municipis: { weight: 1, opacity: 0.4 },
 }
 
-// Ordre de contenció: índex més baix = més contenidor. Es veuen les línies amb
-// índex ≤ el del nivell actiu (el triat i tots els seus contenidors).
-const ORDRE_CONTENCIO: NivellTerritorial[] = ['provincies', 'vegueries', 'comarques', 'municipis']
-
+// Visibilitat lliure: cada capa es mostra si està als toggles del panell.
 function liniaVisible(capa: NivellTerritorial): boolean {
-  return ORDRE_CONTENCIO.indexOf(capa) <= ORDRE_CONTENCIO.indexOf(nivellEfectiu.value)
+  return mapaStore.capesVisibles.has(capa)
 }
 
 // Línia d'una capa: gruix fix; opacitat fixa si és visible al nivell actiu, o 0
@@ -929,7 +952,7 @@ async function carregaMascaraCatalunya() {
       ...({ renderer: L.canvas({ pane: PANE_COMUNITAT }) } as L.GeoJSONOptions),
       pane: PANE_COMUNITAT,
       interactive: false,
-      style: { color: '#555', weight: 5, opacity: 1, fillOpacity: 0 },
+      style: { color: '#555', weight: 4, opacity: 1, fillOpacity: 0 },
     }).addTo(mapa)
   } catch (err) {
     console.error('Error carregant la màscara de Catalunya', err)
@@ -1128,16 +1151,14 @@ onMounted(() => {
     zoomDelta: 1,
   })
 
-  tilesBase = L.tileLayer(URL_TILES_BASE, {
-    attribution: '© OpenStreetMap contributors',
-    maxZoom: 19,
-  }).addTo(mapa)
+  actualitzaTilesNormal(zoomInicial)
 
   creaPanesTerritorials()
 
   mapa.on('zoomend', () => {
     const zoom = mapa!.getZoom()
     mapaStore.actualitzaZoom(zoom)
+    actualitzaTilesNormal(zoom)
     carregaTotesCapes(zoom)
     actualitzaMaxBounds()
     if (zoom <= zoomBase) {
@@ -1195,6 +1216,7 @@ onUnmounted(() => {
   Object.keys(cacheLayers).forEach((k) => delete cacheLayers[k])
   ;(Object.keys(capesActives) as NivellTerritorial[]).forEach((n) => (capesActives[n] = null))
   tilesBase = null
+  tilesDetall = null
   tilesJoc = null
   mascaraCatalunya = null
 })
@@ -1205,10 +1227,10 @@ watch(
   () => actualitzaEstilsTotes()
 )
 
-// Quan el nivell actiu canvia, re-aplica estils i la interactivitat dels panes.
-// (En mode joc el selector està amagat i el nivell el mana el joc — s'ignora.)
+// Quan canvien les capes visibles, re-aplica estils i la interactivitat dels
+// panes. (En mode joc el panell està amagat i el nivell el mana el joc.)
 watch(
-  () => mapaStore.nivellActiu,
+  () => mapaStore.capesVisibles,
   () => {
     if (props.modeJoc) return
     actualitzaEstilsTotes()
@@ -1247,15 +1269,15 @@ watch(
   <div id="mapa-contenidor" class="mapa-contenidor">
     <!-- Panell ocult en mode joc: mostrar el nom en hover faria trivial el GeoFreak -->
     <div v-if="!modeJoc" ref="infoTerritoriEl" class="info-territori">
-      <div class="info-territori__grid" role="radiogroup" :aria-label="$t('mapa.nivellAria')">
+      <div class="info-territori__grid" role="group" :aria-label="$t('mapa.nivellAria')">
         <div class="info-territori__cel">
           <button
             type="button"
             class="info-territori__cap"
-            :class="{ 'info-territori__cap--actiu': mapaStore.nivellActiu === 'provincies' }"
-            role="radio"
-            :aria-checked="mapaStore.nivellActiu === 'provincies'"
-            @click="mapaStore.defineixNivellActiu('provincies')"
+            :class="{ 'info-territori__cap--actiu': mapaStore.esVisible('provincies') }"
+            role="checkbox"
+            :aria-checked="mapaStore.esVisible('provincies')"
+            @click="mapaStore.alternaCapa('provincies')"
           >
             {{ $t('nivells.provincia') }}
           </button>
@@ -1277,10 +1299,10 @@ watch(
           <button
             type="button"
             class="info-territori__cap"
-            :class="{ 'info-territori__cap--actiu': mapaStore.nivellActiu === 'vegueries' }"
-            role="radio"
-            :aria-checked="mapaStore.nivellActiu === 'vegueries'"
-            @click="mapaStore.defineixNivellActiu('vegueries')"
+            :class="{ 'info-territori__cap--actiu': mapaStore.esVisible('vegueries') }"
+            role="checkbox"
+            :aria-checked="mapaStore.esVisible('vegueries')"
+            @click="mapaStore.alternaCapa('vegueries')"
           >
             {{ $t('nivells.vegueria') }}
           </button>
@@ -1302,10 +1324,10 @@ watch(
           <button
             type="button"
             class="info-territori__cap"
-            :class="{ 'info-territori__cap--actiu': mapaStore.nivellActiu === 'comarques' }"
-            role="radio"
-            :aria-checked="mapaStore.nivellActiu === 'comarques'"
-            @click="mapaStore.defineixNivellActiu('comarques')"
+            :class="{ 'info-territori__cap--actiu': mapaStore.esVisible('comarques') }"
+            role="checkbox"
+            :aria-checked="mapaStore.esVisible('comarques')"
+            @click="mapaStore.alternaCapa('comarques')"
           >
             {{ $t('nivells.comarca') }}
           </button>
@@ -1322,10 +1344,10 @@ watch(
           <button
             type="button"
             class="info-territori__cap"
-            :class="{ 'info-territori__cap--actiu': mapaStore.nivellActiu === 'municipis' }"
-            role="radio"
-            :aria-checked="mapaStore.nivellActiu === 'municipis'"
-            @click="mapaStore.defineixNivellActiu('municipis')"
+            :class="{ 'info-territori__cap--actiu': mapaStore.esVisible('municipis') }"
+            role="checkbox"
+            :aria-checked="mapaStore.esVisible('municipis')"
+            @click="mapaStore.alternaCapa('municipis')"
           >
             {{ $t('nivells.municipi') }}
           </button>

@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 
 // Zoom i centre inicials: Catalunya sencera visible
@@ -34,7 +34,34 @@ export interface ModeJocMapa {
 export const useMapaStore = defineStore('mapa', () => {
   const zoom = ref(ZOOM_INICIAL)
   const centre = ref<[number, number]>(CENTRE_INICIAL)
-  const nivellActiu = ref<NivellTerritorial>('provincies')
+
+  // Capes de delimitació visibles (combinació LLIURE): cada tipus s'activa o
+  // desactiva independentment. El subratllat del panell marca les visibles.
+  // Per defecte, només províncies.
+  const capesVisibles = ref<Set<NivellTerritorial>>(new Set<NivellTerritorial>(['provincies']))
+
+  // De més contenidor a més fi. La capa interactiva (hover/clic per seleccionar
+  // territori) és la més FINA de les visibles.
+  const ORDRE: NivellTerritorial[] = ['provincies', 'vegueries', 'comarques', 'municipis']
+
+  const nivellInteractiu = computed<NivellTerritorial | null>(() => {
+    for (let i = ORDRE.length - 1; i >= 0; i--) {
+      if (capesVisibles.value.has(ORDRE[i]!)) return ORDRE[i]!
+    }
+    return null
+  })
+
+  function esVisible(nivell: NivellTerritorial): boolean {
+    return capesVisibles.value.has(nivell)
+  }
+
+  function alternaCapa(nivell: NivellTerritorial) {
+    // Es reassigna el Set (nova identitat) perquè els watchers reaccionin.
+    const nou = new Set(capesVisibles.value)
+    if (nou.has(nivell)) nou.delete(nivell)
+    else nou.add(nivell)
+    capesVisibles.value = nou
+  }
 
   function actualitzaZoom(nouZoom: number) {
     zoom.value = nouZoom
@@ -49,17 +76,15 @@ export const useMapaStore = defineStore('mapa', () => {
     if (nouZoom !== undefined) zoom.value = nouZoom
   }
 
-  function defineixNivellActiu(nivell: NivellTerritorial) {
-    nivellActiu.value = nivell
-  }
-
   return {
     zoom,
     centre,
-    nivellActiu,
+    capesVisibles,
+    nivellInteractiu,
+    esVisible,
+    alternaCapa,
     actualitzaZoom,
     actualitzaCentre,
     volaA,
-    defineixNivellActiu,
   }
 })
