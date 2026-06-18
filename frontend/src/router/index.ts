@@ -37,6 +37,7 @@ const router = createRouter({
     },
     { path: '/sobre', name: 'sobre', component: placeholder, props: { ambMapa: false } },
     { path: '/contacte', name: 'contacte', component: placeholder, props: { ambMapa: false } },
+    { path: '/legal', name: 'legal', component: () => import('@/views/LegalView.vue') },
     {
       path: '/suggeriments',
       name: 'suggeriments',

@@ -1,17 +1,24 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import CabeceraApp from '@/components/CabeceraApp.vue'
+import PeuApp from '@/components/PeuApp.vue'
 import { useAuthStore } from '@/stores/auth'
 
 // En arrencar, restaura la sessió si hi ha un token vàlid desat.
 const auth = useAuthStore()
 onMounted(() => auth.carregaJo())
+
+// El peu s'amaga al joc (experiència immersiva a pantalla completa).
+const route = useRoute()
+const mostraPeu = computed(() => !route.path.startsWith('/jocs/geofreak'))
 </script>
 
 <template>
   <div class="app-layout">
     <CabeceraApp />
     <RouterView class="app-layout__contingut" />
+    <PeuApp v-if="mostraPeu" />
   </div>
 
   <div class="overlay-orientacio" role="alert" aria-live="assertive">

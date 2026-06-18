@@ -47,7 +47,8 @@
       "merchandising": "Merchandising",
       "sobre": "Sobre nosaltres",
       "contacte": "Contacte",
-      "suggeriments": "Bústia de suggeriments"
+      "suggeriments": "Bústia de suggeriments",
+      "legal": "Legal"
     },
     "tabs": {
       "on": "On?",
@@ -287,5 +288,18 @@
   "orientacio": {
     "gira": "Gira el dispositiu",
     "subtitol": "Aquesta pàgina només es visualitza en posició vertical"
+  },
+  "peu": {
+    "aria": "Enllaços legals"
+  },
+  "legal": {
+    "titol": "Avisos legals",
+    "intro": "Aquesta secció recull la informació legal de viscalaterra.cat: qui hi ha al darrere, com tractem les teves dades i les condicions d'ús de la plataforma.",
+    "enPreparacio": "Aquests textos s'estan preparant i es publicaran abans d'obrir la plataforma a usuaris.",
+    "properament": "Properament.",
+    "avisLegal": "Avís legal",
+    "privacitat": "Política de privacitat",
+    "cookies": "Política de cookies",
+    "condicions": "Condicions d'ús"
   }
 }

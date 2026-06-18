@@ -47,7 +47,8 @@
       "merchandising": "Merchandising",
       "sobre": "About us",
       "contacte": "Contact",
-      "suggeriments": "Suggestion box"
+      "suggeriments": "Suggestion box",
+      "legal": "Legal"
     },
     "tabs": {
       "on": "Where?",
@@ -287,5 +288,18 @@
   "orientacio": {
     "gira": "Rotate your device",
     "subtitol": "This page can only be viewed in portrait orientation"
+  },
+  "peu": {
+    "aria": "Legal links"
+  },
+  "legal": {
+    "titol": "Legal notices",
+    "intro": "This section gathers the legal information of viscalaterra.cat: who is behind it, how we handle your data, and the platform's terms of use.",
+    "enPreparacio": "These texts are being prepared and will be published before opening the platform to users.",
+    "properament": "Coming soon.",
+    "avisLegal": "Legal notice",
+    "privacitat": "Privacy policy",
+    "cookies": "Cookie policy",
+    "condicions": "Terms of use"
   }
 }

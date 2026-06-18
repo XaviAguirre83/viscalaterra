@@ -28,6 +28,7 @@ const SECCIONS = [
   { id: 'sobre', clau: 'nav.seccions.sobre', ruta: '/sobre', grup: 3 },
   { id: 'contacte', clau: 'nav.seccions.contacte', ruta: '/contacte', grup: 3 },
   { id: 'suggeriments', clau: 'nav.seccions.suggeriments', ruta: '/suggeriments', grup: 3 },
+  { id: 'legal', clau: 'nav.seccions.legal', ruta: '/legal', grup: 3 },
 ]
 
 const seccioActiva = computed(() => SECCIONS.find((s) => route.path.startsWith(s.ruta)))
