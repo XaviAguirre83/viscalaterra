@@ -21,7 +21,7 @@ la resta del territori espanyol en color més tenue (inspirat en meteo.cat).
 
 - **V1:** Català exclusivament (requisit per al domini `.cat`)
 - **V2:** Castellà, anglès
-- **Futur:** Castellà, anglès, gallec, basc i altres _(sense límit definit)_
+- **Futur:** Castellà, anglès, gallec, basc i altres _(sense límit definit)_... ARANÉS (seria la óstia)!! : )
 - **Visió a llarg termini:** Versió "Països Catalans" ampliant a Comunitat Valenciana i Illes Balears — descartada per ara, apuntada per si hi ha èxit
 
 **Implicació tècnica important:** cal construir la plataforma amb i18n (internacionalització) des del primer dia, encara que inicialment només hi hagi català. Afegir-ho a posteriori és molt més costós que preveure-ho des de l'inici.
