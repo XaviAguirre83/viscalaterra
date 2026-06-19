@@ -5,9 +5,6 @@ import TabOn from './TabOn.vue'
 import TabQue from './TabQue.vue'
 import TabQuan from './TabQuan.vue'
 import CercaRapida from './CercaRapida.vue'
-import { useMapaOpcionsStore } from '@/stores/mapaOpcions'
-
-const mapaOpcions = useMapaOpcionsStore()
 
 type Tab = 'on' | 'que' | 'quan'
 
@@ -106,31 +103,6 @@ watch(
             </div>
             <div class="barra__cerca-fila">
               <CercaRapida />
-              <button
-                type="button"
-                class="btn-opcions"
-                :class="{ 'btn-opcions--actiu': mapaOpcions.panelObert }"
-                :title="$t('opcionsMapa.titol')"
-                :aria-label="$t('opcionsMapa.titol')"
-                :aria-expanded="mapaOpcions.panelObert"
-                @click="mapaOpcions.alterna()"
-              >
-                <svg
-                  class="btn-opcions__icona"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <circle cx="12" cy="12" r="3" />
-                  <path
-                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
-                  />
-                </svg>
-              </button>
             </div>
           </div>
         </template>
@@ -197,7 +169,7 @@ watch(
   height: 48px;
   padding: 0 12px;
   gap: 12px;
-  position: relative; /* àncora del ⚙️ (absolut en desktop) */
+  position: relative;
 }
 
 .barra__zona {
@@ -210,14 +182,20 @@ watch(
    (width W = min(760px, 100vw-24px), centrat). */
 .barra__fila-1--cerca .barra__zona--esq {
   flex: 0 0 auto;
-  width: calc((100vw - min(760px, 100vw - 24px)) / 2 - 24px);
+  /* Espaiador esquerre: alinea el bloc central amb el recuadre PVCM, però mai
+     més estret que el botó ☰ (si no, "On?" se li muntaria a sobre en finestres
+     estretes). */
+  width: max(56px, calc((100vw - min(760px, 100vw - 24px)) / 2 - 24px));
 }
 
 /* Bloc central: mateix ample que el recuadre → "On?" al cantó esquerre i el
-   botó "CERCA" al cantó dret del recuadre. El ⚙️ queda fora, a la cantonada. */
+   botó "CERCA" al cantó dret del recuadre (mateixa amplada que info-territori). */
 .barra__centre {
   flex: 0 0 auto;
   width: min(760px, 100vw - 24px);
+  /* Mai més ample que l'espai lliure després del ☰: així el botó "Cerca" no
+     queda tallat pel marge dret en finestres estretes. */
+  max-width: calc(100vw - 96px);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -233,59 +211,16 @@ watch(
   min-width: 0;
 }
 
-/* Cercador + engranatge d'opcions. Ordre DOM: cercador → ⚙️. */
+/* Cercador ràpid: ocupa tota l'amplada del bloc central; el botó "CERCA" del
+   propi component queda alineat amb el cantó dret del recuadre. */
 .barra__cerca-fila {
   display: flex;
   align-items: center;
-  gap: 6px;
 }
 
 .barra__cerca-fila .cerca-rapida {
   flex: 1 1 auto;
   min-width: 0;
-}
-
-/* El ⚙️ s'àncora a la cantonada dreta de la barra (fora del recuadre). En
-   mòbil torna al flux normal (vegeu el media query). */
-.barra__fila-1--cerca .btn-opcions {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.btn-opcions {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border: 1px solid #d8d8d4;
-  border-radius: 8px;
-  background: #fafaf8;
-  color: #555;
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    color 0.15s,
-    border-color 0.15s;
-}
-
-.btn-opcions__icona {
-  width: 19px;
-  height: 19px;
-}
-
-.btn-opcions:hover {
-  background: #f0f4f0;
-  color: #2d6a2d;
-}
-
-.btn-opcions--actiu {
-  background: #eef4ee;
-  border-color: #2d6a2d;
-  color: #2d6a2d;
 }
 
 @media (max-width: 768px) {
@@ -312,44 +247,14 @@ watch(
     flex: 1 1 auto;
   }
 
+  /* 2a fila: el cercador a tota l'amplada (el ⚙️ ara viu dins el mapa). */
   .barra__fila-1--cerca .barra__cerca-fila {
     flex: 1 1 100%;
-    /* gap 12 = mateixa separació que ☰↔On?: així "Cerca per nom" arrenca
-       alineat sota "On?" (i el ⚙️ sota el ☰). */
-    gap: 12px;
     padding: 0 4px 8px 0;
   }
 
-  /* Línia divisòria vertical que separa la columna esquerra (☰ / ⚙️) de la
-     dreta (On?… / Cerca per nom), de dalt a baix de la barra de dues files. */
-  .barra__fila-1--cerca {
-    position: relative;
-  }
-
-  .barra__fila-1--cerca::after {
-    content: '';
-    position: absolute;
-    top: 6px;
-    bottom: 6px;
-    left: 62px;
-    width: 1px;
-    background: #e0e0dc;
-    pointer-events: none;
-  }
-
-  /* El cercador ocupa l'espai i el ⚙️ es mou a l'esquerra */
   .barra__cerca-fila .cerca-rapida {
     flex: 1;
-    order: 1;
-  }
-
-  /* El ⚙️ torna al flux (2a fila), a l'esquerra, sota el ☰ */
-  .barra__fila-1--cerca .btn-opcions {
-    position: static;
-    transform: none;
-    order: 0;
-    width: 44px;
-    height: 44px;
   }
 }
 

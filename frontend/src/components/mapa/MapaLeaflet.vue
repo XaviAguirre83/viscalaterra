@@ -1363,6 +1363,35 @@ watch(
       </div>
     </div>
 
+    <!-- Engranatge d'opcions del mapa (escut/bandera, capes…): cantonada
+         superior dreta, fent simetria amb el control de zoom (superior esq.). -->
+    <button
+      v-if="!modeJoc"
+      type="button"
+      class="mapa-opcions-btn"
+      :class="{ 'mapa-opcions-btn--actiu': mapaOpcions.panelObert }"
+      :title="$t('opcionsMapa.titol')"
+      :aria-label="$t('opcionsMapa.titol')"
+      :aria-expanded="mapaOpcions.panelObert"
+      @click="mapaOpcions.alterna()"
+    >
+      <svg
+        class="mapa-opcions-btn__icona"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="3" />
+        <path
+          d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+        />
+      </svg>
+    </button>
+
     <!-- Escut/bandera del territori en hover (desktop) o clicat (mòbil),
          abaix-centre. Fons transparent amb halo blanc; clic → ampliar. -->
     <div
@@ -1439,13 +1468,55 @@ watch(
   position: relative;
 }
 
+/* Engranatge d'opcions del mapa: overlay a la cantonada superior dreta
+   (simètric al control de zoom de Leaflet, a la superior esquerra). */
+.mapa-opcions-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #d8d8d4;
+  border-radius: 8px;
+  background: #fff;
+  color: #555;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.mapa-opcions-btn__icona {
+  width: 20px;
+  height: 20px;
+}
+
+.mapa-opcions-btn:hover {
+  background: #f0f4f0;
+  color: #2d6a2d;
+}
+
+.mapa-opcions-btn--actiu {
+  background: #eef4ee;
+  border-color: #2d6a2d;
+  color: #2d6a2d;
+}
+
 .info-territori {
   position: absolute;
   top: 10px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
-  width: min(760px, calc(100vw - 24px));
+  /* Deixa ~60px lliures a cada costat dins el mapa perquè el control de zoom
+     (esq.) i el ⚙️ (dreta) no es muntin sobre el recuadre en finestres estretes. */
+  width: min(760px, calc(100vw - 120px));
   background: white;
   padding: 8px 12px;
   border-radius: 6px;
@@ -1527,6 +1598,14 @@ watch(
     transform: none;
     border-radius: 0;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  }
+
+  /* La banda PVCM ocupa tot l'ample a dalt (top:0); el ⚙️ baixa a la cantonada
+     inferior dreta per no solapar-s'hi (en mòbil no hi ha control de zoom). */
+  .mapa-opcions-btn {
+    top: auto;
+    bottom: 26px;
+    right: 10px;
   }
 
   /* 4 columnes: [etiqueta · valor] × 2. Les columnes "auto" igualen l'ample de
