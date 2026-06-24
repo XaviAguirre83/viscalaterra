@@ -2,31 +2,32 @@
 
 ## Descripció general
 
-Plataforma de descoberta de Catalunya. El mapa actua com a filtre geogràfic:
-l'usuari primer selecciona el territori d'interès (municipis, comarques, etc.)
-i després cerca contingut dins d'aquella selecció geogràfica.
+Plataforma de descoberta de Catalunya. El mapa actua com a filtre geogràfic. El filtre pivota sobre tres pilars:
+
+- **On?** l'usuari pot escollir un o més llocs, ja siguin províncies, vegueries, comarques o municipis. Es pot seleccionar tant al mapa com al menú desplegable.
+- **Què?** l'usuari pot escollir un ítem o grup d'ítems d'interès (esports, aire lliure, pet-friendly...)
+- **Quan?** l'usuari pot fer una selecció temporal (només habilitat al menú **"agenda"**), en un interval de dies o amb periodicitat
 
 El mapa està construït amb Leaflet.js. Catalunya apareix com a regió principal;
-la resta del territori espanyol en color més tenue (inspirat en meteo.cat).
+la resta del territori espanyol i francès en color més tenue (inspirat en el mapa de la web meteo.cat).
 
 ## Manifest / Esperit del projecte
 
-**Descentralitzar la descoberta de Catalunya.** Més enllà de Barcelona, la plataforma vol posar en valor qualsevol racó del territori — que algú de fora o de casa pugui trobar atractiu a llocs poc turístics, reduint la massificació dels indrets més concorreguts i donant visibilitat als que no la tenen.
+**Descentralitzar la descoberta de Catalunya.** Més enllà de Barcelona, la plataforma vol posar en valor qualsevol racó del territori — que algú de fora o de casa pugui trobar atractius els llocs poc turístics, reduint la massificació dels indrets més concorreguts i donant visibilitat als que no la tenen.
 
 **Sense intencionalitat política de cap mena.** El projecte neix per diversió, per conèixer millor la terra i per al gaudi de qui vulgui fer-la servir. Que el focus sigui Catalunya no implica cap biaix nacionalista ni ideològic.
 
-**Fet amb passió.** El creador i els col·laboradors ho fan per gaudir de crear quelcom nou i poder compartir-lo.
+**Fet amb passió.** El creador i els col·laboradors ho fan per gaudir de crear quelcom nou i poder compartir-lo, fer-lo créixer i que sigui d'utilitat pel major nombre d'usuaris possible.
 
 ## Idiomes
 
-- **V1:** Català exclusivament (requisit per al domini `.cat`)
-- **V2:** Castellà, anglès
-- **Futur:** Castellà, anglès, gallec, basc i altres _(sense límit definit)_... ARANÉS (seria la óstia)!! : )
-- **Visió a llarg termini:** Versió "Països Catalans" ampliant a Comunitat Valenciana i Illes Balears — descartada per ara, apuntada per si hi ha èxit
+- **Actual:** català, castellà i anglès, els tres idiomes ja implementats. El català és l'idioma per defecte de la plataforma (requisit per al domini `.cat`) i sempre és l'idioma d'arrencada a la primera visita.
+- **Futur:** altres llengües cooficials de l'Estat espanyol, com el gallec i el basc. A l'aranès li dediquem un apartat en aquesta mateixa secció.
+  Més endavant, francès, alemany, italià, portuguès, rus… qualsevol idioma és benvingut, prèvia avaluació de les implicacions tècniques de cada traducció.
 
-**Implicació tècnica important:** cal construir la plataforma amb i18n (internacionalització) des del primer dia, encara que inicialment només hi hagi català. Afegir-ho a posteriori és molt més costós que preveure-ho des de l'inici.
+**Implicació tècnica important:** cal construir la plataforma amb i18n (internacionalització) des del primer dia. Tenir-ho previst des de l'inici és el que ha permès afegir el castellà i l'anglès amb facilitat; fer-ho a posteriori hauria estat molt més costós.
 
-**Aranès — compromís de futur** _(idea de l'Xavi, 2026-06-18)_: l'aranès (variant de l'occità gascó, llengua oficial a Catalunya) hauria de formar part de la plataforma sense cap dubte — encaixa de ple amb l'esperit de "la terra". Cal planejar com fer-ho:
+**Aranès — compromís de futur**: l'aranès (variant de l'occità gascó, llengua oficial a Catalunya) hauria de formar part de la plataforma sense cap dubte — encaixa de ple amb l'esperit de "la terra". Cal planejar com fer-ho:
 
 - **Tècnicament és trivial:** un codi de locale nou (p. ex. `oc-aranes`) + un JSON de traduccions; la base i18n ja admet afegir idiomes.
 - **El repte és la qualitat, no el codi:** el corpus d'aranès és petit i té normativa pròpia (Institut d'Estudis Aranesi – Acadèmia aranesa dera lengua occitana), amb trets distintius (articles `eth`/`era`, etc.). Una IA pot fer un **esborrany**, però **cal validació d'un parlant nadiu / l'IEA** abans de publicar; un aranès mediocre seria contraproduent amb aquesta comunitat.
@@ -37,10 +38,39 @@ la resta del territori espanyol en color més tenue (inspirat en meteo.cat).
 
 _(pendent de definir)_
 
-## Barra de menú (sobre el mapa)
+## Menú i navegació
 
-Tres pestanyes principals: **On?** | **Què?** | **Quan?**
-Cada pestanya expandeix un desplegable cap avall en fer clic.
+La barra superior (sota la capçalera) té dos blocs:
+
+1. **Menú principal** (botó ☰): desplegable amb totes les seccions.
+2. **Barra contextual de filtres**: només a Llocs i Agenda — tabs On?/Què?/Quan? + cercador ràpid.
+
+### Menú principal (seccions)
+
+Desplegable des del botó ☰, en tres grups separats per una línia:
+
+**Seccions amb mapa**
+
+- **Llocs** (`/llocs`) — llocs i equipaments (atemporal). Filtres On?/Què?. Secció principal.
+- **Agenda** (`/agenda`) — esdeveniments (temporal). Filtres On?/Què?/Quan?.
+- **Taulell d'anuncis** (`/anuncis`) — tauler veïnal _(en construcció)_.
+- **Fet a la terra** (`/fet-a-la-terra`) — cercador de productes manufacturats a Catalunya; a futur, espai de venda per a petits productors locals _(en construcció)_.
+- **Jocs** (`/jocs`) — jocs sobre el coneixement del territori (GeoFreak…).
+
+**Botiga**
+
+- **Merchandising** (`/merchandising`) — articles de la marca _(en construcció, sense mapa)_.
+
+**Meta (sense mapa)**
+
+- **Sobre nosaltres** (`/sobre`) · **Contacte** (`/contacte`) · **Bústia de suggeriments** (`/suggeriments`) — _(en construcció)_
+- **Legal** (`/legal`) — avís legal, privacitat, etc.
+
+L'**Espai d'usuari** (`/espai`) és accessible des del menú d'usuari, no del menú principal.
+
+### Barra contextual de filtres (Llocs / Agenda)
+
+Només apareix a Llocs i Agenda. Tres pestanyes —**On?** | **Què?** | **Quan?**— que expandeixen un desplegable cap avall en fer clic (Quan? només a Agenda; els llocs són atemporals). Al costat, el **cercador ràpid**.
 
 ### On?
 
@@ -95,7 +125,7 @@ opcionalment, Què?
 
 ## Funcionalitats principals
 
-- Mapa de Catalunya amb selector de divisió territorial (ràdio button, una sola activa):
+- Mapa de Catalunya amb 4 capes de divisió territorial (visibilitat lliure, activables per separat):
   - Província (4)
   - Vegueria (9, incloent la Val d'Aran com a entitat territorial singular)
   - Comarca (43)
@@ -137,29 +167,36 @@ opcionalment, Què?
 
 ## Interactivitat
 
-### Sistema de nivells de línies delimitants
+> El mapa carrega **sempre les 4 capes territorials alhora** (Província, Vegueria, Comarca, Municipi), cadascuna al seu propi _pane_ i dibuixada sobre Canvas (una capa = un canvas) per rendiment. El contorn de Catalunya sempre és visible com a marc exterior.
 
-- Nivell 1: 100% opacitat, 2px
-- Nivell 2: 75% opacitat, 1.5px
-- Nivell 3: 50% opacitat, 1px
-- Nivell 4: 25% opacitat, 0.5px
+### Capes de delimitació (visibilitat lliure)
 
-La divisió seleccionada al selector pren sempre el Nivell 1. La resta es distribueixen així:
+No hi ha un únic "nivell actiu". L'usuari **activa o desactiva cada capa de manera independent** (qualsevol combinació) des de les capçaleres del panell superior. Per defecte només es mostra **Província**.
 
-| Selector  | Nivell 1  | Nivell 2  | Nivell 3 | Nivell 4 |
-| --------- | --------- | --------- | -------- | -------- |
-| Província | Província | Vegueria  | Comarca  | Municipi |
-| Vegueria  | Vegueria  | Província | Comarca  | Municipi |
-| Comarca   | Comarca   | Província | Vegueria | Municipi |
-| Municipi  | Municipi  | Província | Vegueria | Comarca  |
+Cada capa té un estil de línia **fix** (com més gran el territori, més gruixuda i opaca la línia):
 
-### Selector de nivell territorial actiu (al mapa)
+| Capa      | Gruix | Opacitat |
+| --------- | ----- | -------- |
+| Província | 4 px  | 0,85     |
+| Vegueria  | 3 px  | 0,70     |
+| Comarca   | 2 px  | 0,55     |
+| Municipi  | 1 px  | 0,40     |
 
-El mapa mostra **sempre les 4 capes de divisió territorial visibles** (Província, Vegueria, Comarca, Municipi). Un control de radio buttons a la cantonada superior dreta permet triar quin nivell és el "Nivell 1":
+- Una capa desactivada no dibuixa la seva línia (opacitat 0), però segueix carregada a memòria.
+- El **contorn de Catalunya** és a banda: línia gruixuda sempre visible.
 
-- El nivell actiu té el gruix de línia màxim, opacitat plena i és l'únic interactiu (hover, clic, selecció).
-- Els altres nivells reben gruix i opacitat decreixents (veure "Sistema de nivells de línies delimitants" més avall).
-- Clic sobre un polígon del nivell actiu selecciona/deselecciona tots els seus municipis (cascada cap a la unitat mínima). Per a Vegueries i Comarques transfrontereres, la selecció afecta tots els municipis del territori (independentment de la província).
+### Capa interactiva i selecció
+
+- La capa **interactiva** (hover, clic, selecció) és sempre la **més fina de les visibles**. Ex.: amb Província + Comarca visibles, la interactiva és Comarca; amb només Província, és Província. Sense cap capa visible, no hi ha interacció.
+- **Clic** sobre una demarcació de la capa interactiva: toggle que selecciona/deselecciona tots els seus municipis (cascada cap a la unitat mínima). Vegueries i comarques transfrontereres seleccionen tots els seus municipis independentment de la província.
+- **Farcit de color només als municipis**: únicament la capa de municipis es pinta (seleccionat ple 0,70 · parcial 0,55). Les capes superiors mai s'omplen; si la capa interactiva és superior i conté selecció, se'n ressalta la **vora** amb el color temàtic. Així, fent zoom out d'una selecció de 3 municipis, es veuen exactament aquells 3 municipis pintats.
+- **Hover**: feedback visual temporal (farcit suau amb el to del tema); no persisteix.
+- **Clic dret / pulsació llarga** sobre la demarcació interactiva → obre la **fitxa de territori** (enllaços externs, escut/bandera…).
+
+### Basemap i màscara
+
+- **Tiles**: Carto Positron net a la vista general; a partir del zoom ~13 es passa a Carto Voyager (més detall de carrers) quan ja es mira un municipi de prop. En mode joc, tiles **sense etiquetes** (anti-trampa).
+- **Màscara**: una capa blanca semitransparent tapa tot el món excepte Catalunya (retallada) → el territori destaca i la resta queda atenuada (inspirat en meteo.cat).
 
 ### Restriccions de navegació del mapa
 
@@ -169,20 +206,17 @@ El mapa mostra **sempre les 4 capes de divisió territorial visibles** (Provínc
   - Si la finestra del navegador és prou gran per veure tot Catalunya → el mapa és immòbil (no cal desplaçar-se).
   - Si la finestra és petita (part de Catalunya queda fora de la pantalla) → el desplaçament s'habilita per poder accedir a tot el territori.
 - **Límits de desplaçament dinàmics**: els límits de moviment es calculen automàticament en funció de la mida del viewport i el zoom actual, garantint sempre que qualsevol punt de Catalunya sigui accessible sense poder anar a territoris irrellevants. Es recalculen en cada canvi de zoom i en redimensionar la finestra.
+- **Vista base generalitzada**: aquest sistema (zoom mínim + centre de retorn + límits) opera sobre una «vista base» que normalment és Catalunya i, en mode joc amb territori contenidor, passa a ser el bbox del contenidor.
 
-### Panell de context geogràfic (part superior central del mapa)
+### Panell de capes i context (part superior central del mapa)
 
-Mostra la jerarquia completa des del nivell superior fins al nivell actiu al selector:
+Graella 2×2 (Província · Vegueria · Comarca · Municipi) amb un doble rol:
 
-| Selector  | Panell mostra (de dalt a baix)                  |
-| --------- | ----------------------------------------------- |
-| Província | Província                                       |
-| Vegueria  | Província(s) → Vegueria                         |
-| Comarca   | Província(s) → Vegueria → Comarca               |
-| Municipi  | Província(s) → Vegueria(s) → Comarca → Municipi |
+- **Capçaleres = interruptors de capa**: cada capçalera activa/desactiva la seva capa (subratllada = visible). És el control de la "visibilitat lliure" descrita a dalt.
+- **Cel·les de valor = context del hover**: en passar el cursor per la capa interactiva, mostren la jerarquia de la demarcació (província → vegueria → comarca → municipi).
 
-- Si una divisió pertany a més d'una unitat superior, es mostren totes (ex. Cerdanya → "Girona, Lleida")
-- Criteri d'ordenació/representació quan hi ha múltiples unitats superiors: _(pendent, possiblement per % de territori)_
+- Si una comarca transfronterera pertany a més d'una província o vegueria, es mostren totes, en ordre de dominància (ex. Cerdanya → "Girona, Lleida").
+- En mode joc (GeoFreak) el panell s'amaga: mostrar el nom en hover faria trivial el joc.
 
 ## Stack tecnològic
 
@@ -333,11 +367,13 @@ Aspectes a definir:
 
 **Un sol domini — `viscalaterra.cat`** amb múltiples seccions.
 
-Cerca, Jocs i Marxandatge conviuen sota el mateix domini, comparteixen sistema d'usuaris i identitat visual. El codi és modular internament (cada secció ben separada) tot i compartir el mateix deploy. Si en el futur la botiga creix, es pot externalitzar a subdomini sense trencar res.
+Llocs, Agenda, Jocs, Marxandatge i la resta de seccions conviuen sota el mateix domini, comparteixen sistema d'usuaris i identitat visual. El codi és modular internament (cada secció ben separada) tot i compartir el mateix deploy. Si en el futur la botiga creix, es pot externalitzar a subdomini sense trencar res.
 
-### Seccions principals (barra de menú)
+### Detall de seccions
 
-**Cerca** — La funcionalitat principal. Mapa + filtres On?/Què?/Quan? + resultats.
+La llista completa de seccions (amb la seva ruta i estat) viu a § **Menú i navegació**. Aquí només es detalla allò amb pes propi (Agenda, mecàniques dels jocs…).
+
+**Agenda** — Cerca d'esdeveniments (cultura, esport, fires, festes…). Mateix paradigma de filtre que Llocs, però amb l'eix temporal (Quan?) com a protagonista: la unitat és l'esdeveniment amb data. Secció **independent** de Llocs, tot i que comparteixen els `llocs` (un esdeveniment passa en un lloc). Els municipis amb esdeveniments actius es destaquen al mapa.
 
 **Jocs** — Jocs que reutilitzen el mapa i el coneixement de Catalunya. Mecàniques:
 
@@ -543,12 +579,6 @@ Tots els jocs de la secció Jocs podrien suportar tres modalitats de joc:
 - Trivial de Catalunya (multijugador en temps real via Socket.io)
 - Risk de Catalunya
 
-**Agenda Cultural** — Vista especialitzada de Cerca, no secció independent. Accés ràpid des del menú, però comparteix base de dades i lògica amb Cerca. Essencialment és Cerca pre-filtrada per Què? → Cultura + Quan? → Puntual, amb presentació orientada a calendari/esdeveniments. Qualsevol persona o col·lectiu pot anunciar un esdeveniment sense distinció entre professional i amateur. Els municipis amb esdeveniments actius apareixen destacats al mapa.
-
-**Marxandatge** — Venda d'articles de la marca. Integrat al mateix domini; si creix, candidat a externalitzar (ex. Shopify en subdomini).
-
-**Espai d'usuari** — Registre, login, perfil, contribucions, reputació.
-
 ## Requisits de disseny
 
 ### Responsive (prioritat alta)
@@ -579,7 +609,7 @@ Un assistent d'intel·ligència artificial integrat a la plataforma per ajudar l
 
 ### Viscalaterra Països Catalans
 
-Expansió del mapa i la base de dades per incloure la Comunitat Valenciana i les Illes Balears, completant els territoris de parla catalana.
+Expansió del mapa i la base de dades per incloure la Comunitat Valenciana, les Illes Balears i Andorra, completant els territoris de parla catalana.
 
 - Descartada per ara, condicionada a l'èxit de la versió Catalunya
 - Implicació tècnica: les capes GeoJSON haurien d'ampliar-se; l'arquitectura modular ho hauria de permetre sense grans refactors

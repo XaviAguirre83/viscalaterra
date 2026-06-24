@@ -164,12 +164,12 @@ El model viu a `frontend/src/data/temporal.ts` (mòdul pur, sense Vue, testejabl
 
 ### Sistema de 4 nivells territorials al mapa
 
-`MapaLeaflet.vue` carrega **simultàniament** les 4 capes territorials (provincies, vegueries, comarques, municipis). El `mapaStore.nivellActiu` determina quina és la "Nivell 1" (la més prominent i l'única interactiva).
+`MapaLeaflet.vue` carrega **simultàniament** les 4 capes territorials (provincies, vegueries, comarques, municipis). La **visibilitat és lliure**: `mapaStore.capesVisibles` (un `Set`) decideix quines es dibuixen (qualsevol combinació; per defecte només `provincies`). La capa **interactiva** (hover/clic/selecció) és sempre la més fina de les visibles (`mapaStore.nivellInteractiu`).
 
-- **Matriu de prioritat** (`NIVELLS_ORDRE`): segons el nivell actiu, la resta de capes ocupen els nivells 2-4 amb gruix i opacitat de bordes decreixents (`ESTIL_NIVELL`): 2px/100% → 1.5px/75% → 1px/50% → 0.5px/25%.
+- **Estil de línia fix per capa** (`ESTIL_DELIMITACIO`): provincies 4px/0.85 → vegueries 3px/0.7 → comarques 2px/0.55 → municipis 1px/0.4. Una capa no visible es dibuixa amb opacitat 0. El contorn de Catalunya (comunitat) és a banda, sempre visible (pane propi, gruix 4).
 - **Resolució per capa** (`resolucioPerCapa`): provincies/vegueries mai van més enllà de 250000; comarques fins a 100000; municipis fins a 5000.
 - **Caché**: capes carregades reutilitzades en canviar de zoom (key `${nivell}-${resolucio}`).
-- **Selector**: integrat al panell `info-territori` (vegeu secció següent); ja no és un control Leaflet independent.
+- **Toggles de capa**: les capçaleres del panell `info-territori` activen/desactiven cada capa (`alternaCapa`); vegeu secció següent. Ja no és un control Leaflet independent ni un selector de nivell únic.
 
 #### Sistema de panes i interactivitat
 
@@ -181,18 +181,18 @@ La interactivitat es gestiona exclusivament via CSS, **no** via l'opció `intera
 - CSS: `.leaflet-pane[class*='leaflet-territori-'] path.leaflet-interactive { pointer-events: none }` — tots els paths inactius ignoren events.
 - CSS: `.territori-actiu path.leaflet-interactive { pointer-events: fill }` — el pane actiu respon a tota l'àrea interior del polígon, fins i tot amb `fillOpacity: 0` (amb `visiblePainted` l'interior no respondria).
 - L'especificitat de les regles és (0,3,1) i (0,4,1), superiors a la regla de Leaflet `.leaflet-pane > svg path.leaflet-interactive` (0,2,2) que posa `pointer-events: auto`.
-- Els handlers `mouseover/mouseout/click` comproven igualment `if (nivell !== mapaStore.nivellActiu) return` com a seguretat addicional.
+- Els handlers `mouseover/mouseout/click` comproven igualment `if (nivell !== nivellEfectiu.value) return` com a seguretat addicional (en mode joc el nivell el mana el joc; altrament és `nivellInteractiu`).
 
-#### Panell d'informació i selector de nivell (`info-territori`)
+#### Panell d'informació i toggles de capa (`info-territori`)
 
 Panell Vue posicionat `absolute` a la part superior centrada del mapa (`top: 10px; left: 50%; transform: translateX(-50%)`). Té dues files:
 
-- **Fila de capçaleres** — 4 botons (`<button>`) amb `pointer-events: auto`: Província · Vegueria · Comarca · Municipi. El nivell actiu es marca amb subratllat i text fosc; la resta en gris. Clic → `mapaStore.defineixNivellActiu(nivell)`.
-- **Fila de valors** — `pointer-events: none`, s'omple en `mouseover` sobre el territori actiu. Les cel·les de Província i Vegueria suporten múltiples línies (valor dominant + secundari en gris més clar) per a les comarques transfrontereres.
+- **Fila de capçaleres** — 4 botons (`<button role="checkbox">`) amb `pointer-events: auto`: Província · Vegueria · Comarca · Municipi. Cada un **activa/desactiva la seva capa** (`mapaStore.alternaCapa(nivell)`); les visibles es marquen amb subratllat i text fosc, la resta en gris. La visibilitat és lliure (qualsevol combinació).
+- **Fila de valors** — `pointer-events: none`, s'omple en `mouseover` sobre la capa interactiva (la més fina visible). Les cel·les de Província i Vegueria suporten múltiples línies (valor dominant + secundari en gris més clar) per a les comarques transfrontereres.
 
-Comportament per nivell actiu:
+Comportament segons la capa interactiva (la que rep el hover):
 
-| Selector   | Província                               | Vegueria                     | Comarca     | Municipi     |
+| Capa       | Província                               | Vegueria                     | Comarca     | Municipi     |
 | ---------- | --------------------------------------- | ---------------------------- | ----------- | ------------ |
 | Provincies | nom de la província                     | —                            | —           | —            |
 | Vegueries  | —                                       | nom de la vegueria           | —           | —            |
@@ -203,7 +203,7 @@ La lògica de resolució viu a `filesHover` (computed reactiu sobre `hoverInfo` 
 
 #### Selecció visual al mapa
 
-**Únicament la capa de municipis mostra farcit de color.** Les capes superiors (comarca, vegueria, província) mantenen sempre `fillOpacity: 0` — les seves línies delimitadores es veuen, però l'àrea interior mai es pinta. La selecció es visualitza exclusivament als municipis individuals que formen part del territori seleccionat, independentment del nivell selector actiu. Així, fent zoom out des d'una selecció de 3 municipis del Maresme, es veuen exactament aquells 3 municipis pintats.
+**Únicament la capa de municipis mostra farcit de color.** Les capes superiors (comarca, vegueria, província) mantenen sempre `fillOpacity: 0` — les seves línies delimitadores es veuen, però l'àrea interior mai es pinta. La selecció es visualitza exclusivament als municipis individuals que formen part del territori seleccionat, independentment de la capa interactiva. Així, fent zoom out des d'una selecció de 3 municipis del Maresme, es veuen exactament aquells 3 municipis pintats.
 
 Opacitats:
 
