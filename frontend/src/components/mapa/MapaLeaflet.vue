@@ -32,11 +32,11 @@ const emit = defineEmits<{
   obreFitxa: [objectiu: { nivell: NivellTerritorial; codi: string; nom: string }]
 }>()
 
-// Nivell que mana al mapa: el del joc en mode joc, el del selector altrament.
-// Capa interactiva: en joc la marca el joc; en normal, la més fina visible
-// (pot ser null si no n'hi ha cap de visible).
-const nivellEfectiu = computed<NivellTerritorial | null>(
-  () => props.modeJoc?.nivell ?? mapaStore.nivellInteractiu
+// Nivell que mana al mapa: el del joc en mode joc, el triat per l'usuari als
+// quadres de valors del panell altrament (sempre n'hi ha exactament un;
+// independent de quines capes de línies siguin visibles).
+const nivellEfectiu = computed<NivellTerritorial>(
+  () => props.modeJoc?.nivell ?? mapaStore.nivellSeleccio
 )
 
 // Features jugables (Set per a cerca O(1)); null = totes les del nivell.
@@ -544,8 +544,10 @@ function estilPerFeature(
   }
 
   // Capes superiors: sense farcit. Si és la capa activa i té selecció, destaca
-  // la vora amb el color temàtic per indicar que conté territori seleccionat.
-  if (esCapaActiva) {
+  // la vora amb el color temàtic per indicar que conté territori seleccionat —
+  // però només si les seves línies són visibles (el nivell de selecció és
+  // independent dels toggles de visibilitat i no ha de fer aparèixer línies).
+  if (esCapaActiva && liniaVisible(nivell)) {
     const estat = estatSeleccioFeature(info, nivell)
     if (estat !== 'cap') {
       const tema = temaDeInfo(info)
@@ -1227,10 +1229,21 @@ watch(
   () => actualitzaEstilsTotes()
 )
 
-// Quan canvien les capes visibles, re-aplica estils i la interactivitat dels
-// panes. (En mode joc el panell està amagat i el nivell el mana el joc.)
+// Quan canvien les capes visibles, re-aplica estils (només afecta el dibuix de
+// línies; la interactivitat la mana nivellSeleccio, independent).
 watch(
   () => mapaStore.capesVisibles,
+  () => {
+    if (props.modeJoc) return
+    actualitzaEstilsTotes()
+  }
+)
+
+// Quan l'usuari canvia el nivell de selecció (quadres de valors del panell),
+// re-aplica estils i mou la interactivitat al pane corresponent. (En mode joc
+// el panell està amagat i el nivell el mana el joc.)
+watch(
+  () => mapaStore.nivellSeleccio,
   () => {
     if (props.modeJoc) return
     actualitzaEstilsTotes()
@@ -1281,8 +1294,16 @@ watch(
           >
             {{ $t('nivells.provincia') }}
           </button>
-          <div class="info-territori__val-cel">
-            <div class="info-territori__val-inner">
+          <button
+            type="button"
+            class="info-territori__val-cel"
+            :class="{ 'info-territori__val-cel--actiu': mapaStore.nivellSeleccio === 'provincies' }"
+            :aria-pressed="mapaStore.nivellSeleccio === 'provincies'"
+            :aria-label="$t('mapa.seleccioPer', { nivell: $t('nivells.provincia') })"
+            :title="$t('mapa.seleccioPer', { nivell: $t('nivells.provincia') })"
+            @click="mapaStore.defineixNivellSeleccio('provincies')"
+          >
+            <span class="info-territori__val-inner">
               <template v-if="filesHover?.provincies.length">
                 <span
                   v-for="(p, i) in filesHover.provincies"
@@ -1292,8 +1313,8 @@ watch(
                 >
               </template>
               <span v-else class="info-territori__val--buit">—</span>
-            </div>
-          </div>
+            </span>
+          </button>
         </div>
         <div class="info-territori__cel">
           <button
@@ -1306,8 +1327,16 @@ watch(
           >
             {{ $t('nivells.vegueria') }}
           </button>
-          <div class="info-territori__val-cel">
-            <div class="info-territori__val-inner">
+          <button
+            type="button"
+            class="info-territori__val-cel"
+            :class="{ 'info-territori__val-cel--actiu': mapaStore.nivellSeleccio === 'vegueries' }"
+            :aria-pressed="mapaStore.nivellSeleccio === 'vegueries'"
+            :aria-label="$t('mapa.seleccioPer', { nivell: $t('nivells.vegueria') })"
+            :title="$t('mapa.seleccioPer', { nivell: $t('nivells.vegueria') })"
+            @click="mapaStore.defineixNivellSeleccio('vegueries')"
+          >
+            <span class="info-territori__val-inner">
               <template v-if="filesHover?.vegueries.length">
                 <span
                   v-for="(v, i) in filesHover.vegueries"
@@ -1317,8 +1346,8 @@ watch(
                 >
               </template>
               <span v-else class="info-territori__val--buit">—</span>
-            </div>
-          </div>
+            </span>
+          </button>
         </div>
         <div class="info-territori__cel">
           <button
@@ -1331,14 +1360,22 @@ watch(
           >
             {{ $t('nivells.comarca') }}
           </button>
-          <div class="info-territori__val-cel">
-            <div class="info-territori__val-inner">
+          <button
+            type="button"
+            class="info-territori__val-cel"
+            :class="{ 'info-territori__val-cel--actiu': mapaStore.nivellSeleccio === 'comarques' }"
+            :aria-pressed="mapaStore.nivellSeleccio === 'comarques'"
+            :aria-label="$t('mapa.seleccioPer', { nivell: $t('nivells.comarca') })"
+            :title="$t('mapa.seleccioPer', { nivell: $t('nivells.comarca') })"
+            @click="mapaStore.defineixNivellSeleccio('comarques')"
+          >
+            <span class="info-territori__val-inner">
               <span
                 :class="{ 'info-territori__val--buit': !filesHover || filesHover.comarca === '—' }"
                 >{{ filesHover?.comarca ?? '—' }}</span
               >
-            </div>
-          </div>
+            </span>
+          </button>
         </div>
         <div class="info-territori__cel">
           <button
@@ -1351,14 +1388,22 @@ watch(
           >
             {{ $t('nivells.municipi') }}
           </button>
-          <div class="info-territori__val-cel">
-            <div class="info-territori__val-inner">
+          <button
+            type="button"
+            class="info-territori__val-cel"
+            :class="{ 'info-territori__val-cel--actiu': mapaStore.nivellSeleccio === 'municipis' }"
+            :aria-pressed="mapaStore.nivellSeleccio === 'municipis'"
+            :aria-label="$t('mapa.seleccioPer', { nivell: $t('nivells.municipi') })"
+            :title="$t('mapa.seleccioPer', { nivell: $t('nivells.municipi') })"
+            @click="mapaStore.defineixNivellSeleccio('municipis')"
+          >
+            <span class="info-territori__val-inner">
               <span
                 :class="{ 'info-territori__val--buit': !filesHover || filesHover.municipi === '—' }"
                 >{{ filesHover?.municipi ?? '—' }}</span
               >
-            </div>
-          </div>
+            </span>
+          </button>
         </div>
       </div>
     </div>
@@ -1574,14 +1619,43 @@ watch(
   color: #1a1a1a;
 }
 
+/* Quadre de valor: botó amb comportament radio — el triat (un i només un dels
+   quatre) determina el nivell de selecció al mapa (hover/clic). */
 .info-territori__val-cel {
   min-width: 0;
   overflow: hidden;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 4px;
+  transition:
+    background 0.15s,
+    box-shadow 0.15s;
+}
+
+/* El fons "pastilla" s'estén amb box-shadow (spread) en lloc de padding per no
+   alterar el layout ni les mesures del marquee mòbil (ajustaCarrusel). */
+.info-territori__val-cel:hover {
+  background: #f0f0ec;
+  box-shadow: 0 0 0 3px #f0f0ec;
+}
+
+.info-territori__val-cel--actiu {
+  background: #e8f0e8;
+  box-shadow:
+    0 0 0 3px #e8f0e8,
+    0 0 0 4px #2d6a2d;
 }
 
 /* Valor en una sola línia; els valors múltiples (comarques transfrontereres)
    es mostren separats per coma. Si no hi cap, … en desktop / marquee en mòbil. */
 .info-territori__val-inner {
+  display: block;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

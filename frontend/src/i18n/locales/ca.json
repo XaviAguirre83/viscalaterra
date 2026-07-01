@@ -282,7 +282,8 @@
   "mapa": {
     "carregant": "Carregant el mapa…",
     "error": "No s'han pogut carregar les dades del mapa.",
-    "nivellAria": "Nivell territorial actiu",
+    "nivellAria": "Capes del mapa i nivell de selecció",
+    "seleccioPer": "Selecciona al mapa per {nivell}",
     "amplia": "Amplia la imatge"
   },
   "orientacio": {

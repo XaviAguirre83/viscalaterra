@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
 // Zoom i centre inicials: Catalunya sencera visible
@@ -37,19 +37,13 @@ export const useMapaStore = defineStore('mapa', () => {
 
   // Capes de delimitació visibles (combinació LLIURE): cada tipus s'activa o
   // desactiva independentment. El subratllat del panell marca les visibles.
-  // Per defecte, només províncies.
+  // Per defecte, només províncies. NOMÉS controla el dibuix de línies — la
+  // interactivitat la mana nivellSeleccio, independent d'aquesta visibilitat.
   const capesVisibles = ref<Set<NivellTerritorial>>(new Set<NivellTerritorial>(['provincies']))
 
-  // De més contenidor a més fi. La capa interactiva (hover/clic per seleccionar
-  // territori) és la més FINA de les visibles.
-  const ORDRE: NivellTerritorial[] = ['provincies', 'vegueries', 'comarques', 'municipis']
-
-  const nivellInteractiu = computed<NivellTerritorial | null>(() => {
-    for (let i = ORDRE.length - 1; i >= 0; i--) {
-      if (capesVisibles.value.has(ORDRE[i]!)) return ORDRE[i]!
-    }
-    return null
-  })
+  // Nivell de selecció al mapa (hover/clic): exactament UN dels quatre, triat
+  // als quadres de valors del panell info-territori (comportament radio).
+  const nivellSeleccio = ref<NivellTerritorial>('provincies')
 
   function esVisible(nivell: NivellTerritorial): boolean {
     return capesVisibles.value.has(nivell)
@@ -61,6 +55,10 @@ export const useMapaStore = defineStore('mapa', () => {
     if (nou.has(nivell)) nou.delete(nivell)
     else nou.add(nivell)
     capesVisibles.value = nou
+  }
+
+  function defineixNivellSeleccio(nivell: NivellTerritorial) {
+    nivellSeleccio.value = nivell
   }
 
   function actualitzaZoom(nouZoom: number) {
@@ -80,9 +78,10 @@ export const useMapaStore = defineStore('mapa', () => {
     zoom,
     centre,
     capesVisibles,
-    nivellInteractiu,
+    nivellSeleccio,
     esVisible,
     alternaCapa,
+    defineixNivellSeleccio,
     actualitzaZoom,
     actualitzaCentre,
     volaA,

@@ -164,7 +164,7 @@ El model viu a `frontend/src/data/temporal.ts` (mòdul pur, sense Vue, testejabl
 
 ### Sistema de 4 nivells territorials al mapa
 
-`MapaLeaflet.vue` carrega **simultàniament** les 4 capes territorials (provincies, vegueries, comarques, municipis). La **visibilitat és lliure**: `mapaStore.capesVisibles` (un `Set`) decideix quines es dibuixen (qualsevol combinació; per defecte només `provincies`). La capa **interactiva** (hover/clic/selecció) és sempre la més fina de les visibles (`mapaStore.nivellInteractiu`).
+`MapaLeaflet.vue` carrega **simultàniament** les 4 capes territorials (provincies, vegueries, comarques, municipis). La **visibilitat és lliure**: `mapaStore.capesVisibles` (un `Set`) decideix quines es dibuixen (qualsevol combinació; per defecte només `provincies`). La capa **interactiva** (hover/clic/selecció) la tria l'usuari als quadres de valors del panell `info-territori` (`mapaStore.nivellSeleccio`, comportament radio: sempre exactament una; per defecte `provincies`) i és **independent** de la visibilitat de línies — es pot seleccionar per comarques amb només les línies de província visibles.
 
 - **Estil de línia fix per capa** (`ESTIL_DELIMITACIO`): provincies 4px/0.85 → vegueries 3px/0.7 → comarques 2px/0.55 → municipis 1px/0.4. Una capa no visible es dibuixa amb opacitat 0. El contorn de Catalunya (comunitat) és a banda, sempre visible (pane propi, gruix 4).
 - **Resolució per capa** (`resolucioPerCapa`): provincies/vegueries mai van més enllà de 250000; comarques fins a 100000; municipis fins a 5000.
@@ -181,14 +181,14 @@ La interactivitat es gestiona exclusivament via CSS, **no** via l'opció `intera
 - CSS: `.leaflet-pane[class*='leaflet-territori-'] path.leaflet-interactive { pointer-events: none }` — tots els paths inactius ignoren events.
 - CSS: `.territori-actiu path.leaflet-interactive { pointer-events: fill }` — el pane actiu respon a tota l'àrea interior del polígon, fins i tot amb `fillOpacity: 0` (amb `visiblePainted` l'interior no respondria).
 - L'especificitat de les regles és (0,3,1) i (0,4,1), superiors a la regla de Leaflet `.leaflet-pane > svg path.leaflet-interactive` (0,2,2) que posa `pointer-events: auto`.
-- Els handlers `mouseover/mouseout/click` comproven igualment `if (nivell !== nivellEfectiu.value) return` com a seguretat addicional (en mode joc el nivell el mana el joc; altrament és `nivellInteractiu`).
+- Els handlers `mouseover/mouseout/click` comproven igualment `if (nivell !== nivellEfectiu.value) return` com a seguretat addicional (en mode joc el nivell el mana el joc; altrament és `nivellSeleccio`).
 
-#### Panell d'informació i toggles de capa (`info-territori`)
+#### Panell d'informació, toggles de capa i nivell de selecció (`info-territori`)
 
 Panell Vue posicionat `absolute` a la part superior centrada del mapa (`top: 10px; left: 50%; transform: translateX(-50%)`). Té dues files:
 
-- **Fila de capçaleres** — 4 botons (`<button role="checkbox">`) amb `pointer-events: auto`: Província · Vegueria · Comarca · Municipi. Cada un **activa/desactiva la seva capa** (`mapaStore.alternaCapa(nivell)`); les visibles es marquen amb subratllat i text fosc, la resta en gris. La visibilitat és lliure (qualsevol combinació).
-- **Fila de valors** — `pointer-events: none`, s'omple en `mouseover` sobre la capa interactiva (la més fina visible). Les cel·les de Província i Vegueria suporten múltiples línies (valor dominant + secundari en gris més clar) per a les comarques transfrontereres.
+- **Fila de capçaleres** — 4 botons (`<button role="checkbox">`) amb `pointer-events: auto`: Província · Vegueria · Comarca · Municipi. Cada un **activa/desactiva la seva capa de línies** (`mapaStore.alternaCapa(nivell)`); les visibles es marquen amb subratllat i text fosc, la resta en gris. La visibilitat és lliure (qualsevol combinació). Només afecta el dibuix, no la interactivitat.
+- **Fila de valors** — 4 botons amb comportament **radio** (`aria-pressed`, un i només un actiu): el triat fixa el **nivell de selecció** del mapa (`mapaStore.defineixNivellSeleccio`) — hover, clic i selecció operen sobre aquest nivell, sigui quina sigui la visibilitat de línies. L'actiu es marca amb una pastilla verda. Els mateixos botons mostren el valor en `mouseover` sobre la capa interactiva; les cel·les de Província i Vegueria suporten múltiples valors (dominant + secundari en gris més clar) per a les comarques transfrontereres.
 
 Comportament segons la capa interactiva (la que rep el hover):
 

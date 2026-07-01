@@ -282,7 +282,8 @@
   "mapa": {
     "carregant": "Cargando el mapa…",
     "error": "No se han podido cargar los datos del mapa.",
-    "nivellAria": "Nivel territorial activo",
+    "nivellAria": "Capas del mapa y nivel de selección",
+    "seleccioPer": "Seleccionar en el mapa por {nivell}",
     "amplia": "Ampliar la imagen"
   },
   "orientacio": {

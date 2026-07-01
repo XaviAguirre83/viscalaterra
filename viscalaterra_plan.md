@@ -187,9 +187,9 @@ Cada capa té un estil de línia **fix** (com més gran el territori, més gruix
 
 ### Capa interactiva i selecció
 
-- La capa **interactiva** (hover, clic, selecció) és sempre la **més fina de les visibles**. Ex.: amb Província + Comarca visibles, la interactiva és Comarca; amb només Província, és Província. Sense cap capa visible, no hi ha interacció.
+- La capa **interactiva** (hover, clic, selecció) la **tria l'usuari** als quadres de valors del panell info-territori: comportament radio, un i només un nivell actiu (per defecte Província). És **independent** dels toggles de visibilitat de línies — es pot seleccionar per comarques encara que només es vegin les línies de província.
 - **Clic** sobre una demarcació de la capa interactiva: toggle que selecciona/deselecciona tots els seus municipis (cascada cap a la unitat mínima). Vegueries i comarques transfrontereres seleccionen tots els seus municipis independentment de la província.
-- **Farcit de color només als municipis**: únicament la capa de municipis es pinta (seleccionat ple 0,70 · parcial 0,55). Les capes superiors mai s'omplen; si la capa interactiva és superior i conté selecció, se'n ressalta la **vora** amb el color temàtic. Així, fent zoom out d'una selecció de 3 municipis, es veuen exactament aquells 3 municipis pintats.
+- **Farcit de color només als municipis**: únicament la capa de municipis es pinta (seleccionat ple 0,70 · parcial 0,55). Les capes superiors mai s'omplen; si la capa interactiva és superior, conté selecció i les seves línies són visibles, se'n ressalta la **vora** amb el color temàtic. Així, fent zoom out d'una selecció de 3 municipis, es veuen exactament aquells 3 municipis pintats.
 - **Hover**: feedback visual temporal (farcit suau amb el to del tema); no persisteix.
 - **Clic dret / pulsació llarga** sobre la demarcació interactiva → obre la **fitxa de territori** (enllaços externs, escut/bandera…).
 

@@ -282,7 +282,8 @@
   "mapa": {
     "carregant": "Loading the map…",
     "error": "Could not load the map data.",
-    "nivellAria": "Active territorial level",
+    "nivellAria": "Map layers and selection level",
+    "seleccioPer": "Select on the map by {nivell}",
     "amplia": "Enlarge image"
   },
   "orientacio": {
