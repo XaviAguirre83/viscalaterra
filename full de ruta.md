@@ -174,14 +174,19 @@ staging.viscalaterra.cat  → staging   (proves amb amics)
 Caddy gestiona els dos dominis i certificats al mateix VPS sense cost addicional.
 El staging apunta a la branca `develop`; producció a `main`.
 
-**4.3 Autenticació real (JWT + bcrypt)**
-Avui el login és un mock en memòria (`stores/auth.ts`). Cal implementar:
+**4.3 Autenticació real (JWT + bcrypt) — FET** _(actualitzat 2026-07-03)_
+Implementada: taula `usuaris`, endpoints `/api/auth/registre|login|google|jo`,
+JWT amb expiració, login amb Google (GSI), `ModalAuth` i menú d'usuari.
 
-- Taula `usuaris` a la BD (email, password_hash, reputació, creat_en).
-- Endpoints `POST /api/auth/registre` i `POST /api/auth/login` al backend.
-- JWT real amb expiració; `localStorage` al frontend.
+Queda el **hardening pre-beta** (de l'auditoria 2026-07-02, per ordre):
 
-Prerequisit bloquejant per al sistema de contribucions.
+- **JWT de localStorage → cookie HttpOnly + SameSite** (+ anti-CSRF per Origin,
+  endpoint de logout al servidor, `JWT_EXPIRES_IN` a 24h). Un XSS avui podria
+  exfiltrar el token; amb la cookie HttpOnly el JS no el pot llegir. Estimat:
+  1–2 h + prova manual del login amb Google al navegador. Fer-ho **abans de la
+  beta amb usuaris** (invalida les sessions existents — ara és barat).
+- **Rol de BD sense superusuari** per a l'app (vegeu auditoria 2026-07-02,
+  seguretat § MITJÀ 3). Fer-ho **abans de producció real**.
 
 **4.4 Sistema de contribucions i verificació col·lectiva**
 El nucli diferenciador de viscalaterra. Vegeu secció 4.4 detallada més avall.
