@@ -2,7 +2,22 @@
 
 ## Descripció general
 
-Plataforma de descoberta de Catalunya. El mapa actua com a filtre geogràfic. El filtre pivota sobre tres pilars:
+Plataforma de descoberta de Catalunya. El mapa n'és l'eix vertebrador — la majoria
+de seccions l'usen com a filtre geogràfic o com a tauler de joc — però la
+plataforma és més que un cercador:
+
+- **Llocs** — cerca de llocs i equipaments d'espai públic (atemporal). La secció principal.
+- **Agenda** — cerca d'esdeveniments, amb l'eix temporal com a protagonista.
+- **Taulell d'anuncis** — tauler veïnal geolocalitzat _(en construcció)_.
+- **Fet a la terra** — cercador de productes manufacturats a Catalunya; a futur, espai de venda per a petits productors locals _(en construcció)_.
+- **Jocs** — jocs sobre el coneixement del territori amb el mapa com a tauler (GeoFreak, i més per venir).
+- **Merchandising** — botiga d'articles de la marca, sense mapa _(en construcció)_.
+- **Meta** — Sobre nosaltres, Contacte, Bústia de suggeriments i Legal.
+
+El detall de rutes i estat de cada secció és a § Menú i navegació; el pes propi de
+cada una (Agenda, mecàniques dels jocs…), a § Arquitectura general.
+
+A les seccions de cerca (Llocs i Agenda), el filtre pivota sobre tres pilars:
 
 - **On?** l'usuari pot escollir un o més llocs, ja siguin províncies, vegueries, comarques o municipis. Es pot seleccionar tant al mapa com al menú desplegable.
 - **Què?** l'usuari pot escollir un ítem o grup d'ítems d'interès (esports, aire lliure, pet-friendly...)
@@ -36,7 +51,7 @@ la resta del territori espanyol i francès en color més tenue (inspirat en el m
 
 ## Públic objectiu
 
-_(pendent de definir)_
+TODO: Aquesta secció no tinc clara que haguem de tenir-la _(pendent de definir)_
 
 ## Menú i navegació
 
