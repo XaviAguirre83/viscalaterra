@@ -1,9 +1,12 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
-// Zoom i centre inicials: Catalunya sencera visible
-const ZOOM_INICIAL = 8
-const CENTRE_INICIAL: [number, number] = [41.708, 1.738]
+// Zoom i centre inicials: Catalunya sencera visible. Exportats perquè el mapa
+// construeixi la seva "vista base" (minZoom, centre de retorn) SEMPRE a partir
+// d'aquestes constants — mai del zoom/centre persistits al store, que només
+// són l'última vista de l'usuari.
+export const ZOOM_INICIAL = 8
+export const CENTRE_INICIAL: [number, number] = [41.708, 1.738]
 
 export type NivellTerritorial = 'provincies' | 'vegueries' | 'comarques' | 'municipis'
 

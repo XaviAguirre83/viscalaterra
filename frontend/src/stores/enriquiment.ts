@@ -33,8 +33,6 @@ interface DadesEnriquiment {
   provincies: Record<string, Enriquiment>
 }
 
-const BUIT: DadesEnriquiment = { municipis: {}, comarques: {}, provincies: {} }
-
 export const useEnriquimentStore = defineStore('enriquiment', () => {
   const dades = ref<DadesEnriquiment | null>(null)
   const carregant = ref(false)
@@ -50,7 +48,11 @@ export const useEnriquimentStore = defineStore('enriquiment', () => {
         dades.value = d
       })
       .catch(() => {
-        dades.value = BUIT
+        // Error transitori (xarxa mòbil intermitent): NO es cachea el fallo —
+        // abans es desava un objecte buit i emblemes/fitxes quedaven "sense
+        // informació" tota la sessió. Alliberar la promesa permet que la
+        // propera crida a carrega() ho reintenti.
+        promesa = null
       })
       .finally(() => {
         carregant.value = false

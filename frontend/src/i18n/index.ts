@@ -40,8 +40,15 @@ function esIdiomaValid(codi: string): codi is Idioma {
 // per defecte, sempre català — és l'idioma principal de la plataforma, independentment
 // de la configuració del navegador del visitant.
 function idiomaInicial(): Idioma {
-  const desat = localStorage.getItem(STORAGE_KEY)
-  if (desat && esIdiomaValid(desat)) return desat
+  // localStorage pot llançar (p. ex. "bloquejar dades de llocs" al navegador);
+  // com que això s'executa en importar el mòdul, sense el try/catch l'app
+  // sencera quedaria en blanc.
+  try {
+    const desat = localStorage.getItem(STORAGE_KEY)
+    if (desat && esIdiomaValid(desat)) return desat
+  } catch {
+    // Sense accés al desat: català per defecte.
+  }
   return 'ca'
 }
 
@@ -61,6 +68,10 @@ document.documentElement.setAttribute('lang', inicial)
 // Canvia l'idioma actiu, el persisteix i actualitza <html lang>.
 export function canviaIdioma(nou: Idioma) {
   i18n.global.locale.value = nou
-  localStorage.setItem(STORAGE_KEY, nou)
+  try {
+    localStorage.setItem(STORAGE_KEY, nou)
+  } catch {
+    // Sense persistència: l'idioma triat dura només aquesta sessió.
+  }
   document.documentElement.setAttribute('lang', nou)
 }

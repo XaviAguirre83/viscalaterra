@@ -3,7 +3,13 @@ import { onMounted, onUnmounted, watch, ref, computed, nextTick } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useTerritorisStore } from '@/stores/territoris'
-import { useMapaStore, type ModeJocMapa, type NivellTerritorial } from '@/stores/mapa'
+import {
+  useMapaStore,
+  ZOOM_INICIAL,
+  CENTRE_INICIAL,
+  type ModeJocMapa,
+  type NivellTerritorial,
+} from '@/stores/mapa'
 import { useMapaOpcionsStore } from '@/stores/mapaOpcions'
 import { useEnriquimentStore, type Credit } from '@/stores/enriquiment'
 import {
@@ -116,6 +122,9 @@ const capesActives: Record<NivellTerritorial, L.GeoJSON | null> = {
 }
 // Cache de capes carregades per (nivell, resolució) — evita re-fetch en canviar zoom.
 const cacheLayers: Record<string, L.GeoJSON> = {}
+// Descàrregues en curs per clau (single-flight): dues crides concurrents de la
+// mateixa capa comparteixen fetch i construcció en lloc de duplicar-los.
+const cachePromeses: Record<string, Promise<L.GeoJSON | null>> = {}
 
 // ── Sistema de delimitacions ───────────────────────────────────────────────
 // Cada nivell té una línia FIXA (gruix + opacitat). La visibilitat és LLIURE:
@@ -996,75 +1005,89 @@ async function carregaCapa(nivell: NivellTerritorial, zoom: number) {
 
   let capa = cacheLayers[clau]
   if (!capa) {
-    const res = await fetch(`/api/geojson/${nivell}?resolucio=${resolucio}`)
-    if (!res.ok) return
-    const dades = await res.json()
+    cachePromeses[clau] ??= (async (): Promise<L.GeoJSON | null> => {
+      const res = await fetch(`/api/geojson/${nivell}?resolucio=${resolucio}`)
+      if (!res.ok) return null
+      const dades = await res.json()
 
-    capa = L.geoJSON(dades, {
-      // renderer és vàlid en runtime però @types/leaflet no el declara a GeoJSONOptions
-      ...({ renderer: canvasRenderers[nivell] } as L.GeoJSONOptions),
-      pane: PANE_NOMS[nivell],
-      style: (feature) => estilPerFeature(feature, nivell),
-      onEachFeature(feature, layer) {
-        const pathLayer = layer as L.Path
-        layer.on({
-          mouseover() {
-            if (nivell !== nivellEfectiu.value) return
-            const info = codiDeFeature(feature, nivell)
-            if (!info) return
-            // En mode joc no es mostra cap nom (delataria la resposta): només
-            // feedback visual, i únicament a les features jugables no encertades
-            // i quan es respon clicant («On és...?»).
-            if (props.modeJoc) {
-              if (!props.modeJoc.interactiu || !esJugable(info) || esEncertada(info)) return
-              // Amb pista activa, només els 4 candidats reaccionen.
-              if (props.modeJoc.codisPista && !props.modeJoc.codisPista.includes(info.codi)) return
-              pathLayer.setStyle(estilHoverPerFeature(feature, nivell))
-              return
-            }
-            pathLayer.setStyle(estilHoverPerFeature(feature, nivell))
-            hoverInfo.value = {
-              nivell,
-              codi: info.codi,
-              nom: info.nom ?? '',
-              nomProvincia: info.nomProvincia,
-              nomsProvincia: info.nomsProvincia,
-              nomVegueria: info.nomVegueria,
-              nomsVegueria: info.nomsVegueria,
-              nomComarca: info.nomComarca,
-            }
-          },
-          mouseout() {
-            if (nivell !== nivellEfectiu.value) return
-            pathLayer.setStyle(estilPerFeature(feature, nivell))
-            hoverInfo.value = null
-          },
-          click() {
-            if (nivell !== nivellEfectiu.value) return
-            if (props.modeJoc) {
-              if (!props.modeJoc.interactiu) return
+      const nova = L.geoJSON(dades, {
+        // renderer és vàlid en runtime però @types/leaflet no el declara a GeoJSONOptions
+        ...({ renderer: canvasRenderers[nivell] } as L.GeoJSONOptions),
+        pane: PANE_NOMS[nivell],
+        style: (feature) => estilPerFeature(feature, nivell),
+        onEachFeature(feature, layer) {
+          const pathLayer = layer as L.Path
+          layer.on({
+            mouseover() {
+              if (nivell !== nivellEfectiu.value) return
               const info = codiDeFeature(feature, nivell)
-              if (!info || !esJugable(info) || esEncertada(info)) return
-              if (props.modeJoc.codisPista && !props.modeJoc.codisPista.includes(info.codi)) return
-              emit('clicJoc', info.codi, info.nom ?? '')
-              return
-            }
-            gestionaClicFeature(feature, nivell)
-          },
-          contextmenu(e: L.LeafletMouseEvent) {
-            // Clic dret (desktop) / long-press (mòbil) sobre el territori del
-            // nivell actiu → fitxa amb enllaços. No en mode joc.
-            if (props.modeJoc || nivell !== nivellEfectiu.value) return
-            e.originalEvent?.preventDefault?.()
-            const info = codiDeFeature(feature, nivell)
-            if (!info) return
-            emit('obreFitxa', { nivell, codi: info.codi, nom: info.nom ?? '' })
-          },
-        })
-      },
+              if (!info) return
+              // En mode joc no es mostra cap nom (delataria la resposta): només
+              // feedback visual, i únicament a les features jugables no encertades
+              // i quan es respon clicant («On és...?»).
+              if (props.modeJoc) {
+                if (!props.modeJoc.interactiu || !esJugable(info) || esEncertada(info)) return
+                // Amb pista activa, només els 4 candidats reaccionen.
+                if (props.modeJoc.codisPista && !props.modeJoc.codisPista.includes(info.codi))
+                  return
+                pathLayer.setStyle(estilHoverPerFeature(feature, nivell))
+                return
+              }
+              pathLayer.setStyle(estilHoverPerFeature(feature, nivell))
+              hoverInfo.value = {
+                nivell,
+                codi: info.codi,
+                nom: info.nom ?? '',
+                nomProvincia: info.nomProvincia,
+                nomsProvincia: info.nomsProvincia,
+                nomVegueria: info.nomVegueria,
+                nomsVegueria: info.nomsVegueria,
+                nomComarca: info.nomComarca,
+              }
+            },
+            mouseout() {
+              if (nivell !== nivellEfectiu.value) return
+              pathLayer.setStyle(estilPerFeature(feature, nivell))
+              hoverInfo.value = null
+            },
+            click() {
+              if (nivell !== nivellEfectiu.value) return
+              if (props.modeJoc) {
+                if (!props.modeJoc.interactiu) return
+                const info = codiDeFeature(feature, nivell)
+                if (!info || !esJugable(info) || esEncertada(info)) return
+                if (props.modeJoc.codisPista && !props.modeJoc.codisPista.includes(info.codi))
+                  return
+                emit('clicJoc', info.codi, info.nom ?? '')
+                return
+              }
+              gestionaClicFeature(feature, nivell)
+            },
+            contextmenu(e: L.LeafletMouseEvent) {
+              // Clic dret (desktop) / long-press (mòbil) sobre el territori del
+              // nivell actiu → fitxa amb enllaços. No en mode joc.
+              if (props.modeJoc || nivell !== nivellEfectiu.value) return
+              e.originalEvent?.preventDefault?.()
+              const info = codiDeFeature(feature, nivell)
+              if (!info) return
+              emit('obreFitxa', { nivell, codi: info.codi, nom: info.nom ?? '' })
+            },
+          })
+        },
+      })
+      cacheLayers[clau] = nova
+      return nova
+    })().finally(() => {
+      delete cachePromeses[clau]
     })
-    cacheLayers[clau] = capa
+    capa = (await cachePromeses[clau]) ?? undefined
+    if (!capa) return
   }
+
+  // Resposta fora d'ordre: si mentre esperàvem la descàrrega el zoom ha tornat
+  // a canviar, aquesta resolució ja no és la vigent — la crida més recent
+  // s'encarrega de posar la capa activa correcta i aquí no la trepitgem.
+  if (!mapa || resolucioPerCapa(nivell, mapa.getZoom()) !== resolucio) return
 
   const anterior = capesActives[nivell]
   if (anterior && anterior !== capa) {
@@ -1084,8 +1107,13 @@ async function carregaCapa(nivell: NivellTerritorial, zoom: number) {
   })
 }
 
+// Càrregues de capes en vol: amb dues de solapades (zoomends ràpids), la
+// primera que acaba no ha d'apagar l'indicador de la que encara corre.
+let carreguesEnVol = 0
+
 async function carregaTotesCapes(zoom: number) {
   const nivells: NivellTerritorial[] = ['provincies', 'vegueries', 'comarques', 'municipis']
+  carreguesEnVol++
   carregant.value = true
   errorMapa.value = false
   try {
@@ -1097,7 +1125,8 @@ async function carregaTotesCapes(zoom: number) {
     console.error('Error carregant les capes del mapa', err)
     errorMapa.value = true
   } finally {
-    carregant.value = false
+    carreguesEnVol--
+    if (carreguesEnVol === 0) carregant.value = false
   }
 }
 
@@ -1134,14 +1163,27 @@ onMounted(() => {
   // En mòbil la pantalla és més estreta: cal un nivell més de zoom out perquè
   // tota Catalunya càpiga a la vista inicial (en refrescar) i com a mínim.
   const mobil = window.matchMedia('(max-width: 768px)').matches
-  zoomInicial = mapaStore.zoom - (mobil ? 1 : 0)
-  centreInicial = mapaStore.centre
+  // Vista base SEMPRE des de les constants, mai del zoom/centre persistits:
+  // si no, el zoom amb què l'usuari marxa d'una secció es converteix en
+  // minZoom del muntatge següent i el mapa queda clavat sense poder allunyar
+  // (i al mòbil cada visita al joc restava un nivell acumulativament).
+  zoomInicial = ZOOM_INICIAL - (mobil ? 1 : 0)
+  centreInicial = CENTRE_INICIAL
   zoomBase = zoomInicial
   centreBase = centreInicial
 
+  // L'última vista de l'usuari (store) es restaura només com a punt de
+  // partida — mai per sota de la base ni com a límit.
+  const esVistaVerge =
+    mapaStore.zoom === ZOOM_INICIAL &&
+    mapaStore.centre[0] === CENTRE_INICIAL[0] &&
+    mapaStore.centre[1] === CENTRE_INICIAL[1]
+  const zoomArrencada = esVistaVerge ? zoomInicial : Math.max(mapaStore.zoom, zoomInicial)
+  const centreArrencada = esVistaVerge ? centreInicial : mapaStore.centre
+
   mapa = L.map('mapa-contenidor', {
-    center: centreInicial,
-    zoom: zoomInicial,
+    center: centreArrencada,
+    zoom: zoomArrencada,
     minZoom: zoomInicial,
     dragging: false,
     maxBoundsViscosity: 1.0,
@@ -1153,7 +1195,7 @@ onMounted(() => {
     zoomDelta: 1,
   })
 
-  actualitzaTilesNormal(zoomInicial)
+  actualitzaTilesNormal(zoomArrencada)
 
   creaPanesTerritorials()
 
@@ -1191,7 +1233,7 @@ onMounted(() => {
   })
 
   carregaMascaraCatalunya()
-  carregaTotesCapes(mapaStore.zoom)
+  carregaTotesCapes(zoomArrencada)
   actualitzaMaxBounds()
   actualitzaDragging()
 
@@ -1204,11 +1246,11 @@ onUnmounted(() => {
   animacionsFlaix.forEach((id) => cancelAnimationFrame(id))
   animacionsFlaix.clear()
   // Si es desmunta en plena partida (navegació directa a una altra secció),
-  // restaura zoom/centre del store: el proper mapa arrencaria amb minZoom
-  // clavat dins el territori del joc.
+  // reinicia la vista persistida a les constants: el zoom/centre del joc no
+  // són una "última vista" que el proper mapa hagi de restaurar.
   if (props.modeJoc) {
-    mapaStore.actualitzaZoom(zoomInicial)
-    mapaStore.actualitzaCentre(centreInicial[0], centreInicial[1])
+    mapaStore.actualitzaZoom(ZOOM_INICIAL)
+    mapaStore.actualitzaCentre(CENTRE_INICIAL[0], CENTRE_INICIAL[1])
   }
   mapa?.remove()
   mapa = null
@@ -1216,6 +1258,7 @@ onUnmounted(() => {
   // per-instància, buidar-les en desmuntar evita estats penjats en escenaris
   // d'edge (HMR en desenvolupament, o un futur <keep-alive>) i ajuda el GC.
   Object.keys(cacheLayers).forEach((k) => delete cacheLayers[k])
+  Object.keys(cachePromeses).forEach((k) => delete cachePromeses[k])
   ;(Object.keys(capesActives) as NivellTerritorial[]).forEach((n) => (capesActives[n] = null))
   tilesBase = null
   tilesDetall = null

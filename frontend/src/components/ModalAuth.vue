@@ -61,18 +61,28 @@ interface GoogleId {
 }
 type FinestraGoogle = Window & { google?: GoogleId }
 
+// Single-flight a nivell de mòdul: si el modal es tanca i es reobre mentre el
+// script encara es descarrega, la segona crida espera la MATEIXA promesa.
+// (Abans es resolia immediatament perquè el <script> ja existia al DOM, i el
+// botó de Google no es renderitzava perquè window.google encara no hi era.)
+let promesaScriptGoogle: Promise<void> | null = null
+
 function carregaScriptGoogle(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (document.getElementById('gsi-script')) return resolve()
+  promesaScriptGoogle ??= new Promise<void>((resolve, reject) => {
+    if ((window as FinestraGoogle).google) return resolve()
     const s = document.createElement('script')
     s.src = 'https://accounts.google.com/gsi/client'
     s.async = true
     s.defer = true
     s.id = 'gsi-script'
     s.onload = () => resolve()
-    s.onerror = () => reject(new Error('Google no disponible'))
+    s.onerror = () => {
+      promesaScriptGoogle = null // permet reintentar en reobrir el modal
+      reject(new Error('Google no disponible'))
+    }
     document.head.appendChild(s)
   })
+  return promesaScriptGoogle
 }
 
 async function onCredentialGoogle(resp: { credential: string }) {

@@ -15,12 +15,19 @@ const SELECTOR_FOCUSABLE = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(',')
 
+// Pila global de traps actius: amb dos diàlegs oberts alhora (p. ex. el wizard
+// del joc i ModalAuth), només el més recent ha de processar Escape i Tab.
+// Sense la pila, un sol Esc tancava tots dos (tots els listeners del mateix
+// node reben l'event; stopPropagation no els atura).
+const pilaTraps: symbol[] = []
+
 export function useFocusTrap(
   contenidor: Ref<HTMLElement | null>,
   obert: Ref<boolean>,
   onEscape?: () => void
 ) {
   let focusPrevi: HTMLElement | null = null
+  const id = Symbol('focus-trap')
 
   function focusables(): HTMLElement[] {
     if (!contenidor.value) return []
@@ -30,6 +37,8 @@ export function useFocusTrap(
   }
 
   function onKeydown(e: KeyboardEvent) {
+    // Només el trap del capdamunt de la pila respon; els de sota esperen.
+    if (pilaTraps[pilaTraps.length - 1] !== id) return
     if (e.key === 'Escape') {
       e.stopPropagation()
       onEscape?.()
@@ -50,22 +59,33 @@ export function useFocusTrap(
     }
   }
 
+  // Desactivació idempotent: la fa servir tant el watch (obert → false) com
+  // onBeforeUnmount (modals que es tanquen desmuntant-se amb v-if, com
+  // ModalAuth) — així el focus SEMPRE torna a l'element que va obrir el modal.
+  function desactiva() {
+    const idx = pilaTraps.indexOf(id)
+    if (idx !== -1) pilaTraps.splice(idx, 1)
+    document.removeEventListener('keydown', onKeydown, true)
+    focusPrevi?.focus?.()
+    focusPrevi = null
+  }
+
   watch(
     obert,
     async (esObert) => {
       if (esObert) {
+        if (pilaTraps.includes(id)) return
         focusPrevi = document.activeElement as HTMLElement | null
+        pilaTraps.push(id)
         await nextTick()
         document.addEventListener('keydown', onKeydown, true)
         focusables()[0]?.focus()
       } else {
-        document.removeEventListener('keydown', onKeydown, true)
-        focusPrevi?.focus?.()
-        focusPrevi = null
+        desactiva()
       }
     },
     { immediate: true }
   )
 
-  onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown, true))
+  onBeforeUnmount(desactiva)
 }

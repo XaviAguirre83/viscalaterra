@@ -461,10 +461,16 @@ watch(
       executaCompte()
       return
     }
-    if (fase === 'partida' && geofreak.configuracio.modalitat === 'comEsDiu') {
-      textResposta.value = ''
-      await nextTick()
-      respostaInput.value?.focus()
+    if (fase === 'partida') {
+      // Si el mòbil s'ha girat durant el compte enrere (quan pausa() encara
+      // era un no-op perquè la fase no era 'partida'), pausa des del primer
+      // instant — si no, el rellotge corria sota l'overlay "Gira el dispositiu".
+      aplicaPausaLandscape()
+      if (geofreak.configuracio.modalitat === 'comEsDiu') {
+        textResposta.value = ''
+        await nextTick()
+        respostaInput.value?.focus()
+      }
     }
   }
 )

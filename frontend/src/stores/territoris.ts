@@ -9,21 +9,31 @@ export const useTerritorisStore = defineStore('territoris', () => {
   const error = ref<string | null>(null)
   const municipisSeleccionats = ref(new Set<string>())
 
-  async function carregaArbre() {
-    if (arbre.value) return
-    carregant.value = true
-    error.value = null
-    try {
-      const res = await fetch('/api/territoris/arbre')
-      if (!res.ok) throw new Error(`Error ${res.status}`)
-      const data = (await res.json()) as ArbreTerritorial
-      arbre.value = data.provincies
-      vegueries.value = data.vegueries
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Error desconegut'
-    } finally {
-      carregant.value = false
-    }
+  // Single-flight: dues vistes que munten gairebé alhora (Explorador i
+  // GeoFreak) comparteixen la mateixa descàrrega de l'arbre en lloc de
+  // demanar-lo dues vegades. En cas d'error, la promesa s'allibera i el botó
+  // de reintent pot tornar-ho a provar.
+  let promesaArbre: Promise<void> | null = null
+
+  function carregaArbre(): Promise<void> {
+    if (arbre.value) return Promise.resolve()
+    promesaArbre ??= (async () => {
+      carregant.value = true
+      error.value = null
+      try {
+        const res = await fetch('/api/territoris/arbre')
+        if (!res.ok) throw new Error(`Error ${res.status}`)
+        const data = (await res.json()) as ArbreTerritorial
+        arbre.value = data.provincies
+        vegueries.value = data.vegueries
+      } catch (e) {
+        error.value = e instanceof Error ? e.message : 'Error desconegut'
+      } finally {
+        carregant.value = false
+        promesaArbre = null
+      }
+    })()
+    return promesaArbre
   }
 
   // Una comarca pot estar repartida entre dues provincies (Cerdanya, Berguedà, Osona,
