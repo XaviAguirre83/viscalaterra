@@ -4,7 +4,7 @@
 > `viscalaterra_plan.md` (visió de producte) i `CLAUDE.md` (referència tècnica del codi), aquí
 > s'ordenen els **propers passos de desenvolupament** i es deixa constància de les decisions preses.
 
-Última actualització: 2026-06-17
+Última actualització: 2026-07-03
 
 ---
 
@@ -22,7 +22,10 @@ El que ja està consolidat i funcionant:
 - **Accessibilitat i SEO** bàsics aplicats (auditoria 2026-06-03).
 - **Catàleg de categories Què?** (provisional, encara **sense dades reals** al darrere).
 - **Pestanya Quan?** (estructura present).
-- **Espai d'usuari**: `ModalAuth` + store `auth` — de moment **mock**, sense JWT real.
+- **Autenticació real**: JWT + bcrypt + login amb Google (`/api/auth/*`, `ModalAuth`,
+  menú d'usuari). Queda el hardening pre-beta (vegeu 4.3).
+- **GeoFreak** complet i polit: 2 modalitats, 9 nivells, pista, multijugador local
+  per conquesta, wizard de configuració.
 
 ### El gran buit identificat
 
@@ -32,8 +35,6 @@ visuals, però no hi ha:
 - dades de contingut (equipaments / punts d'interès) ni taula `elements`,
 - endpoint que combini els tres filtres i retorni resultats,
 - botons "Executar cerca" / "Netejar cerca" ni llista de resultats sota el mapa.
-
-A més, **GeoMaster** (primer joc) està dissenyat però no implementat.
 
 ---
 
