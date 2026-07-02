@@ -4,12 +4,13 @@ Plataforma de descoberta de Catalunya. El mapa actua com a filtre geogràfic: l'
 
 ## Característiques principals
 
-- **Cerca** — Filtra per territori (On?), categoria (Què?) i temporalitat (Quan?)
-- **Agenda** — Esdeveniments culturals de tot tipus arreu de Catalunya
+- **Llocs** — Filtra per territori (On?) i categoria (Què?) sobre el mapa de Catalunya
+- **Agenda** — Esdeveniments arreu de Catalunya, amb filtre temporal (Quan?)
 - **Jocs** — Jocs geogràfics sobre Catalunya. El primer, **GeoFreak**: identificació
   territorial (províncies, vegueries, comarques i municipis) amb 9 nivells de
   dificultat, dues modalitats, pista, i mode individual o **multijugador local**.
-- **Contingut col·laboratiu** — Els usuaris contribueixen i verifiquen el contingut
+- **Compte d'usuari** — Registre i login (locals o amb Google)
+- **Contingut col·laboratiu** — Els usuaris contribuiran i verificaran el contingut _(previst)_
 
 ## Stack tecnològic
 
@@ -43,7 +44,7 @@ cp .env.example .env
 docker compose up
 
 # 5. Importa les geodades a la base de dades (només el primer cop)
-cd backend && npm run seed
+docker compose exec backend npm run seed
 ```
 
 ## Contribuir

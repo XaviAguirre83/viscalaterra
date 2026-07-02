@@ -17,7 +17,7 @@ backend/data/geojson/
 ├── comunitat/      # 6 resolucions — contorn de Catalunya
 ├── provincies/     # 6 resolucions — 4 províncies
 ├── comarques/      # 6 resolucions — 43 comarques
-├── vegueries/      # 6 resolucions — 8 vegueries
+├── vegueries/      # 6 resolucions — 9 vegueries (inclou la Val d'Aran, entitat territorial singular)
 ├── municipis/      # 6 resolucions — 947 municipis
 ├── data/           # propietats alfanumèriques + caps de municipi
 └── plantilles/     # esquemes de propietats (referència)
@@ -46,5 +46,7 @@ Les 6 resolucions corresponen als denominadors d'escala:
 Descomprimeix el conjunt de dades a `backend/data/geojson/` i executa el seed:
 
 ```bash
-cd backend && npm run seed
+cd backend && npm run seed          # des del host (cal el port 5432 publicat)
+# o bé, amb l'entorn Docker aixecat:
+docker compose exec backend npm run seed
 ```

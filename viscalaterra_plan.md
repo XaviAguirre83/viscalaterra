@@ -80,7 +80,7 @@ Només apareix a Llocs i Agenda. Tres pestanyes —**On?** | **Què?** | **Quan?
   - Per defecte totes col·lapsades; expandir una no col·lapsa les altres
 - Dins de cada Comarca: els seus Municipis com a botons de selecció (sense checkboxes)
   - Cantonades adaptatives: rodones a dalt al primer, rodones a baix a l'últim, totes rodones si és únic
-  - Els municipis capital de comarca apareixen en negreta
+  - Els municipis capital de comarca apareixeran en negreta _(previst — l'API encara no exposa CAPMUNI)_
 - Les Vegueries NO apareixen en aquest desplegable (poc conegudes popularment)
   però sí apareixen com a capa visual al mapa i com a opció al selector del mapa
 - Sincronització bidireccional amb el mapa:
@@ -152,6 +152,10 @@ opcionalment, Què?
 
 ## Cerca
 
+> _Estat: el motor de cerca (Executar/Netejar, estat visual "Resultat") encara
+> no està implementat — depèn dels endpoints de `llocs` (Què?). Els filtres On?
+> (complet), Què? i Quan? (UI llesta) ja existeixen._
+
 ### Botó "Executar cerca"
 
 - Combina els tres filtres actius: On? + Què? + Quan?
@@ -213,7 +217,7 @@ Cada capa té un estil de línia **fix** (com més gran el territori, més gruix
 Graella 2×2 (Província · Vegueria · Comarca · Municipi) amb un doble rol:
 
 - **Capçaleres = interruptors de capa**: cada capçalera activa/desactiva la seva capa (subratllada = visible). És el control de la "visibilitat lliure" descrita a dalt.
-- **Cel·les de valor = context del hover**: en passar el cursor per la capa interactiva, mostren la jerarquia de la demarcació (província → vegueria → comarca → municipi).
+- **Cel·les de valor = selector de nivell + context del hover**: cada cel·la és un botó amb comportament radio — el triat (pastilla verda; un i només un) fixa el **nivell de selecció** del mapa. Alhora, en passar el cursor per la capa interactiva, mostren la jerarquia de la demarcació (província → vegueria → comarca → municipi).
 
 - Si una comarca transfronterera pertany a més d'una província o vegueria, es mostren totes, en ordre de dominància (ex. Cerdanya → "Girona, Lleida").
 - En mode joc (GeoFreak) el panell s'amaga: mostrar el nom en hover faria trivial el joc.
@@ -228,7 +232,7 @@ Graella 2×2 (Província · Vegueria · Comarca · Municipi) amb un doble rol:
 | Base de dades | PostgreSQL + PostGIS | Relacional + suport natiu de dades geogràfiques                |
 | Mapa          | Leaflet.js           | Ja decidit                                                     |
 | Temps real    | Socket.io            | _Previst_ (Trivial multijugador online) — encara no instal·lat |
-| Autenticació  | JWT + bcrypt         | Control propi; migrable a servei extern si cal                 |
+| Autenticació  | JWT + bcrypt         | Implementada, amb login amb Google (google-auth-library)       |
 | i18n          | Vue I18n (vue-i18n)  | Frontend (ca/es/en). El contingut de dades es traduirà a BD    |
 
 ## Entorn de desenvolupament
@@ -240,15 +244,15 @@ Graella 2×2 (Província · Vegueria · Comarca · Municipi) amb un doble rol:
 
 ## Bones pràctiques i forma de treballar
 
-| Pràctica         | Eina                     | Equivalent embedded  |
-| ---------------- | ------------------------ | -------------------- |
-| Unit testing     | Vitest                   | TDD amb CUnit/Unity  |
-| E2E / BDD        | Playwright + Cucumber.js | BDD                  |
-| Linting          | ESLint + Prettier        | Linters              |
-| Anàlisi estàtic  | TypeScript               | Anàlisi estàtic de C |
-| Pre-commit hooks | Husky + lint-staged      | Pre-commit hooks     |
-| CI/CD pipelines  | GitHub Actions           | Pipelines CI/CD      |
-| Code coverage    | Integrat a Vitest        | Coverage             |
+| Pràctica         | Eina                | Equivalent embedded  |
+| ---------------- | ------------------- | -------------------- |
+| Unit testing     | Vitest              | TDD amb CUnit/Unity  |
+| E2E              | Playwright          | Tests de sistema     |
+| Linting          | ESLint + Prettier   | Linters              |
+| Anàlisi estàtic  | TypeScript          | Anàlisi estàtic de C |
+| Pre-commit hooks | Husky + lint-staged | Pre-commit hooks     |
+| CI/CD pipelines  | GitHub Actions      | Pipelines CI/CD      |
+| Code coverage    | Integrat a Vitest   | Coverage             |
 
 **Principi:** totes aquestes pràctiques es configuren des del primer commit, no s'afegeixen després. Si s'incorporen col·laboradors, les regles ja estan definides i automatitzades.
 
@@ -315,20 +319,22 @@ rate limiting i caché viuen millor en un procés estable i de cost fix.
 
 ## Estructura de la pàgina
 
-### Hero (franja superior)
+### Capçalera (franja superior)
 
-- Ocupa tot l'ample de la pantalla, alçada de franja apaïsada (no full viewport)
-- El mapa ha de ser visible directament a sota sense necessitat de fer scroll
-- Contingut: passi de diapositives d'imatges estàtiques emblemàtiques de Catalunya
+- Implementada a `CabeceraApp.vue`: franja fixa de 110px a totes les pàgines,
+  amb el logo a l'esquerra, el nom `viscalaterra.cat` i el menú d'usuari
+  (login/espai) a la dreta.
+- El mapa és visible directament a sota sense necessitat de fer scroll.
+- **Fons de vídeo** (`<video autoplay muted loop>`, preparat però encara sense
+  fitxer — mentre no hi és, fons fosc): _highlights_ emblemàtics de Catalunya
   - Paisatges: Montserrat, Pica d'Estats, Pedraforca, Montseny...
   - Cultura popular: Castellers, Sardanes, Balls de Bastons, Trabucaires, Caga Tió, Castanyera, Correfocs, La Patum...
   - Patrimoni: Sagrada Família, Catedral de Girona, Amfiteatre de Tarragona...
-- Text superposat: títol del projecte + claim ("Descobreix Catalunya" o similar)
 - Sense CTA de moment
 
 ### Mapa + Cerca
 
-- Immediatament a sota del hero
+- Immediatament a sota de la capçalera i la barra de navegació
 - Veure seccions "Funcionalitats principals" i "Cerca"
 
 ## Espai d'usuari
@@ -336,6 +342,11 @@ rate limiting i caché viuen millor en un procés estable i de cost fix.
 ### Registre i login
 
 Necessari per contribuir contingut i participar en el sistema de verificació.
+
+**Estat: implementat.** Registre i login locals (JWT + bcrypt) i login amb Google
+(One Tap / botó GSI) al backend (`/api/auth/registre`, `/login`, `/google`, `/jo`),
+amb `ModalAuth.vue` i menú d'usuari a la capçalera. La pàgina `/espai` és encara
+un placeholder; la verificació d'email és al roadmap (`full de ruta.md`).
 
 ### Contribució de contingut
 
@@ -629,7 +640,7 @@ Cada província té una paleta pròpia usada tant al mapa (Leaflet) com al panel
 - **Base**: selecció total (fons ple, text blanc)
 - **Parcial**: selecció parcial (fons suau, text de color `vora`)
 - **Hover**: previsualització al passar el cursor (fons molt suau)
-- Les comarques al mapa (zoom intermedi) usen verd neutre perquè poden abastar dues províncies
+- Les comarques al mapa hereten el color de la seva província; les 4 transfrontereres usen una mescla RGB ponderada pel % de municipis de cada província. Les vegueries tenen paleta pròpia (9 colors). Detall complet a CLAUDE.md § Temàtica de colors.
 
 ### Comarques transfrontereres (partides entre dues províncies)
 
@@ -651,12 +662,20 @@ de la columna de la província on es fa clic.
 
 ### Capa d'escuts i banderes al mapa
 
-Un cop disponibles els assets d'imatge (escuts i banderes de províncies, comarques i municipis), afegir al mapa de la secció On? una capa opcional de superposició visual:
+**Parcialment implementat.** Ja existeix:
 
-- **Toggle independent** per a escuts i per a banderes (mostrar/amagar cadascun per separat).
-- Es mostra centrat al polígon de cada demarcació al nivell territorial actiu.
-- Purament informatiu — no afecta la selecció ni els filtres.
-- Activar els dos alhora pot saturar visualment; la UI ha de gestionar-ho (avisar o limitar).
+- Panell d'opcions ⚙️ del mapa amb **toggles independents** d'escut i bandera.
+- Amb un toggle actiu, l'emblema del territori en hover (desktop) o clicat (mòbil)
+  es mostra abaix-centre del mapa, amb lightbox en clicar-lo i crèdit Wikimedia.
+- Assets recollits via pipeline Wikidata (`backend/src/scripts/enriqueix-territoris.ts`
+  - `baixa-emblemes.ts`), servits en local des de `/emblemes/`.
+- La **fitxa de territori** (clic dret / pulsació llarga) mostra també escut,
+  bandera i enllaços externs (web oficial, Viquipèdia).
+
+Pendent (visió original): superposar l'emblema centrat al polígon de **cada**
+demarcació del nivell actiu com a capa del mapa. Purament informatiu — no
+afectaria la selecció ni els filtres; activar escuts i banderes alhora pot
+saturar visualment i la UI ho haurà de gestionar.
 
 ## Notes i decisions
 
@@ -665,13 +684,15 @@ Un cop disponibles els assets d'imatge (escuts i banderes de províncies, comarq
 - **Font:** ICC — divisions-administratives-v2r1, data de referència 2024-01-18. Llicència CC BY 4.0.
 - **Estratègia híbrida:** els fitxers GeoJSON es serveixen estàtics des del backend per a Leaflet (ja estan optimitzats en 6 resolucions). PostGIS s'usa per a les queries territorials (quin municipi pertany a quina comarca, filtres de cerca). No es regenera GeoJSON des de PostGIS.
 - **GeoJSON fora del repo:** 115 MB de fitxers no es guarden a Git. Es descarreguen manualment i s'importen amb `npm run seed`. Documentat a `backend/data/README.md`.
-- **Resolució per zoom:** 1000000 (zoom ≤8) → 500000 → 250000 → 100000 → 5000 (zoom ≥15). El backend tria el fitxer automàticament segons el zoom que envia el frontend.
+- **Resolució per zoom:** 1000000 (zoom ≤8) → 500000 → 250000 → 100000 → 5000 (zoom ≥15). El frontend demana la resolució explícitament (`?resolucio=`) segons capa i zoom (`resolucioPerCapa` a `MapaLeaflet.vue`); el backend també accepta `?zoom=` i deriva la resolució.
 
-### API (maig 2026)
+### API (actualitzat juliol 2026)
 
 - `GET /api/territoris/arbre` — retorna l'arbre complet (província → comarca → municipi) en una sola petició. El frontend el carrega a l'inici i navega localment sense més peticions.
-- `GET /api/geojson/:nivell?zoom=N` — GeoJSON per a Leaflet a la resolució adequada.
-- Endpoints de `llocs` (Què?) i `auth` dissenyats però no implementats encara.
+- `GET /api/geojson/:nivell?resolucio=N` — GeoJSON per a Leaflet (nivells: comunitat, provincies, vegueries, comarques, municipis). Alternativa `?zoom=N` (el backend deriva la resolució).
+- `POST /api/auth/registre` · `POST /api/auth/login` · `POST /api/auth/google` · `GET /api/auth/jo` — autenticació implementada (JWT + bcrypt + Google Sign-In).
+- El servidor porta helmet, compressió gzip/br, CORS per llista blanca, rate limiting i gestor d'errors centralitzat (`backend/src/index.ts`).
+- Endpoints de `llocs` (Què?) dissenyats però no implementats encara.
 
 ### Plataforma Git i estratègia de branques (maig 2026)
 

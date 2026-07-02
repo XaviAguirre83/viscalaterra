@@ -1,73 +1,43 @@
-# frontend
+# frontend — viscalaterra.cat
 
-This template should help get you started developing with Vue 3 in Vite.
+SPA en **Vue 3 + Vite + TypeScript** (Pinia, Vue Router, Vue I18n, Leaflet).
 
-## Recommended IDE Setup
+La documentació de referència del projecte (arquitectura, convencions, comandos)
+és a [`../CLAUDE.md`](../CLAUDE.md) i la spec de producte a
+[`../viscalaterra_plan.md`](../viscalaterra_plan.md).
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+## Desenvolupament
 
-## Recommended Browser Setup
+L'entorn recomanat és Docker des de l'arrel del repo (`docker compose up`, vegeu
+el [README principal](../README.md)). El frontend queda servit a
+`http://localhost:5173` amb hot-reload; les crides `/api/*` es redirigeixen al
+backend via proxy de Vite (`vite.config.ts`).
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+Les dependències s'instal·len **dins del contenidor** (el `node_modules` està
+bind-muntat): `docker compose exec frontend npm install <paquet>`.
 
-## Type Support for `.vue` Imports in TS
-
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
+## Comandos
 
 ```sh
-npm install
+npm run dev          # servidor de desenvolupament Vite
+npm run build        # compilació de producció (vue-tsc + vite build)
+npm run type-check   # verificació de tipus
+npm run lint         # oxlint + eslint (no modifica; el que corre al CI)
+npm run lint:fix     # amb autofix
+npm run test:unit    # Vitest
+npm run test:e2e     # Playwright (cal `npx playwright install` el primer cop)
 ```
 
-### Compile and Hot-Reload for Development
+Amb Docker, prefixa'ls amb `docker compose exec frontend …`.
 
-```sh
-npm run dev
-```
+## Estructura de `src/`
 
-### Type-Check, Compile and Minify for Production
-
-```sh
-npm run build
-```
-
-### Run Unit Tests with [Vitest](https://vitest.dev/)
-
-```sh
-npm run test:unit
-```
-
-### Run End-to-End Tests with [Playwright](https://playwright.dev)
-
-```sh
-# Install browsers for the first run
-npx playwright install
-
-# When testing on CI, must build the project first
-npm run build
-
-# Runs the end-to-end tests
-npm run test:e2e
-# Runs the tests only on Chromium
-npm run test:e2e -- --project=chromium
-# Runs the tests of a specific file
-npm run test:e2e -- tests/example.spec.ts
-# Runs the tests in debug mode
-npm run test:e2e -- --debug
-```
-
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
-npm run lint
-```
+| Carpeta        | Contingut                                                       |
+| -------------- | --------------------------------------------------------------- |
+| `views/`       | una vista per ruta (Explorador = Llocs/Agenda, Jocs, GeoFreak…) |
+| `components/`  | components reutilitzables (mapa, filtres, capçalera, modals…)   |
+| `stores/`      | Pinia (territoris, mapa, filtres, auth, geofreak…)              |
+| `data/`        | mòduls purs sense Vue, testejables (temporal, geofreak, text…)  |
+| `composables/` | composables Vue (p. ex. `useFocusTrap`)                         |
+| `theme/`       | paleta de colors per província/vegueria/comarca                 |
+| `i18n/`        | Vue I18n amb diccionaris `ca` / `es` / `en` a `locales/`        |

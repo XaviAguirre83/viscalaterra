@@ -98,13 +98,18 @@ npm workspaces: `frontend` y `backend` son paquetes independientes. Las dependen
 ### Frontend
 
 - **Entrada**: `frontend/src/main.ts` monta la app Vue, registra Pinia y Vue Router.
-- **Layout global**: `App.vue` — flex column `height: 100dvh` (amb fallback `100vh`; el dvh evita que el que s'ancora a baix quedi sota la barra del navegador mòbil): `CabeceraApp` (110px, `flex-shrink: 0`) + `RouterView` (`flex: 1; min-height: 0`).
+- **Layout global**: `App.vue` — flex column `height: 100dvh` (amb fallback `100vh`; el dvh evita que el que s'ancora a baix quedi sota la barra del navegador mòbil): `CabeceraApp` (110px, `flex-shrink: 0`) + `RouterView` (`flex: 1; min-height: 0`) + `PeuApp` (peu amb enllaços legals, ocult a `/jocs/geofreak`). A l'arrencada llança `auth.carregaJo()` per restaurar la sessió.
 - **Estado global**: Pinia (`frontend/src/stores/`). Stores activos:
   - `territoris` — árbol provincial completo (província → comarca → municipi), municipis seleccionats, helpers de selección global y per-provincia (distinción necesaria por las comarques transfrontereres)
-  - `mapa` — zoom y centro del mapa Leaflet
-  - `filtres` — pestaña activa del panel On?/Què?/Quan?
+  - `mapa` — zoom/centro del mapa, `capesVisibles` (toggles de líneas), `nivellSeleccio` (nivel de selección, radio) y el tipo `ModeJocMapa`
+  - `filtres` — pestaña activa del panel On?/Què?/Quan? + selección temporal
+  - `auth` — sesión de usuario (token JWT en `localStorage`, `carregaJo()` al arrancar la app)
+  - `geofreak` — máquina de estados del juego (detalle en § Secció Jocs)
+  - `enriquiment` — datos Wikidata por territorio (web, Viquipèdia, escut, bandera), carga bajo demanda compartida
+  - `fitxa` — qué fitxa de territori está abierta (la renderiza `FitxaTerritori.vue`)
+  - `mapaOpcions` — panel ⚙️ del mapa (toggles escut/bandera)
 - **Temàtica de colors**: `frontend/src/theme/provincies.ts` — paleta central per província i per vegueria, usada tant per Leaflet (`L.PathOptions`) com pel panell On? (CSS custom properties `--prov-base`, `--prov-parcial`, etc.). Vegeu la secció "Temàtica de colors" més avall.
-- **Routing**: Vue Router con `createWebHistory`. Las rutas se definen en `frontend/src/router/index.ts`. Seccions previstes: `/cerca`, `/agenda`, `/jocs`, `/merchandising`, `/sobre` (les tres últimes sense vista implementada encara).
+- **Routing**: Vue Router con `createWebHistory`, rutas en `frontend/src/router/index.ts`, todas con import lazy. Implementadas: `/llocs` y `/agenda` (comparten `ExploradorView`; `/` y `/cerca` redirigen a `/llocs`), `/jocs`, `/jocs/geofreak`, `/legal`. Placeholder (`VistaPlaceholder`, con o sin mapa): `/anuncis`, `/fet-a-la-terra`, `/merchandising`, `/sobre`, `/contacte`, `/suggeriments`, `/espai`.
 - **i18n**: Vue I18n (`frontend/src/i18n/`). Tres idiomes (`ca`/`es`/`en`) amb diccionaris JSON a `i18n/locales/`. L'idioma actiu es desa a `localStorage` (clau `viscalaterra-idioma`); a la primera visita (sense res desat) sempre s'arrenca en **català**, l'idioma principal de la plataforma (no es té en compte l'idioma del navegador). `canviaIdioma()` actualitza també l'atribut `<html lang>`. Els components tradueixen amb `$t('clau')` al template (o `useI18n().t()` a la lògica). **Important**: això tradueix només el text d'**interfície**; el contingut de **dades** (llocs, esdeveniments) es traduirà a nivell de base de dades, no amb i18n. Per afegir un idioma: nou codi a `IDIOMES` + nou JSON a `locales/`.
 - **Componentes**: `frontend/src/components/` para reutilizables, `frontend/src/views/` para páginas completas (una por ruta). Composables a `frontend/src/composables/` (p. ex. `useFocusTrap` per a l'accessibilitat dels modals: focus-trap + Esc + retorn de focus).
 - **Mòduls de dades purs** (`frontend/src/data/`, sense Vue, testejables — patró `data/ ↔ stores/`): `temporal.ts` (model del Quan?), `categories.ts` (catàleg Què?), `geofreak.ts` (model del joc), `text.ts` (`normalitza()` — minúscules sense accents, compartit per CercaRapida i la resposta escrita del joc), `articles.ts` (articles catalans de comarques/vegueries: `nomAmbArticle`/`nomAmbDe` → "del Maresme", "de l'Anoia", "d'Osona").
@@ -117,19 +122,20 @@ Component fix a la part superior de totes les pàgines (110px d'alçada):
 - **Gradient**: `::before` semi-transparent d'esquerra a dreta per garantir llegibilitat del logo sobre qualsevol vídeo.
 - **Logo**: `frontend/src/assets/logo.png` — ocupa gairebé tota l'alçada (`calc(110px - 16px)`), alineat a l'esquerra.
 - **Nom**: `viscalaterra.cat` superposat sobre la part inferior del logo (`position: absolute; bottom: 2px`).
+- **Selector d'idioma** (banderes ca/es/en) i **menú d'usuari** a la dreta: sense sessió, botó "Connecta" que obre `ModalAuth.vue` (login/registre locals + botó de Google GSI); amb sessió, desplegable amb nom d'usuari, enllaç a `/espai` i "Surt".
 
 ### Barra de navegació (`PanellFiltres.vue`)
 
 Barra horitzontal de 48px sota la capçalera. Estructura:
 
 ```
-[☰]  CERCA  |  On?  Què?  Quan?  |  [CercaRapida]
+[☰]  LLOCS  |  On?  Què?  (Quan?)  |  [CercaRapida]
 ```
 
 - **Botó hamburger** (☰ / ✕ animat): obre/tanca el menú principal de seccions.
-- **Menú de seccions** (desplegable vertical, `position: absolute`): CERCA · AGENDA CULTURAL · JOCS · MERCHANDISING · SOBRE NOSALTRES. Clic → navega i tanca el menú. Clic fora (overlay transparent) → tanca.
+- **Menú de seccions** (desplegable vertical, `position: absolute`), en tres grups separats per línia: Llocs · Agenda · Anuncis · Fet a la terra · Jocs │ Merchandising │ Sobre nosaltres · Contacte · Suggeriments · Legal. Clic → navega i tanca el menú. Clic fora (overlay transparent) → tanca.
 - **Nom secció activa**: detectat via `useRoute()` comparant `route.path` amb les rutes de cada secció.
-- **Ítems contextuals**: només es mostren per a la secció activa. Per a CERCA: tabs On?/Què?/Quan? + `CercaRapida`. Les altres seccions mostraran els seus ítems quan s'implementin les vistes.
+- **Ítems contextuals**: tabs + `CercaRapida` només a Llocs i Agenda (`mostraTabs`). El tab **Quan? només apareix a Agenda** (`mostraQuan`) — els llocs són atemporals.
 
 ### Cercador ràpid (`CercaRapida.vue`)
 
@@ -232,8 +238,11 @@ Les taules `COMARCA_NOMPROVINCIES` i `COMARCA_NOMVEGUERIES` a `provincies.ts` ma
 
 ### Backend
 
-- **Entrada**: `backend/src/index.ts`. Express con `express.json()`. Endpoint de salud en `GET /health`.
-- **Conexión a BD**: vía variables de entorno `DB_*` del `.env`.
+- **Entrada**: `backend/src/index.ts`. Express 5 con helmet, compression (gzip/br), CORS por lista blanca (`CORS_ORIGINS`), `express.json({ limit: '100kb' })`, rate limiting global (+ uno más estricto en auth) y gestor de errores centralizado. Endpoint de salud en `GET /health`.
+- **Rutas** (`backend/src/routes/`): `territoris.ts` (`GET /api/territoris/arbre`, con caché en memoria), `geojson.ts` (`GET /api/geojson/:nivell?resolucio=N`, niveles y resoluciones por whitelist, caché en memoria de ficheros), `auth.ts` (`POST /registre`, `POST /login`, `POST /google`, `GET /jo`).
+- **Auth** (`backend/src/auth/`): `jwt.ts` (firma/verificación, `JWT_SECRET` obligatorio — el proceso no arranca sin él), `middleware.ts` (`requereixAuth`, Bearer token), `usuaris.ts` (queries parametrizadas; `password_hash` nunca sale en respuestas). Registro local con bcrypt; login con Google verificado con `audience` + `email_verified` (google-auth-library), con vinculación de cuentas por email verificado.
+- **Conexión a BD**: `backend/src/db.ts` (pool `pg`), vía variables de entorno `DB_*` del `.env`.
+- **Scripts** (`backend/src/scripts/`): `seed-geodata.ts` (importa los GeoJSON a PostGIS), `enriqueix-territoris.ts` (pipeline Wikidata → `frontend/public/data/territoris-enriquiment.json`), `baixa-emblemes.ts` (descarga escudos/banderas de Wikimedia a `frontend/public/emblemes/`).
 
 ### Convenciones de commits
 
