@@ -30,13 +30,14 @@ btree (H9) i trocejar MapaLeaflet.vue (ara ~2000 línies) — cap dels tres urge
 
 ## Bloc B — considerar més endavant (per ordre de retorn)
 
-1. **Cachear el GeoJSON ja comprimit** al backend (guardar el buffer gzip, servir
-   amb `Content-Encoding: gzip`): mesurat ~1 s/petició per recomprimir
-   municipis-5000 encara que la font sigui a memòria; RAM del caché 100→25 MB.
+1. ~~**Cachear el GeoJSON ja comprimit**~~ — ✅ **APLICAT 2026-07-03**: caché del
+   buffer gzip (nivell 6, async, single-flight); mesurat 1 s → 6,8 ms per petició
+   en calent.
 2. **Reconsiderar la resolució 5000 dels municipis** (`resolucioPerCapa`):
    7,2 MB gz per usuari a zoom ≥15, probablement indistingible de 100000.
-3. **ETag/Last-Modified a /api/geojson**: passades les 24 h de max-age el client
-   re-descarrega ~1,6 MB en lloc de rebre un 304.
+   _Decisió visual de l'usuari pendent (comparació A/B en pantalla)._
+3. ~~**ETag a /api/geojson**~~ — ✅ **APLICAT 2026-07-03**: ETag fort + 304 a
+   If-None-Match (mesurat: 0 bytes, 2,6 ms).
 4. **Healthcheck real**: /health amb `SELECT 1` + healthcheck al compose de prod
    (el depends_on actual no detecta un backend zombie).
 5. **Pool de pg amb max/connectionTimeoutMillis explícits** — quan hi hagi més
