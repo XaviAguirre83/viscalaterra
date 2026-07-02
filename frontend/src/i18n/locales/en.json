@@ -25,6 +25,7 @@
       "nom_obligatori": "Name is required",
       "email_no_valid": "The email address is not valid",
       "contrasenya_curta": "The password must be at least 8 characters",
+      "contrasenya_llarga": "The password cannot be longer than 72 characters",
       "email_duplicat": "An account with this email already exists",
       "credencials_incorrectes": "Incorrect email or password",
       "google_no_configurat": "Google sign-in is not configured",

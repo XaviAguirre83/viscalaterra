@@ -34,6 +34,14 @@ const googleClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID) : nul
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MIN_CONTRASENYA = 8
+// bcrypt només considera els primers 72 bytes; acceptar més enganya l'usuari
+// (creuria tenir una contrasenya més llarga del que realment es verifica).
+const MAX_CONTRASENYA = 72
+
+// Hash esquer per al login quan l'email no existeix: es paga el mateix cost de
+// bcrypt que amb un compte real, i la latència no revela quins emails hi ha
+// registrats (timing attack d'enumeració d'usuaris).
+const HASH_ESQUER = bcrypt.hashSync('contrasenya-esquer-anti-timing', 10)
 
 function normalitzaEmail(v: unknown): string {
   return typeof v === 'string' ? v.trim().toLowerCase() : ''
@@ -54,6 +62,9 @@ router.post('/registre', async (req: Request, res: Response) => {
   if (contrasenya.length < MIN_CONTRASENYA) {
     return res.status(400).json({ codi: 'contrasenya_curta' })
   }
+  if (contrasenya.length > MAX_CONTRASENYA) {
+    return res.status(400).json({ codi: 'contrasenya_llarga' })
+  }
 
   if (await buscaPerEmail(email)) {
     return res.status(409).json({ codi: 'email_duplicat' })
@@ -72,7 +83,9 @@ router.post('/login', async (req: Request, res: Response) => {
   const usuari = await buscaPerEmail(email)
   if (!usuari || !usuari.password_hash) {
     // Compte inexistent o creat només amb Google: codi genèric per no revelar
-    // quins emails estan registrats.
+    // quins emails estan registrats, i comparació contra un hash esquer perquè
+    // la latència sigui la mateixa que amb un compte real (anti-timing).
+    await bcrypt.compare(contrasenya, HASH_ESQUER)
     return res.status(401).json({ codi: 'credencials_incorrectes' })
   }
   const correcte = await bcrypt.compare(contrasenya, usuari.password_hash)

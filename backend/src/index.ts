@@ -13,6 +13,12 @@ const port = process.env.PORT ?? 3000
 // No revelar la tecnologia del servidor (fingerprinting).
 app.disable('x-powered-by')
 
+// Un salt de proxy davant (Caddy a producció, proxy de Vite en dev): sense
+// això req.ip és la IP del contenidor del proxy — idèntica per a tothom — i
+// el rate limiting es converteix en un únic cub compartit per tots els usuaris
+// (express-rate-limit v8 ho detecta i llança ERR_ERL_UNEXPECTED_X_FORWARDED_FOR).
+app.set('trust proxy', 1)
+
 // Cabeceres de seguretat (clickjacking, MIME-sniffing, etc.).
 app.use(helmet())
 
@@ -55,6 +61,12 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ error: 'Error intern' })
 })
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Backend escoltant al port ${port}`)
+})
+
+// Aturada neta: com a PID 1 dins Docker, Node ignora SIGTERM per defecte i
+// cada redeploy esperava els 10 s de gràcia i tallava respostes en vol.
+process.on('SIGTERM', () => {
+  server.close(() => process.exit(0))
 })

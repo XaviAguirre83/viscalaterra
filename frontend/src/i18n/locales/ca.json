@@ -25,6 +25,7 @@
       "nom_obligatori": "El nom és obligatori",
       "email_no_valid": "L'adreça electrònica no és vàlida",
       "contrasenya_curta": "La contrasenya ha de tenir 8 caràcters o més",
+      "contrasenya_llarga": "La contrasenya no pot superar els 72 caràcters",
       "email_duplicat": "Ja existeix un compte amb aquest correu",
       "credencials_incorrectes": "Correu o contrasenya incorrectes",
       "google_no_configurat": "El login amb Google no està configurat",
