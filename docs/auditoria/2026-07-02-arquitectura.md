@@ -33,9 +33,16 @@ btree (H9) i trocejar MapaLeaflet.vue (ara ~2000 línies) — cap dels tres urge
 1. ~~**Cachear el GeoJSON ja comprimit**~~ — ✅ **APLICAT 2026-07-03**: caché del
    buffer gzip (nivell 6, async, single-flight); mesurat 1 s → 6,8 ms per petició
    en calent.
-2. **Reconsiderar la resolució 5000 dels municipis** (`resolucioPerCapa`):
-   7,2 MB gz per usuari a zoom ≥15, probablement indistingible de 100000.
-   _Decisió visual de l'usuari pendent (comparació A/B en pantalla)._
+2. ~~**Reconsiderar la resolució 5000 dels municipis**~~ — ❌ **DESCARTAT
+   2026-07-03 amb mesures**: la hipòtesi "indistingible de 100000" era falsa.
+   Desviació màxima mesurada (Hausdorff dirigit, mostra de 12 municipis):
+   1:100000 fins a **100 m = 28 px a zoom 15** (talla entrants sencers del
+   límit); 1:50000 fins a 57 m = 16 px. Decisió de l'usuari: **mantenir 1:5000**
+   a zoom ≥15 — amb el caché comprimit + ETag (punts 1 i 3) el cost de servidor
+   ja és negligible i els 6,8 MB només els paga qui arriba a nivell de carrer,
+   just quan la fidelitat importa. S'ha afegit 50000 a la whitelist del backend
+   com a opció intermèdia disponible. (Mètode: comparació de polilínies amb
+   projecció local + pàgina Leaflet amb les 3 resolucions superposades.)
 3. ~~**ETag a /api/geojson**~~ — ✅ **APLICAT 2026-07-03**: ETag fort + 304 a
    If-None-Match (mesurat: 0 bytes, 2,6 ms).
 4. **Healthcheck real**: /health amb `SELECT 1` + healthcheck al compose de prod

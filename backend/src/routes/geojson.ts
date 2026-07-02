@@ -14,7 +14,7 @@ const GEOJSON_DIR = path.resolve(__dirname, '../../data/geojson')
 // Resolucions GeoJSON disponibles (denominadors d'escala ICC):
 // 5000 (màx detall) → 1000000 (mínim detall). Whitelist de seguretat:
 // la resolució forma part del nom de fitxer, així evitem construir rutes arbitràries.
-const RESOLUCIONS_VALIDES = new Set([5000, 100000, 250000, 500000, 1000000])
+const RESOLUCIONS_VALIDES = new Set([5000, 50000, 100000, 250000, 500000, 1000000])
 
 // Compatibilitat: si un client antic encara envia ?zoom=, en derivem la resolució.
 const RESOLUCIO_PER_ZOOM: [number, number][] = [
