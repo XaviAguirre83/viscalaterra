@@ -1,5 +1,7 @@
 import './assets/main.css'
-import 'flag-icons/css/flag-icons.min.css'
+// Banderes pròpies (3 SVG) en lloc de flag-icons: la dependència inlinava 400
+// banderes com a data-URI al CSS crític (−80 KB gz al treure-la).
+import './assets/banderes.css'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'

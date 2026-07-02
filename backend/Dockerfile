@@ -6,7 +6,8 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --ignore-scripts
+# npm ci: instal·la EXACTAMENT el package-lock.json (build reproduïble).
+RUN npm ci --ignore-scripts
 COPY . .
 RUN npm run build
 
@@ -16,7 +17,7 @@ ENV NODE_ENV=production
 WORKDIR /app
 # Només dependències de producció (sense ts-node-dev, typescript, etc.).
 COPY package*.json ./
-RUN npm install --omit=dev --ignore-scripts && npm cache clean --force
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 # Codi ja compilat des de l'etapa de build.
 COPY --from=build /app/dist ./dist
 # Les geodades (backend/data) NO es copien: es munten com a volum en temps d'execució.

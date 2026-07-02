@@ -21,6 +21,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run format:check
+      # Dependències amb vulnerabilitats conegudes (high o superior) trenquen el CI.
+      - run: npm audit --audit-level=high
 
   frontend:
     name: Frontend — lint, types & tests

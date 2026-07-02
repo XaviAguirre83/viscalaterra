@@ -1,0 +1,34 @@
+/* Banderes del selector d'idioma — substitueix la dependència flag-icons.
+ *
+ * flag-icons importava 400 banderes com a data-URI dins el CSS crític
+ * (431 KB / 88 KB gz mesurats al build) per usar-ne només tres. Aquí es
+ * repliquen la classe base .fi (proporció 4×3) i les tres banderes que fem
+ * servir, amb els SVG originals de flag-icons copiats a assets/banderes/.
+ * Per a un idioma nou: copiar el SVG de flag-icons i afegir una classe.
+ */
+
+.fi {
+  display: inline-block;
+  width: 1.333333em;
+  line-height: 1em;
+  background-size: contain;
+  background-position: 50%;
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+.fi::before {
+  content: ' ';
+}
+
+.fi-es-ct {
+  background-image: url('@/assets/banderes/es-ct.svg');
+}
+
+.fi-es {
+  background-image: url('@/assets/banderes/es.svg');
+}
+
+.fi-gb {
+  background-image: url('@/assets/banderes/gb.svg');
+}
