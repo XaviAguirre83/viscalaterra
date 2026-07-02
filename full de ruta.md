@@ -186,7 +186,12 @@ Queda el **hardening pre-beta** (de l'auditoria 2026-07-02, per ordre):
   1–2 h + prova manual del login amb Google al navegador. Fer-ho **abans de la
   beta amb usuaris** (invalida les sessions existents — ara és barat).
 - **Rol de BD sense superusuari** per a l'app (vegeu auditoria 2026-07-02,
-  seguretat § MITJÀ 3). Fer-ho **abans de producció real**.
+  seguretat § MITJÀ 3). Fer-ho **abans de producció real**: script SQL a
+  `infra/db/init/` (rol `viscalaterra_app` amb GRANT mínims) + 2 vars d'entorn
+  - `db.ts`. Si es deixa escrit a `init/` abans del dia del VPS, producció
+    naixerà ben configurada de fàbrica; en local implica recrear el volum
+    (`down -v` + seed, es perden els usuaris de prova) o aplicar el SQL a mà.
+    Estimat: 30–45 min.
 
 **4.4 Sistema de contribucions i verificació col·lectiva**
 El nucli diferenciador de viscalaterra. Vegeu secció 4.4 detallada més avall.
