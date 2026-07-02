@@ -1,6 +1,11 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import path from 'path'
 import { readFile } from 'fs/promises'
+import { gzip, gunzipSync } from 'zlib'
+import { promisify } from 'util'
+import { createHash } from 'crypto'
+
+const gzipAsync = promisify(gzip)
 
 const router = Router()
 
@@ -35,9 +40,41 @@ function resolucioPerZoom(zoom: number): number {
   return 1000000
 }
 
-// Caché en memòria dels fitxers ja llegits: evita el I/O de disc en peticions
-// repetides. Els fitxers més sol·licitats (~6 MB en total) hi caben de sobres.
-const fileCache = new Map<string, Buffer>()
+// Caché en memòria per fitxer: el contingut JA COMPRIMIT (gzip nivell 9) i el
+// seu ETag. Es comprimeix UNA vegada en carregar — abans el middleware
+// `compression` recomprimia a cada petició (~1 s de CPU per servir
+// municipis-5000 encara que el fitxer fos a memòria) — i guardar només el
+// comprimit divideix per ~4 la RAM del caché. Es cachea la PROMESA
+// (single-flight): dues peticions concurrents del mateix fitxer comparteixen
+// lectura i compressió.
+interface EntradaCache {
+  gzip: Buffer
+  etag: string
+}
+
+const fileCache = new Map<string, Promise<EntradaCache>>()
+
+function carregaFitxer(fitxerPath: string): Promise<EntradaCache> {
+  let entrada = fileCache.get(fitxerPath)
+  if (!entrada) {
+    entrada = (async (): Promise<EntradaCache> => {
+      const original = await readFile(fitxerPath)
+      // Compressió asíncrona (threadpool de zlib): no bloqueja l'event loop
+      // ni tan sols la primera vegada amb els 29 MB de municipis-5000.
+      // Nivell 6 (default): el 9 només guanya ~2% de mida i triga 4× més
+      // (mesurat: 9,7 s vs ~2,5 s en la primera càrrega del fitxer gran).
+      const comprimit = await gzipAsync(original, { level: 6 })
+      // ETag fort sobre el contingut original: només canvia si canvia el fitxer.
+      const etag = `"${createHash('sha1').update(original).digest('hex')}"`
+      return { gzip: comprimit, etag }
+    })()
+    // Si la càrrega falla (p. ex. ENOENT abans de col·locar les geodades),
+    // s'allibera l'entrada perquè una petició posterior ho pugui reintentar.
+    entrada.catch(() => fileCache.delete(fitxerPath))
+    fileCache.set(fitxerPath, entrada)
+  }
+  return entrada
+}
 
 /**
  * GET /api/geojson/:nivell?resolucio=N   (preferent)
@@ -82,20 +119,32 @@ router.get('/:nivell', async (req: Request, res: Response, next: NextFunction) =
   const nomFitxer = `divisions-administratives-v2r1-${nomBase}-${resolucio}-20240118.json`
   const fitxerPath = path.join(GEOJSON_DIR, nivell, nomFitxer)
 
-  const cached = fileCache.get(fitxerPath)
-  if (cached) {
+  try {
+    const { gzip: cos, etag } = await carregaFitxer(fitxerPath)
+
     res.setHeader('Content-Type', 'application/geo+json')
     res.setHeader('Cache-Control', 'public, max-age=86400') // 24h — les geodades no canvien
-    res.end(cached)
-    return
-  }
+    res.setHeader('ETag', etag)
+    res.setHeader('Vary', 'Accept-Encoding')
 
-  try {
-    const buffer = await readFile(fitxerPath)
-    fileCache.set(fitxerPath, buffer)
-    res.setHeader('Content-Type', 'application/geo+json')
-    res.setHeader('Cache-Control', 'public, max-age=86400')
-    res.end(buffer)
+    // Revalidació: passades les 24 h de max-age, el client pregunta amb
+    // If-None-Match i, si té la versió vigent, rep un 304 buit en lloc de
+    // tornar a descarregar ~1,6 MB de GeoJSON.
+    if (req.headers['if-none-match'] === etag) {
+      res.status(304).end()
+      return
+    }
+
+    if (req.acceptsEncodings('gzip')) {
+      // Es serveix el buffer ja comprimit tal qual; `compression` (index.ts)
+      // no toca respostes que ja porten Content-Encoding.
+      res.setHeader('Content-Encoding', 'gzip')
+      res.end(cos)
+    } else {
+      // Client sense suport gzip (raríssim): es descomprimeix sota demanda en
+      // lloc de guardar també l'original (duplicaria la RAM del caché).
+      res.end(gunzipSync(cos))
+    }
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
       res.status(503).json({
