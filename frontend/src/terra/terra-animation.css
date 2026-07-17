@@ -1,0 +1,94 @@
+/* Animació tipogràfica "La terra" — capa i frases (creades per JS). */
+
+.terra-anim {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.terra-frase {
+  position: absolute;
+  color: #f5f1e8;
+  font-family: var(--font-display);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.4);
+  will-change: transform, opacity;
+}
+
+.terra-frase__linia {
+  /* GSAP (autoAlpha) pren el control de visibility + opacity. */
+  visibility: hidden;
+  font-size: clamp(0.85rem, 1.7vw, 1.1rem);
+  font-weight: 500;
+  letter-spacing: 0.015em;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.terra-frase__linia--sagnada {
+  margin-left: 1.8em;
+}
+
+/* Bloc final: línies centrades, sense sagnat. */
+.terra-frase--centrada {
+  text-align: center;
+}
+
+.terra-frase--centrada .terra-frase__linia--sagnada {
+  margin-left: 0;
+}
+
+/* Clímax: VISCA LA TERRA! (l'efecte especial s'ancorarà al label 'visca'). */
+.terra-frase--destacada .terra-frase__linia {
+  font-size: clamp(1.5rem, 3.4vw, 2.3rem);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+/* ── Controls provisionals de desenvolupament ──────────────────────────── */
+
+.terra-dev {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: var(--radi-sm, 8px);
+  pointer-events: auto;
+  font-family: var(--font-ui);
+}
+
+.terra-dev__btn {
+  padding: 2px 4px;
+  background: none;
+  border: none;
+  color: #ffffff;
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.terra-dev__barra {
+  width: 160px;
+  accent-color: #8fc78f;
+}
+
+.terra-dev__temps {
+  min-width: 52px;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* El mòdul ja no es munta amb moviment reduït (ho comprova el JS);
+   doble seguretat per si la preferència canvia amb la pàgina oberta. */
+@media (prefers-reduced-motion: reduce) {
+  .terra-anim {
+    display: none;
+  }
+}

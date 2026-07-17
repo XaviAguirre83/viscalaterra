@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import logoUrl from '@/assets/logo.png'
+import { muntaTerraAnimacio, type TerraAnimacio } from '@/terra/terra-animation'
 import {
   IDIOMES,
   ETIQUETA_IDIOMA,
@@ -40,6 +41,20 @@ function tancaSessio() {
   menuUsuariObert.value = false
   auth.surt()
 }
+
+// ── Animació tipogràfica "La terra" ─────────────────────────────────────
+const terraEl = ref<HTMLElement | null>(null)
+let terraAnim: TerraAnimacio | null = null
+
+onMounted(() => {
+  // controlsDev: true torna a mostrar els controls de revisió (play/scrub).
+  if (terraEl.value) terraAnim = muntaTerraAnimacio(terraEl.value, { controlsDev: false })
+})
+
+onBeforeUnmount(() => {
+  terraAnim?.destrueix()
+  terraAnim = null
+})
 </script>
 
 <template>
@@ -48,11 +63,14 @@ function tancaSessio() {
       <!-- <source src="/video/highlights.mp4" type="video/mp4" /> -->
     </video>
 
+    <!-- Animació tipogràfica "La terra" (fase 1: frases; després SVG + àudio) -->
+    <div ref="terraEl" class="cabecera__terra" aria-hidden="true" />
+
     <!-- Identitat (esquerra) -->
-    <div class="cabecera__identitat">
+    <RouterLink to="/llocs" class="cabecera__identitat">
       <img :src="logoUrl" alt="viscalaterra" class="cabecera__logo" />
-      <span class="cabecera__nom">viscalaterra.cat</span>
-    </div>
+      <span class="cabecera__nom">viscalaterra<span class="cabecera__nom-tld">.cat</span></span>
+    </RouterLink>
 
     <!-- Controls globals (dreta) -->
     <div class="cabecera__controls">
@@ -196,7 +214,13 @@ function tancaSessio() {
   z-index: 2100; /* per sobre de la barra de navegació (2000): el desplegable d'idioma hi flota a sobre */
   width: 100%;
   height: 110px;
-  background: #1a2635;
+  /* Tres capes (de dalt a baix): corbes de nivell topogràfiques (guiny al
+     territori), halo verd bosc a la dreta i gradient de nit com a base. */
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='130'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.05' stroke-width='1.3'%3E%3Cpath d='M0 14 q32.5 -11 65 0 t65 0 t65 0 t65 0'/%3E%3Cpath d='M0 40 q32.5 13 65 0 t65 0 t65 0 t65 0'/%3E%3Cpath d='M0 66 q32.5 -9 65 0 t65 0 t65 0 t65 0'/%3E%3Cpath d='M0 92 q32.5 11 65 0 t65 0 t65 0 t65 0'/%3E%3Cpath d='M0 118 q32.5 -13 65 0 t65 0 t65 0 t65 0'/%3E%3C/g%3E%3C/svg%3E")
+      repeat,
+    radial-gradient(ellipse 60% 130% at 88% 15%, rgba(45, 106, 45, 0.4), transparent 65%),
+    linear-gradient(110deg, #131d29 0%, #1a2635 58%, #1d3226 100%);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -209,11 +233,31 @@ function tancaSessio() {
   inset: 0;
   background: linear-gradient(
     to right,
-    rgba(0, 0, 0, 0.6) 0%,
-    rgba(0, 0, 0, 0.15) 45%,
+    rgba(0, 0, 0, 0.45) 0%,
+    rgba(0, 0, 0, 0.1) 45%,
     transparent 75%
   );
   z-index: 1;
+  pointer-events: none;
+}
+
+/* Franja identitària: els colors de les quatre províncies (BCN/GIR/LLE/TAR),
+   la mateixa paleta del mapa i del panell On?. */
+.cabecera::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: linear-gradient(
+    to right,
+    #c4382e 0 25%,
+    #2d6a2d 25% 50%,
+    #b8860b 50% 75%,
+    #2b6cb0 75% 100%
+  );
+  z-index: 3;
   pointer-events: none;
 }
 
@@ -226,47 +270,108 @@ function tancaSessio() {
   z-index: 0;
 }
 
+/* Capa de l'animació "La terra": per sobre del gradient (1) perquè el text
+   no s'enfosqueixi, per sota de la franja de províncies (3) i dels controls. */
+.cabecera__terra {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
 /* ── Identitat ──────────────────────────────────────────────────────────── */
 
 .cabecera__identitat {
   position: relative;
   z-index: 2;
-  display: inline-block;
-  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 20px;
   height: 100%;
+  text-decoration: none;
 }
 
 .cabecera__logo {
-  height: calc(110px - 16px);
+  position: relative;
+  /* Per sobre dels noms: el logo tapa la part alta del bloc de text. */
+  z-index: 1;
+  height: 76px;
   width: auto;
   display: block;
   object-fit: contain;
   object-position: left center;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.35));
+  transition: transform var(--mou-mig);
 }
 
+.cabecera__identitat:hover .cabecera__logo {
+  transform: scale(1.05) rotate(-2deg);
+}
+
+/* Ancorat a baix a l'esquerra, mig cobert pel logo (que hi queda per sobre):
+   així el nom no ocupa amplada pròpia i deixa espai a l'animació "La terra". */
 .cabecera__nom {
   position: absolute;
-  bottom: 2px;
-  left: 42px;
-  color: #ffffff;
-  font-size: 0.9rem;
+  left: 48px;
+  /* La caixa del logo acaba a 17px ((110 − 76) / 2); ajustat a ull un pèl
+     més avall perquè casi amb la punta visible del dibuix. */
+  bottom: 13px;
+  z-index: 0;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
   font-weight: 600;
-  letter-spacing: 1.5px;
-  text-transform: lowercase;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+  letter-spacing: 0.02em;
+  line-height: 1.05;
+  color: #ffffff;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+}
+
+.cabecera__nom-tld {
+  color: #8fc78f;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .cabecera__identitat {
+    gap: 10px;
+    padding: 8px 12px;
+    min-width: 0;
+  }
+
+  .cabecera__logo {
+    height: 68px;
+  }
+
+  .cabecera__nom {
+    left: 34px;
+    /* Mateix criteri que en desktop, amb el logo de 68px (caixa a 21px). */
+    bottom: 17px;
+    font-size: 1.15rem;
+    white-space: nowrap;
+  }
 }
 
 /* ── Controls globals (dreta) ───────────────────────────────────────────── */
 
 .cabecera__controls {
   position: relative;
-  z-index: 2;
+  /* Per sobre de la franja de províncies (::after, z-index 3): els desplegables
+     d'idioma i d'usuari la creuen en obrir-se i han de quedar-hi per damunt. */
+  z-index: 4;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 8px;
+  align-items: center;
+  gap: 12px;
   padding: 0 24px;
+}
+
+@media (max-width: 768px) {
+  .cabecera__controls {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    padding: 0 12px;
+  }
 }
 
 /* ── Selector d'idioma (desplegable, escalable a molts idiomes) ─────────── */
@@ -326,12 +431,27 @@ function tancaSessio() {
   z-index: 3000;
   min-width: 160px;
   margin: 0;
-  padding: 4px;
+  padding: 5px;
   list-style: none;
-  background: #ffffff;
-  border: 1px solid #e0e0dc;
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  background: var(--color-superficie, #ffffff);
+  border: 1px solid var(--color-vora, #e0e0dc);
+  border-radius: var(--radi-md, 12px);
+  box-shadow: var(--ombra-3, 0 8px 24px rgba(0, 0, 0, 0.18));
+  animation: menu-apareix var(--mou-mig, 0.2s ease);
+  transform-origin: top right;
+}
+
+@keyframes menu-apareix {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .selector-idioma__llista {
+    animation: none;
+  }
 }
 
 .selector-idioma__opcio {
@@ -390,21 +510,38 @@ function tancaSessio() {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  height: 34px;
-  padding: 0 14px;
+  height: 36px;
+  padding: 0 16px;
   border: 1px solid transparent;
-  border-radius: 17px;
+  border-radius: var(--radi-pastilla, 18px);
   background: #ffffff;
   color: #1a2635;
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  transition:
+    background var(--mou-rapid, 0.15s),
+    transform var(--mou-mig, 0.2s),
+    box-shadow var(--mou-mig, 0.2s);
 }
 
 .usuari-btn:hover {
-  background: #e8f0e8;
+  background: #eaf3ea;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.3);
+}
+
+.usuari-btn:active {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .usuari-btn,
+  .usuari-btn:hover {
+    transform: none;
+  }
 }
 
 .usuari-btn__icona {
@@ -433,12 +570,20 @@ function tancaSessio() {
   z-index: 3000;
   min-width: 170px;
   margin: 0;
-  padding: 4px;
+  padding: 5px;
   list-style: none;
-  background: #fff;
-  border: 1px solid #e0e0dc;
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  background: var(--color-superficie, #fff);
+  border: 1px solid var(--color-vora, #e0e0dc);
+  border-radius: var(--radi-md, 12px);
+  box-shadow: var(--ombra-3, 0 8px 24px rgba(0, 0, 0, 0.18));
+  animation: menu-apareix var(--mou-mig, 0.2s ease);
+  transform-origin: top right;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .usuari-menu {
+    animation: none;
+  }
 }
 
 .usuari-menu__opcio {
