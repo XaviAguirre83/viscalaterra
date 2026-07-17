@@ -37,52 +37,66 @@ const SECCIONS = ['avisLegal', 'privacitat', 'cookies', 'condicions'] as const
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  background: #eef1f4;
+  background: var(--color-fons, #eef1f4);
 }
 
+/* Full "document": targeta blanca centrada sobre el fons pedra */
 .legal {
   max-width: 760px;
-  margin: 0 auto;
-  padding: 28px 20px 48px;
+  margin: 32px auto 48px;
+  padding: 36px 40px 44px;
+  background: var(--color-superficie, #fff);
+  border: 1px solid var(--color-vora, #e3e5de);
+  border-radius: var(--radi-lg, 16px);
+  box-shadow: var(--ombra-1);
 }
 
 .legal__titol {
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: #1a2635;
+  font-family: var(--font-display);
+  font-size: var(--text-titol, 1.7rem);
+  font-weight: 700;
+  color: var(--color-text-fort, #1a2635);
 }
 
 .legal__intro {
-  margin-top: 8px;
+  margin-top: 10px;
   color: #444;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 .legal__avis {
-  margin-top: 16px;
-  padding: 10px 14px;
+  margin-top: 18px;
+  padding: 11px 15px;
   background: #fff7e6;
   border: 1px solid #f0d28a;
-  border-radius: 8px;
+  border-radius: var(--radi-sm, 8px);
   font-size: var(--text-sm);
   color: #8a6d1a;
 }
 
 .legal__seccio {
-  margin-top: 28px;
-  padding-top: 18px;
-  border-top: 1px solid #dfe4ea;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-vora, #dfe4ea);
 }
 
 .legal__seccio-titol {
+  font-family: var(--font-display);
   font-size: 1.15rem;
-  font-weight: 700;
-  color: #1a2635;
+  font-weight: 600;
+  color: var(--color-text-fort, #1a2635);
 }
 
 .legal__seccio-text {
   margin-top: 6px;
   font-size: var(--text-sm);
   color: var(--color-text-secundari, #737373);
+}
+
+@media (max-width: 768px) {
+  .legal {
+    margin: 14px 12px 32px;
+    padding: 24px 20px 30px;
+  }
 }
 </style>

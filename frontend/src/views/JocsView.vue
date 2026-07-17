@@ -41,7 +41,10 @@ function obreJoc(joc: (typeof JOCS)[number]) {
           <span class="joc-targeta__icona" aria-hidden="true">{{ joc.icona }}</span>
           <span class="joc-targeta__nom">{{ $t(`jocs.${joc.id}.nom`) }}</span>
           <span class="joc-targeta__desc">{{ $t(`jocs.${joc.id}.desc`) }}</span>
-          <span v-if="joc.disponible" class="joc-targeta__cta">{{ $t('jocs.juga') }}</span>
+          <span v-if="joc.disponible" class="joc-targeta__cta"
+            >{{ $t('jocs.juga') }}
+            <span class="joc-targeta__fletxa" aria-hidden="true">→</span></span
+          >
           <span v-else class="joc-targeta__badge">{{ $t('jocs.properament') }}</span>
         </button>
       </div>
@@ -61,32 +64,37 @@ function obreJoc(joc: (typeof JOCS)[number]) {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 32px 24px;
-  background: #eef1f4;
+  padding: 40px 24px 56px;
+  /* Halo verd molt suau que cau des de dalt, sobre el fons pedra global */
+  background:
+    radial-gradient(ellipse 90% 65% at 50% -12%, rgba(45, 106, 45, 0.1), transparent 70%),
+    var(--color-fons, #eef1f4);
 }
 
 .jocs-capcalera {
   max-width: 860px;
-  margin: 0 auto 24px;
+  margin: 0 auto 28px;
   text-align: center;
 }
 
 .jocs-capcalera h1 {
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: #1a2635;
+  font-family: var(--font-display);
+  font-size: var(--text-titol, 1.8rem);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--color-text-fort, #1a2635);
 }
 
 .jocs-capcalera p {
-  margin-top: 4px;
-  font-size: var(--text-sm);
+  margin-top: 6px;
+  font-size: var(--text-base);
   color: var(--color-text-secundari, #737373);
 }
 
 .jocs-graella {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
+  gap: 18px;
   max-width: 860px;
   margin: 0 auto;
 }
@@ -95,60 +103,120 @@ function obreJoc(joc: (typeof JOCS)[number]) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 24px 18px;
-  background: #fff;
-  border: 1px solid #e2e6ea;
-  border-radius: 14px;
+  gap: 10px;
+  padding: 28px 20px 26px;
+  background: var(--color-superficie, #fff);
+  border: 1px solid var(--color-vora, #e2e6ea);
+  border-radius: var(--radi-lg, 16px);
+  box-shadow: var(--ombra-1);
   cursor: pointer;
   text-align: center;
   transition:
-    transform 0.15s,
-    box-shadow 0.15s;
+    transform var(--mou-mig, 0.2s),
+    box-shadow var(--mou-mig, 0.2s),
+    border-color var(--mou-mig, 0.2s);
+  animation: targeta-entra 0.45s cubic-bezier(0.2, 0, 0, 1) backwards;
+}
+
+/* Entrada escalonada de les targetes */
+.joc-targeta:nth-child(2) {
+  animation-delay: 0.07s;
+}
+.joc-targeta:nth-child(3) {
+  animation-delay: 0.14s;
+}
+.joc-targeta:nth-child(4) {
+  animation-delay: 0.21s;
+}
+
+@keyframes targeta-entra {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
 }
 
 .joc-targeta:not(:disabled):hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 24px rgba(26, 38, 53, 0.14);
+  transform: translateY(-4px);
+  border-color: var(--verd-200, #bdd5bd);
+  box-shadow: var(--ombra-3, 0 10px 24px rgba(26, 38, 53, 0.14));
 }
 
 .joc-targeta--inactiva {
   cursor: default;
-  opacity: 0.6;
+  opacity: 0.72;
 }
 
 .joc-targeta__icona {
-  font-size: 2.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  font-size: 2.3rem;
+  border-radius: 24px;
+  background: linear-gradient(145deg, var(--verd-50, #f0f4f0), var(--verd-100, #dfe9df));
+  box-shadow: inset 0 0 0 1px rgba(45, 106, 45, 0.1);
+  transition: transform var(--mou-pop, 0.25s);
+}
+
+.joc-targeta:not(:disabled):hover .joc-targeta__icona {
+  transform: scale(1.1) rotate(-4deg);
+}
+
+.joc-targeta--inactiva .joc-targeta__icona {
+  background: var(--pedra-150, #edefe9);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  filter: grayscale(0.6);
 }
 
 .joc-targeta__nom {
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: #1a2635;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text-fort, #1a2635);
 }
 
 .joc-targeta__desc {
   font-size: var(--text-sm);
   color: var(--color-text-secundari, #737373);
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 .joc-targeta__cta {
-  margin-top: 6px;
-  padding: 6px 18px;
-  border-radius: 18px;
-  background: #2d6a2d;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px 22px;
+  border-radius: var(--radi-pastilla, 18px);
+  background: var(--color-marca, #2d6a2d);
   color: #fff;
   font-size: 0.85rem;
   font-weight: 700;
+  box-shadow: 0 2px 10px rgba(45, 106, 45, 0.35);
+  transition: background var(--mou-rapid, 0.15s);
+}
+
+.joc-targeta__fletxa {
+  transition: transform var(--mou-mig, 0.2s);
+}
+
+.joc-targeta:not(:disabled):hover .joc-targeta__cta {
+  background: var(--color-marca-fosc, #1e4e1e);
+}
+
+.joc-targeta:not(:disabled):hover .joc-targeta__fletxa {
+  transform: translateX(3px);
 }
 
 .joc-targeta__badge {
-  margin-top: 6px;
-  padding: 5px 14px;
-  border-radius: 18px;
-  background: #eef1f4;
-  color: #777;
+  margin-top: 8px;
+  padding: 6px 16px;
+  border-radius: var(--radi-pastilla, 18px);
+  border: 1.5px dashed var(--color-vora-forta, #d2d5cc);
+  background: transparent;
+  color: var(--color-text-secundari, #777);
   font-size: var(--text-xs);
   font-weight: 700;
   text-transform: uppercase;
@@ -157,7 +225,26 @@ function obreJoc(joc: (typeof JOCS)[number]) {
 
 @media (max-width: 768px) {
   .jocs-cos {
-    padding: 20px 14px;
+    padding: 24px 14px 40px;
+  }
+
+  .jocs-graella {
+    gap: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .joc-targeta {
+    animation: none;
+  }
+
+  .joc-targeta:not(:disabled):hover {
+    transform: none;
+  }
+
+  .joc-targeta:not(:disabled):hover .joc-targeta__icona,
+  .joc-targeta:not(:disabled):hover .joc-targeta__fletxa {
+    transform: none;
   }
 }
 </style>

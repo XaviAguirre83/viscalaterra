@@ -162,6 +162,7 @@ onMounted(async () => {
         <p v-if="error" class="modal-auth__error" role="alert">{{ error }}</p>
 
         <button type="submit" class="modal-auth__enviar" :disabled="auth.carregant">
+          <span v-if="auth.carregant" class="modal-auth__spinner" aria-hidden="true" />
           {{ mode === 'entra' ? $t('capcalera.entra') : $t('capcalera.registra') }}
         </button>
       </form>
@@ -185,7 +186,16 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: rgba(26, 38, 53, 0.55);
+  background: rgba(19, 29, 41, 0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: modal-fons 0.18s ease;
+}
+
+@keyframes modal-fons {
+  from {
+    opacity: 0;
+  }
 }
 
 .modal-auth__caixa {
@@ -194,8 +204,23 @@ onMounted(async () => {
   max-width: 380px;
   padding: 28px 28px 32px;
   background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+  border-radius: 20px;
+  box-shadow: var(--ombra-4, 0 16px 48px rgba(0, 0, 0, 0.35));
+  animation: modal-pop var(--mou-pop, 0.26s) backwards;
+}
+
+@keyframes modal-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-auth,
+  .modal-auth__caixa {
+    animation: none;
+  }
 }
 
 .modal-auth__tancar {
@@ -260,40 +285,85 @@ onMounted(async () => {
 }
 
 .modal-auth__camp input {
-  height: 42px;
-  padding: 0 12px;
-  border: 1px solid #d8d8d4;
-  border-radius: 8px;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--color-vora-forta, #d8d8d4);
+  border-radius: var(--radi-sm, 10px);
+  background: var(--pedra-50, #fafaf8);
   font-size: var(--text-base);
   color: #333;
+  transition:
+    border-color var(--mou-rapid, 0.15s),
+    background var(--mou-rapid, 0.15s),
+    box-shadow var(--mou-rapid, 0.15s);
 }
 
 .modal-auth__camp input:focus {
   outline: none;
   border-color: var(--color-marca, #2d6a2d);
-  box-shadow: 0 0 0 2px rgba(45, 106, 45, 0.12);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(45, 106, 45, 0.13);
 }
 
 .modal-auth__enviar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
   margin-top: 6px;
-  height: 44px;
+  height: 46px;
   border: none;
-  border-radius: 22px;
-  background: var(--color-marca, #2d6a2d);
+  border-radius: var(--radi-pastilla, 23px);
+  background: linear-gradient(180deg, var(--verd-500, #3d7c3d), var(--color-marca, #2d6a2d));
   color: #fff;
   font-size: var(--text-base);
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  box-shadow: 0 2px 10px rgba(45, 106, 45, 0.35);
+  transition:
+    filter var(--mou-rapid, 0.15s),
+    transform var(--mou-mig, 0.2s),
+    box-shadow var(--mou-mig, 0.2s);
 }
 
-.modal-auth__enviar:hover {
-  background: var(--color-marca-fosc, #1e4e1e);
+.modal-auth__enviar:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px rgba(45, 106, 45, 0.4);
+}
+
+.modal-auth__enviar:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .modal-auth__enviar:disabled {
-  opacity: 0.6;
+  opacity: 0.65;
   cursor: default;
+}
+
+.modal-auth__spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: modal-gir 0.7s linear infinite;
+}
+
+@keyframes modal-gir {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-auth__enviar:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .modal-auth__spinner {
+    animation-duration: 1.6s;
+  }
 }
 
 .modal-auth__error {

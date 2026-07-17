@@ -17,7 +17,11 @@ const mostraPeu = computed(() => !route.path.startsWith('/jocs/geofreak'))
 <template>
   <div class="app-layout">
     <CabeceraApp />
-    <RouterView class="app-layout__contingut" />
+    <RouterView v-slot="{ Component }">
+      <Transition name="vista" mode="out-in">
+        <component :is="Component" class="app-layout__contingut" />
+      </Transition>
+    </RouterView>
     <PeuApp v-if="mostraPeu" />
   </div>
 
@@ -44,6 +48,25 @@ const mostraPeu = computed(() => !route.path.startsWith('/jocs/geofreak'))
 .app-layout__contingut {
   flex: 1;
   min-height: 0;
+}
+
+/* Fosa suau en canviar de secció (les vistes que comparteixen component,
+   com Llocs ↔ Agenda, no es remunten i per tant no fan la transició). */
+.vista-enter-active,
+.vista-leave-active {
+  transition: opacity 0.14s ease;
+}
+
+.vista-enter-from,
+.vista-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vista-enter-active,
+  .vista-leave-active {
+    transition: none;
+  }
 }
 
 /* ── Overlay orientació ─────────────────────────────────────────────────── */

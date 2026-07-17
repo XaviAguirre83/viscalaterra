@@ -1,47 +1,64 @@
-/* color palette from <https://github.com/vuejs/theme> */
+/* ══════════════════════════════════════════════════════════════════════════
+   viscalaterra.cat — sistema de disseny
+   Tokens globals: paleta, tipografia, geometria, ombres i moviment.
+   Els components consumeixen preferentment els tokens semàntics.
+   ══════════════════════════════════════════════════════════════════════════ */
+
 :root {
-  --vt-c-white: #ffffff;
-  --vt-c-white-soft: #f8f8f8;
-  --vt-c-white-mute: #f2f2f2;
+  /* La plataforma és sempre clara: sense mode fosc automàtic (el tema fosc
+     només viu a la capçalera i el peu, que són de nit per disseny). */
+  color-scheme: light;
 
-  --vt-c-black: #181818;
-  --vt-c-black-soft: #222222;
-  --vt-c-black-mute: #282828;
+  /* ── Paleta primitiva ──────────────────────────────────────────────────── */
 
-  --vt-c-indigo: #2c3e50;
+  /* Verd bosc — color de marca */
+  --verd-50: #f0f4f0;
+  --verd-100: #dfe9df;
+  --verd-200: #bdd5bd;
+  --verd-500: #3d7c3d;
+  --verd-600: #2d6a2d;
+  --verd-700: #265c26;
+  --verd-800: #1e4e1e;
 
-  --vt-c-divider-light-1: rgba(60, 60, 60, 0.29);
-  --vt-c-divider-light-2: rgba(60, 60, 60, 0.12);
-  --vt-c-divider-dark-1: rgba(84, 84, 84, 0.65);
-  --vt-c-divider-dark-2: rgba(84, 84, 84, 0.48);
+  /* Blau nit — capçalera, peu i titulars foscos */
+  --nit-700: #243447;
+  --nit-800: #1a2635;
+  --nit-900: #131d29;
 
-  --vt-c-text-light-1: var(--vt-c-indigo);
-  --vt-c-text-light-2: rgba(60, 60, 60, 0.66);
-  --vt-c-text-dark-1: var(--vt-c-white);
-  --vt-c-text-dark-2: rgba(235, 235, 235, 0.64);
-}
+  /* Neutres càlids ("pedra") — fons, vores i textos */
+  --pedra-50: #fafaf8;
+  --pedra-100: #f4f5f1;
+  --pedra-150: #edefe9;
+  --pedra-200: #e3e5de;
+  --pedra-300: #d2d5cc;
+  --pedra-400: #b0b3aa;
+  --pedra-500: #8a8d84;
+  --pedra-600: #696c64;
+  --pedra-700: #4b4e47;
+  --pedra-900: #22241f;
 
-/* semantic color variables for this project */
-:root {
-  --color-background: var(--vt-c-white);
-  --color-background-soft: var(--vt-c-white-soft);
-  --color-background-mute: var(--vt-c-white-mute);
+  /* ── Tokens semàntics ──────────────────────────────────────────────────── */
 
-  --color-border: var(--vt-c-divider-light-2);
-  --color-border-hover: var(--vt-c-divider-light-1);
+  --color-marca: var(--verd-600);
+  --color-marca-viu: var(--verd-500);
+  --color-marca-fosc: var(--verd-800);
+  --color-marca-clar: var(--verd-50);
+  --color-marca-mig: var(--verd-100);
 
-  --color-heading: var(--vt-c-text-light-1);
-  --color-text: var(--vt-c-text-light-1);
+  --color-fons: var(--pedra-100);
+  --color-superficie: #ffffff;
+  --color-vora: var(--pedra-200);
+  --color-vora-forta: var(--pedra-300);
 
-  --section-gap: 160px;
-
-  /* Color de marca (verd viscalaterra) — abans repetit literalment a 4+ components */
-  --color-marca: #2d6a2d;
-  --color-marca-fosc: #1e4e1e;
-  --color-marca-clar: #f0f4f0;
-
+  --color-text: var(--pedra-900);
+  --color-text-fort: var(--nit-800);
   /* Gris de text secundari que compleix WCAG AA (≥4.5:1 sobre blanc) */
-  --color-text-secundari: #737373;
+  --color-text-secundari: #696c64;
+
+  /* ── Tipografia ────────────────────────────────────────────────────────── */
+
+  --font-ui: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Outfit Variable', Outfit, var(--font-ui);
 
   /* Escala tipogràfica — substitueix les mides ad-hoc disperses */
   --text-xs: 0.75rem;
@@ -49,53 +66,82 @@
   --text-base: 0.9rem;
   --text-md: 1rem;
   --text-lg: 1.2rem;
+  /* Titulars de pàgina: fluïts entre mòbil i desktop */
+  --text-titol: clamp(1.5rem, 1.2rem + 1.4vw, 2rem);
+
+  /* ── Geometria ─────────────────────────────────────────────────────────── */
+
+  --radi-xs: 6px;
+  --radi-sm: 8px;
+  --radi-md: 12px;
+  --radi-lg: 16px;
+  --radi-pastilla: 999px;
+
+  /* ── Ombres (capes suaus amb tint de nit) ──────────────────────────────── */
+
+  --ombra-1: 0 1px 2px rgba(26, 38, 53, 0.05), 0 1px 5px rgba(26, 38, 53, 0.08);
+  --ombra-2: 0 2px 4px rgba(26, 38, 53, 0.05), 0 6px 18px rgba(26, 38, 53, 0.11);
+  --ombra-3: 0 4px 10px rgba(26, 38, 53, 0.07), 0 14px 36px rgba(26, 38, 53, 0.16);
+  --ombra-4: 0 8px 18px rgba(26, 38, 53, 0.1), 0 28px 64px rgba(26, 38, 53, 0.25);
+
+  /* ── Moviment ──────────────────────────────────────────────────────────── */
+
+  --mou-rapid: 0.13s ease;
+  --mou-mig: 0.2s cubic-bezier(0.2, 0, 0, 1);
+  /* Entrada amb un lleuger "overshoot" (per a pops de modals i panells) */
+  --mou-pop: 0.26s cubic-bezier(0.3, 1.25, 0.45, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: var(--vt-c-black);
-    --color-background-soft: var(--vt-c-black-soft);
-    --color-background-mute: var(--vt-c-black-mute);
-
-    --color-border: var(--vt-c-divider-dark-2);
-    --color-border-hover: var(--vt-c-divider-dark-1);
-
-    --color-heading: var(--vt-c-text-dark-1);
-    --color-text: var(--vt-c-text-dark-2);
-  }
-}
+/* ── Reset ─────────────────────────────────────────────────────────────── */
 
 *,
 *::before,
 *::after {
   box-sizing: border-box;
   margin: 0;
-  font-weight: normal;
 }
 
 body {
   min-height: 100vh;
   color: var(--color-text);
-  background: var(--color-background);
-  transition:
-    color 0.5s,
-    background-color 0.5s;
+  background: var(--color-fons);
   line-height: 1.6;
-  font-family:
-    Inter,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    Oxygen,
-    Ubuntu,
-    Cantarell,
-    'Fira Sans',
-    'Droid Sans',
-    'Helvetica Neue',
-    sans-serif;
+  font-family: var(--font-ui);
   font-size: 15px;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Detalls globals ───────────────────────────────────────────────────── */
+
+::selection {
+  background: var(--verd-200);
+  color: var(--pedra-900);
+}
+
+/* Barres de desplaçament fines i discretes (Firefox + WebKit) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--pedra-300) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--pedra-300);
+  border-radius: var(--radi-pastilla);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--pedra-400);
 }

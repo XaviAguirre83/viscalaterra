@@ -129,9 +129,9 @@ function comptadorProvincia(provincia: Provincia): { sel: number; total: number 
           <button type="button" class="provincia__btn" @click="toggleProvincia(provincia)">
             <span>{{ provincia.nom }}</span>
             <span v-if="comptadorProvincia(provincia).sel > 0" class="comptador"
-              >[{{ comptadorProvincia(provincia).sel }}/{{
+              >{{ comptadorProvincia(provincia).sel }}/{{
                 comptadorProvincia(provincia).total
-              }}]</span
+              }}</span
             >
           </button>
         </div>
@@ -166,7 +166,7 @@ function comptadorProvincia(provincia: Provincia): { sel: number; total: number 
                 {{ comarca.nom }}
               </button>
               <span v-if="comptadorComarca(comarca).sel > 0" class="comptador"
-                >[{{ comptadorComarca(comarca).sel }}/{{ comptadorComarca(comarca).total }}]</span
+                >{{ comptadorComarca(comarca).sel }}/{{ comptadorComarca(comarca).total }}</span
               >
             </div>
 
@@ -434,14 +434,20 @@ button:focus-visible {
   color: var(--prov-contrast);
 }
 
-/* ── Comptador [sel/total] ─────────────────────────────── */
+/* ── Comptador sel/total (pastilla) ────────────────────── */
 .comptador {
   flex-shrink: 0;
-  font-size: 0.75rem;
-  font-weight: 600;
-  opacity: 0.75;
+  padding: 1px 7px;
+  border-radius: var(--radi-pastilla, 9px);
+  background: rgba(0, 0, 0, 0.07);
+  font-size: 0.7rem;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.estat--total .comptador {
+  background: rgba(255, 255, 255, 0.22);
 }
 
 .estat-carregant,

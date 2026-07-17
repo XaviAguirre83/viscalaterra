@@ -47,11 +47,12 @@ const opcions = useMapaOpcionsStore()
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 1200;
-  width: 232px;
-  padding: 12px 14px 14px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.22);
+  width: 240px;
+  padding: 14px 16px 16px;
+  background: var(--color-superficie, #fff);
+  border: 1px solid var(--color-vora, #e3e5de);
+  border-radius: var(--radi-lg, 14px);
+  box-shadow: var(--ombra-3, 0 6px 24px rgba(0, 0, 0, 0.22));
 }
 
 .opcions__cap {

@@ -23,8 +23,8 @@ const ANY = new Date().getFullYear()
   align-items: center;
   justify-content: space-between;
   padding: 0 14px;
-  background: #1a2635;
-  color: rgba(255, 255, 255, 0.7);
+  background: linear-gradient(100deg, #131d29 0%, #1a2635 70%, #1c2f24 100%);
+  color: rgba(255, 255, 255, 0.65);
   font-size: var(--text-xs);
 }
 
@@ -37,11 +37,16 @@ const ANY = new Date().getFullYear()
 .peu__enllac {
   color: rgba(255, 255, 255, 0.85);
   text-decoration: none;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition:
+    color var(--mou-rapid, 0.13s),
+    background var(--mou-rapid, 0.13s);
 }
 
 .peu__enllac:hover {
   color: #fff;
-  text-decoration: underline;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .peu__sep {

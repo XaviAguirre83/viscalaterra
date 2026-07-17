@@ -219,6 +219,19 @@ function escTanca() {
 <template>
   <div class="cerca-rapida">
     <div class="cerca-rapida__camp">
+      <svg
+        class="cerca-lupa"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <circle cx="11" cy="11" r="8" />
+        <path d="m21 21-4.35-4.35" />
+      </svg>
       <input
         ref="inputRef"
         v-model="queryBruta"
@@ -288,26 +301,48 @@ function escTanca() {
 }
 
 .cerca-rapida__camp {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
   width: 100%;
 }
 
+.cerca-lupa {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  translate: 0 -50%;
+  width: 15px;
+  height: 15px;
+  color: var(--color-text-secundari, #737373);
+  pointer-events: none;
+  transition: color var(--mou-rapid, 0.15s);
+}
+
+.cerca-rapida__camp:focus-within .cerca-lupa {
+  color: var(--color-marca, #2d6a2d);
+}
+
 .cerca-input {
   flex: 1;
   min-width: 0;
   height: 36px;
-  padding: 0 12px;
-  border: 1px solid #d8d8d4;
-  border-radius: 18px;
+  padding: 0 12px 0 36px;
+  border: 1px solid transparent;
+  border-radius: var(--radi-pastilla, 18px);
   font-size: var(--text-sm);
   color: #333;
-  background: #fafaf8;
+  background: var(--pedra-100, #f4f5f1);
   outline: none;
   transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
+    border-color var(--mou-rapid, 0.15s),
+    background var(--mou-rapid, 0.15s),
+    box-shadow var(--mou-rapid, 0.15s);
+}
+
+.cerca-input:hover:not(:focus) {
+  border-color: var(--color-vora-forta, #d2d5cc);
 }
 
 @media (max-width: 768px) {
@@ -319,7 +354,7 @@ function escTanca() {
 .cerca-input:focus {
   border-color: var(--color-marca, #2d6a2d);
   background: #fff;
-  box-shadow: 0 0 0 2px rgba(45, 106, 45, 0.12);
+  box-shadow: 0 0 0 3px rgba(45, 106, 45, 0.13);
 }
 
 .cerca-btn {
@@ -352,13 +387,29 @@ function escTanca() {
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
-  min-width: 260px;
-  background: #fff;
-  border: 1px solid #e0e0dc;
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  min-width: 280px;
+  max-width: min(420px, calc(100vw - 24px));
+  background: var(--color-superficie, #fff);
+  border: 1px solid var(--color-vora, #e0e0dc);
+  border-radius: var(--radi-md, 12px);
+  box-shadow: var(--ombra-3, 0 8px 24px rgba(0, 0, 0, 0.12));
   overflow: hidden;
   z-index: 3000;
+  animation: dropdown-apareix var(--mou-mig, 0.2s);
+  transform-origin: top left;
+}
+
+@keyframes dropdown-apareix {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.99);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cerca-rapida__dropdown {
+    animation: none;
+  }
 }
 
 .cerca-rapida__buit {

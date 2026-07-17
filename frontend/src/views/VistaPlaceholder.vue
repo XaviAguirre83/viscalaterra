@@ -46,7 +46,10 @@ onMounted(() => {
 }
 
 .placeholder-cos--net {
-  background: #eef1f4;
+  /* Mateix llenguatge que la capçalera: fons pedra amb un halo verd suau */
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(45, 106, 45, 0.08), transparent 70%),
+    var(--color-fons, #eef1f4);
 }
 
 .placeholder-overlay {
@@ -57,32 +60,74 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: rgba(26, 38, 53, 0.22);
+  background: rgba(26, 38, 53, 0.18);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.placeholder-cos--net .placeholder-overlay {
+  background: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .placeholder-caixa {
-  max-width: 340px;
-  padding: 28px 36px;
+  max-width: 360px;
+  padding: 32px 40px 30px;
   text-align: center;
-  background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: var(--radi-lg, 16px);
+  box-shadow: var(--ombra-3, 0 8px 30px rgba(0, 0, 0, 0.25));
+  animation: caixa-pop var(--mou-pop, 0.26s) backwards;
+}
+
+@keyframes caixa-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
 }
 
 .placeholder-icona {
+  display: inline-block;
   font-size: 2.5rem;
+  animation: icona-flota 3.2s ease-in-out infinite;
+}
+
+@keyframes icona-flota {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
 }
 
 .placeholder-titol {
-  margin-top: 8px;
+  margin-top: 10px;
+  font-family: var(--font-display);
   font-size: var(--text-lg);
   font-weight: 700;
-  color: #1a2635;
+  color: var(--color-text-fort, #1a2635);
 }
 
 .placeholder-text {
   margin-top: 6px;
   font-size: var(--text-sm);
   color: var(--color-text-secundari, #737373);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placeholder-caixa {
+    animation: none;
+  }
+
+  .placeholder-icona {
+    animation: none;
+  }
 }
 </style>

@@ -449,9 +449,12 @@ function estilPerFeature(
   nivell: NivellTerritorial
 ): L.PathOptions {
   const info = codiDeFeature(feature, nivell)
-  // Mode joc: línies de context fines (com abans). Normal: gruix fix per nivell
-  // i opacitat 0 si el nivell és més fi que l'actiu (no es dibuixa la línia).
-  const { weight, opacity } = props.modeJoc ? { weight: 1, opacity: 0.45 } : estilLinia(nivell)
+  // Mode joc: només es dibuixa la capa del nivell jugat (jugant a comarques no
+  // s'han de veure els límits municipals); el contorn del contenidor té regla
+  // pròpia més avall. Normal: gruix fix per nivell segons els toggles.
+  const { weight, opacity } = props.modeJoc
+    ? { weight: 1, opacity: nivell === props.modeJoc.nivell ? 0.45 : 0 }
+    : estilLinia(nivell)
 
   // Estil base: vora gris, sense farcit. La interactivitat la gestiona el pane.
   const baseEstil: L.PathOptions = {
@@ -528,7 +531,8 @@ function estilPerFeature(
       // terreny es veu net i no hi ha cap nom a tapar.
       return { color: '#555', weight: 1.5, opacity: 1, fillOpacity: 0 }
     }
-    // Capes de context: només traç, segons la matriu de prominència.
+    // Capes que no es juguen: invisibles (opacity 0 del baseEstil); només el
+    // contorn del contenidor (regla de dalt) es manté com a referència.
     return baseEstil
   }
 
@@ -1568,12 +1572,14 @@ watch(
   justify-content: center;
   width: 38px;
   height: 38px;
-  border: 1px solid #d8d8d4;
-  border-radius: 8px;
-  background: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--radi-sm, 8px);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: #555;
   cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--ombra-2, 0 1px 4px rgba(0, 0, 0, 0.25));
   transition:
     background 0.15s,
     color 0.15s,
@@ -1605,12 +1611,16 @@ watch(
   /* Deixa ~60px lliures a cada costat dins el mapa perquè el control de zoom
      (esq.) i el ⚙️ (dreta) no es muntin sobre el recuadre en finestres estretes. */
   width: min(760px, calc(100vw - 120px));
-  background: white;
+  /* Vidre glaçat: el mapa es continua intuint per sota del panell */
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   padding: 8px 12px;
-  border-radius: 6px;
+  border-radius: var(--radi-md, 10px);
   font-family: inherit;
   font-size: 0.85rem;
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--ombra-2, 0 1px 5px rgba(0, 0, 0, 0.4));
   pointer-events: none;
 }
 
@@ -1713,6 +1723,7 @@ watch(
     width: 100%;
     max-width: none;
     transform: none;
+    border: none;
     border-radius: 0;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
   }
@@ -2020,6 +2031,43 @@ watch(
 .leaflet-pane[class*='leaflet-territori-'].territori-actiu canvas {
   pointer-events: auto;
   cursor: pointer;
+}
+
+/* ── Controls de zoom de Leaflet, adaptats al llenguatge visual del lloc ── */
+.leaflet-control-zoom.leaflet-bar {
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--radi-sm, 8px);
+  box-shadow: var(--ombra-2, 0 1px 5px rgba(0, 0, 0, 0.4));
+  overflow: hidden;
+}
+
+.leaflet-control-zoom.leaflet-bar a {
+  width: 34px;
+  height: 34px;
+  line-height: 34px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #4b4e47;
+  border-bottom-color: var(--color-vora, #e3e5de);
+  transition:
+    background 0.13s,
+    color 0.13s;
+}
+
+.leaflet-control-zoom.leaflet-bar a:first-child {
+  border-top-left-radius: var(--radi-sm, 8px);
+  border-top-right-radius: var(--radi-sm, 8px);
+}
+
+.leaflet-control-zoom.leaflet-bar a:last-child {
+  border-bottom-left-radius: var(--radi-sm, 8px);
+  border-bottom-right-radius: var(--radi-sm, 8px);
+}
+
+.leaflet-control-zoom.leaflet-bar a:hover {
+  background: #ffffff;
+  color: var(--color-marca, #2d6a2d);
 }
 
 @media (max-width: 768px) {

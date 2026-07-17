@@ -1,3 +1,8 @@
+/* Tipografies autoallotjades (sense CDN extern): Inter per a la interfície,
+   Outfit per a titulars i marca. Vite empaqueta els woff2 del subset latin. */
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/outfit';
+
 @import './base.css';
 
 *,
@@ -8,7 +13,7 @@
 
 #app {
   min-height: 100vh;
-  font-family: Inter, system-ui, sans-serif;
+  font-family: var(--font-ui);
 }
 
 /* Focus visible global (WCAG 2.4.7). Components com TabOn poden afinar-lo amb

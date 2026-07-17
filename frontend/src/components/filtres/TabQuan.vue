@@ -231,8 +231,9 @@ const resumMensual = computed(() => {
 
 /* ── Paràmetres del mode actiu ───────────────────────────────────────────── */
 .parametres {
-  border: 1px solid #e2e8e0;
-  border-radius: 8px;
+  border: 1px solid var(--verd-100, #e2e8e0);
+  border-radius: var(--radi-md, 10px);
+  background: linear-gradient(180deg, rgba(45, 106, 45, 0.035), transparent 45%);
   padding: 12px;
   margin: 0;
   display: flex;
@@ -309,12 +310,14 @@ const resumMensual = computed(() => {
 
 .dia-chip:hover {
   border-color: var(--color-marca, #2d6a2d);
+  background: var(--color-marca-clar, #f0f4f0);
 }
 
 .dia-chip.actiu {
   background: var(--color-marca, #2d6a2d);
   border-color: var(--color-marca, #2d6a2d);
   color: #fff;
+  box-shadow: 0 1px 6px rgba(45, 106, 45, 0.3);
 }
 
 /* La casella real queda oculta: el "chip" sencer fa de control. */

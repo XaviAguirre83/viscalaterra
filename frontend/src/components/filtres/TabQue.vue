@@ -48,7 +48,7 @@ function comptador(tema: Tema): { sel: number; total: number } {
         <button type="button" class="tema__btn" @click="toggleTema(tema)">
           <span>{{ $t(tema.clau) }}</span>
           <span v-if="comptador(tema).sel > 0" class="comptador"
-            >[{{ comptador(tema).sel }}/{{ comptador(tema).total }}]</span
+            >{{ comptador(tema).sel }}/{{ comptador(tema).total }}</span
           >
         </button>
       </div>
@@ -156,11 +156,17 @@ function comptador(tema: Tema): { sel: number; total: number } {
 
 .comptador {
   flex-shrink: 0;
-  font-size: var(--text-xs);
-  font-weight: 600;
-  opacity: 0.8;
+  padding: 2px 8px;
+  border-radius: var(--radi-pastilla, 9px);
+  background: rgba(0, 0, 0, 0.07);
+  font-size: 0.7rem;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.tema__fila.estat--total .comptador {
+  background: rgba(255, 255, 255, 0.22);
 }
 
 /* ── Subtemes (checkboxes) ─────────────────────────────────────────────── */

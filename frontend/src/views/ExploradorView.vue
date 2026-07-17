@@ -41,7 +41,8 @@ onMounted(() => territoris.carregaArbre())
   min-height: 0;
   display: flex;
   justify-content: center;
-  background: #c9d2da;
+  /* Marges laterals en verd-gris apagat, en harmonia amb la paleta pedra */
+  background: linear-gradient(180deg, #c6cfc8 0%, #bac4bd 100%);
 }
 
 /* Columna central del mapa: amplada màxima en pantalles amples (marges visibles
@@ -55,7 +56,7 @@ onMounted(() => territoris.carregaArbre())
   /* Marc subtil perquè la columna del mapa es distingeixi dels marges laterals
      (que de moment queden buits, reservats per a contingut futur). */
   box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.1),
-    0 0 24px rgba(0, 0, 0, 0.22);
+    0 0 0 1px rgba(26, 38, 53, 0.12),
+    0 0 32px rgba(26, 38, 53, 0.25);
 }
 </style>

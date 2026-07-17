@@ -102,8 +102,16 @@ useFocusTrap(
   width: min(340px, 100%);
   padding: 20px 22px 22px;
   background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.3);
+  border-radius: var(--radi-lg, 16px);
+  box-shadow: var(--ombra-4, 0 10px 36px rgba(0, 0, 0, 0.3));
+  animation: fitxa-pop var(--mou-pop, 0.26s) backwards;
+}
+
+@keyframes fitxa-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(6px);
+  }
 }
 
 .fitxa__tancar {
@@ -134,9 +142,10 @@ useFocusTrap(
 }
 
 .fitxa__titol {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: #1a2635;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-text-fort, #1a2635);
   line-height: 1.2;
 }
 
@@ -234,6 +243,10 @@ useFocusTrap(
   .fitxa-enter-active,
   .fitxa-leave-active {
     transition: none;
+  }
+
+  .fitxa {
+    animation: none;
   }
 
   .fitxa__spinner {
