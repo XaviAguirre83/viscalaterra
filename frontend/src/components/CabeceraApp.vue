@@ -127,7 +127,8 @@ onBeforeUnmount(() => {
         <button
           v-if="!auth.autenticat"
           type="button"
-          class="usuari-btn"
+          class="usuari-btn usuari-btn--connecta"
+          :aria-label="$t('capcalera.connecta')"
           @click="modalAuthObert = true"
         >
           <svg
@@ -145,7 +146,7 @@ onBeforeUnmount(() => {
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
             <circle cx="12" cy="7" r="4" />
           </svg>
-          {{ $t('capcalera.connecta') }}
+          <span class="usuari-btn__text">{{ $t('capcalera.connecta') }}</span>
         </button>
 
         <!-- Amb sessió: desplegable amb opcions d'usuari -->
@@ -491,8 +492,30 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 768px) {
+  /* Botó rodó com el d'usuari: la bandera omple el cercle i s'hi recorta
+     (cover), sense codi d'idioma ni fletxa. Queden alineats en columna. */
   .selector-idioma__trigger {
-    min-height: 44px;
+    width: 40px;
+    height: 40px;
+    min-height: 0;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  }
+
+  .selector-idioma__trigger .selector-idioma__bandera {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+  }
+
+  .selector-idioma__actual,
+  .selector-idioma__fletxa {
+    display: none;
   }
 
   .selector-idioma__opcio {
@@ -613,6 +636,23 @@ onBeforeUnmount(() => {
 @media (max-width: 768px) {
   .usuari-btn {
     height: 40px;
+  }
+
+  /* Sense sessió, només la icona: petjada compacta com la del selector
+     d'idioma, perquè quedin alineats i el poema del fons respiri. */
+  .usuari-btn--connecta {
+    width: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .usuari-btn--connecta .usuari-btn__icona {
+    width: 20px;
+    height: 20px;
+  }
+
+  .usuari-btn--connecta .usuari-btn__text {
+    display: none;
   }
 
   .usuari-menu__opcio {
