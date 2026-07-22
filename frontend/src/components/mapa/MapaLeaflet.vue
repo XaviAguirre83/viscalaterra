@@ -1639,15 +1639,21 @@ watch(
   min-width: 0;
 }
 
+/* Estat marcat/desmarcat de les dues files: només fons pintat, sense vores
+   ni subratllats. El fons s'estén amb box-shadow (spread) en lloc de padding
+   per no alterar el layout ni les mesures del marquee mòbil (ajustaCarrusel). */
 .info-territori__cap {
   background: none;
   border: none;
-  border-bottom: 2px solid transparent;
-  padding: 0 0 3px;
+  border-radius: 4px;
+  padding: 0;
   margin: 0;
   font-family: inherit;
   font-size: 0.75rem;
   font-weight: 700;
+  /* Igual que la fila de valors: així els fons pintats de les dues files
+     tenen exactament el mateix gruix. */
+  line-height: 17px;
   text-transform: uppercase;
   letter-spacing: 0.4px;
   color: var(--color-text-secundari, #737373);
@@ -1656,16 +1662,23 @@ watch(
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  transition: color 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s,
+    box-shadow 0.15s;
 }
 
 .info-territori__cap:hover {
   color: #444;
+  background: #f0f0ec;
+  box-shadow: 0 0 0 3px #f0f0ec;
 }
 
+/* Capa visible: fons neutre (la fila de valors, en verd, marca la selecció). */
 .info-territori__cap--actiu {
   color: #1a1a1a;
-  border-bottom-color: #1a1a1a;
+  background: #e4e4de;
+  box-shadow: 0 0 0 3px #e4e4de;
 }
 
 .info-territori__val-cel span {
@@ -1679,30 +1692,28 @@ watch(
   overflow: hidden;
   background: none;
   border: none;
+  border-radius: 4px;
   padding: 0;
   margin: 0;
   font: inherit;
+  line-height: 17px;
   color: inherit;
   text-align: left;
   cursor: pointer;
-  border-radius: 4px;
   transition:
     background 0.15s,
     box-shadow 0.15s;
 }
 
-/* El fons "pastilla" s'estén amb box-shadow (spread) en lloc de padding per no
-   alterar el layout ni les mesures del marquee mòbil (ajustaCarrusel). */
 .info-territori__val-cel:hover {
   background: #f0f0ec;
   box-shadow: 0 0 0 3px #f0f0ec;
 }
 
+/* Nivell de selecció actiu: fons verd suau, sense anell ni vora. */
 .info-territori__val-cel--actiu {
   background: #e8f0e8;
-  box-shadow:
-    0 0 0 3px #e8f0e8,
-    0 0 0 4px #2d6a2d;
+  box-shadow: 0 0 0 3px #e8f0e8;
 }
 
 /* Valor en una sola línia; els valors múltiples (comarques transfrontereres)
