@@ -10,19 +10,28 @@
 .terra-frase {
   position: absolute;
   color: #f5f1e8;
-  font-family: var(--font-display);
+  /* Veu pròpia del poema: garalda en cursiva, res a veure amb la UI. */
+  font-family: 'Cormorant Garamond Variable', Georgia, serif;
+  font-style: italic;
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.4);
   will-change: transform, opacity;
 }
 
 .terra-frase__linia {
-  /* GSAP (autoAlpha) pren el control de visibility + opacity. */
-  visibility: hidden;
-  font-size: clamp(0.85rem, 1.7vw, 1.1rem);
-  font-weight: 500;
-  letter-spacing: 0.015em;
-  line-height: 1.4;
+  /* La Cormorant és fina i d'ull petit: una mica més gran i pesada que
+     l'equivalent en sans perquè aguanti l'opacitat baixa de fons. */
+  font-size: clamp(1rem, 2vw, 1.3rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
   white-space: nowrap;
+}
+
+.terra-frase__paraula {
+  /* GSAP (autoAlpha) pren el control de visibility + opacity, paraula a
+     paraula; inline-block deixa la porta oberta a transforms per paraula. */
+  visibility: hidden;
+  display: inline-block;
 }
 
 .terra-frase__linia--sagnada {
@@ -40,7 +49,7 @@
 
 /* Clímax: VISCA LA TERRA! (l'efecte especial s'ancorarà al label 'visca'). */
 .terra-frase--destacada .terra-frase__linia {
-  font-size: clamp(1.5rem, 3.4vw, 2.3rem);
+  font-size: clamp(1.7rem, 3.6vw, 2.5rem);
   font-weight: 700;
   letter-spacing: 0.05em;
 }

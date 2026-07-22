@@ -14,12 +14,14 @@ import {
   FADE_IN,
   FADE_OUT,
   FADE_OUT_FINAL,
-  FRASES,
   OPACITAT_REPOS,
   PAUSA_BUCLE,
-  RETARD_SEGONA_LINIA,
+  resolFrases,
   type Deriva,
 } from './terra-timeline'
+
+// Tipografia pròpia del poema (cursiva variable), independent de la resta de la web.
+import '@fontsource-variable/cormorant-garamond/wght-italic.css'
 import './terra-animation.css'
 
 const VECTOR_DERIVA: Record<Deriva, [number, number]> = {
@@ -53,7 +55,11 @@ export function muntaTerraAnimacio(
   // Bucle infinit amb una pausa en negre entre passades.
   const tl = gsap.timeline({ repeat: -1, repeatDelay: PAUSA_BUCLE })
 
-  FRASES.forEach((frase, i) => {
+  // Temps del guió ja resolts: entrada absoluta de cada frase (àncora
+  // tempsEntrada o cadena de `despres`) i offset de cada paraula.
+  const resoltes = resolFrases()
+
+  resoltes.forEach(({ frase, t, linies }, i) => {
     const grup = document.createElement('div')
     grup.className = 'terra-frase'
     if (frase.centrat) grup.classList.add('terra-frase--centrada')
@@ -61,40 +67,45 @@ export function muntaTerraAnimacio(
     grup.style.left = `${frase.posX}%`
     grup.style.top = `${frase.posY}%`
 
-    const linies = frase.linies.map((text, j) => {
+    const paraules: { el: HTMLElement; offset: number }[] = []
+    linies.forEach((mots, j) => {
       const linia = document.createElement('div')
       linia.className = 'terra-frase__linia'
       if (j > 0) linia.classList.add('terra-frase__linia--sagnada')
-      linia.textContent = text
+      mots.forEach(({ mot, offset }, k) => {
+        if (k > 0) linia.appendChild(document.createTextNode(' '))
+        const span = document.createElement('span')
+        span.className = 'terra-frase__paraula'
+        span.textContent = mot
+        linia.appendChild(span)
+        paraules.push({ el: span, offset })
+      })
       grup.appendChild(linia)
-      return linia
     })
     capa.appendChild(grup)
 
     // Les centrades s'ancoren pel seu centre; xPercent/yPercent conviuen
     // amb els x/y de la deriva sense trepitjar-se.
     if (frase.centrat) gsap.set(grup, { xPercent: -50, yPercent: -50 })
-    gsap.set(linies, { autoAlpha: 0 })
+    gsap.set(
+      paraules.map((p) => p.el),
+      { autoAlpha: 0 }
+    )
 
-    const t = frase.tempsEntrada
     const opacitat = frase.destacat ? 1 : OPACITAT_REPOS
 
     // Label per ancorar-hi el futur efecte especial del clímax.
     if (frase.destacat) tl.addLabel('visca', t)
 
-    linies.forEach((linia, j) => {
-      tl.to(
-        linia,
-        { autoAlpha: opacitat, duration: FADE_IN, ease: 'power1.out' },
-        t + j * RETARD_SEGONA_LINIA
-      )
+    paraules.forEach(({ el, offset }) => {
+      tl.to(el, { autoAlpha: opacitat, duration: FADE_IN, ease: 'power1.out' }, t + offset)
     })
 
     // El grup mor quan entra el següent (solapament entrada/sortida);
     // l'últim (VISCA LA TERRA!) aguanta i es fon just abans del final del
     // track, perquè el bucle empalmi net.
-    const seguent = FRASES[i + 1]
-    const fiVisible = seguent ? seguent.tempsEntrada : DURADA_TOTAL - FADE_OUT_FINAL
+    const seguent = resoltes[i + 1]
+    const fiVisible = seguent ? seguent.t : DURADA_TOTAL - FADE_OUT_FINAL
     const duradaFade = seguent ? FADE_OUT : FADE_OUT_FINAL
     tl.to(grup, { autoAlpha: 0, duration: duradaFade, ease: 'power1.in' }, fiVisible)
 
