@@ -361,16 +361,17 @@ onBeforeUnmount(() => {
      d'idioma i d'usuari la creuen en obrir-se i han de quedar-hi per damunt. */
   z-index: 4;
   display: flex;
-  align-items: center;
-  gap: 12px;
+  /* El selector d'idioma va a sobre del botó de compte, tots dos alineats a la
+     dreta (mateixa disposició en desktop i mòbil): l'idioma és utility i no ha
+     de competir en horitzontal amb "Connecta". */
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
   padding: 0 24px;
 }
 
 @media (max-width: 768px) {
   .cabecera__controls {
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 6px;
     padding: 0 12px;
   }
 }

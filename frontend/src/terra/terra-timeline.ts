@@ -182,10 +182,10 @@ export const FRASES: FraseTerra[] = [
     posY: 40,
   },
   {
-    linies: ['i baixa enrabiada,', 'alçant la veu,'],
+    linies: ['baixant enrabiada,', 'alçant la veu,'],
     despres: 1.5,
     tempsParaules: [
-      [0.0, 0.4, 0.6], // i · baixa · enrrabiada
+      [0.0, 0.6], // baixant · enrabiada
       [1.5, 1.8, 2.1], // alçant · la · veu,
     ],
     posX: 22,
@@ -232,7 +232,7 @@ export const FRASES: FraseTerra[] = [
     despres: 1.0,
     tempsParaules: [
       [0.0, 0.4, 0.6], // del · Sant · Jordi
-      [1.5, 1.8, 2.1], // del · llibre · i · la · rosa,
+      [1.5, 1.8, 2.1, 2.5, 2.9], // del · llibre · i · la · rosa,
     ],
     posX: 10,
     posY: 8,
@@ -242,18 +242,18 @@ export const FRASES: FraseTerra[] = [
     linies: ['de llegendes', 'que el vent encara escampa'],
     despres: 1.0,
     tempsParaules: [
-      [0.0, 0.4, 0.6], // de · llegendes
-      [1.5, 1.8, 2.1, 2.5], // que · el · vent · encara · escampa
+      [0.0, 0.5], // de · llegendes
+      [1.5, 1.8, 2.1, 2.5, 2.9], // que · el · vent · encara · escampa
     ],
     posX: 12,
     posY: 26,
   },
   {
-    linies: ["de l'Empordà al Montsià,", 'del Segrià al Maresme.'],
-    despres: 0.4,
+    linies: ["de l'Empordà al Montsià,", "de l'Aran al Garraf."],
+    despres: 1.0,
     tempsParaules: [
       [0.0, 0.4, 0.6, 1.0], // de · l'Empordà · al · Montsià,
-      [1.5, 1.8, 2.1, 2.5], // del · Segrià · al · Maresme.
+      [1.5, 1.8, 2.1, 2.5], // de · l'Aran · al · Garraf.
     ],
     posX: 54,
     posY: 12,
@@ -262,20 +262,20 @@ export const FRASES: FraseTerra[] = [
   // ── Estrofa 3 · Castellers ───────────────────────────────────────────
   {
     linies: ['Ferma terra', 'de castells i castellers'],
-    despres: 2.2,
+    despres: 1.5,
     tempsParaules: [
-      [0.0, 0.4, 0.6], // Ferma · terra
+      [0.0, 0.5], // Ferma · terra
       [1.5, 1.8, 2.1, 2.5], // de · castells · i · castellers
     ],
     posX: 52,
     posY: 42,
   },
   {
-    linies: ['que en germanor aixequen torres', 'comandades pel so de la gralla,'],
-    despres: 0.4,
+    linies: ['que en germanor aixequen torres', 'a toc de gralla,'],
+    despres: 1.0,
     tempsParaules: [
-      [0.0, 0.4, 0.6], // que · en · germanor · aixequen · torres
-      [1.5, 1.8, 2.1, 2.5], // comandades · pel · so · de · la · gralla,
+      [0.0, 0.4, 0.6, 1.0, 1.4], // que · en · germanor · aixequen · torres
+      [2.1, 2.5, 2.9, 3.3], // a · toc · de · gralla,
     ],
     posX: 15,
     posY: 24,
@@ -284,8 +284,8 @@ export const FRASES: FraseTerra[] = [
     linies: ["alçant l'enxaneta", 'fins a tocar el cel.'],
     despres: 1.0,
     tempsParaules: [
-      [0.0, 0.4, 0.6], // alçant · l'enxaneta
-      [1.5, 1.8, 2.1], // fins · a · tocar · el · cel.
+      [0.0, 0.5], // alçant · l'enxaneta
+      [1.5, 1.8, 2.1, 2.5, 2.9], // fins · a · tocar · el · cel.
     ],
     posX: 44,
     posY: 44,
@@ -296,8 +296,8 @@ export const FRASES: FraseTerra[] = [
     linies: ['Terra de gegants i capgrossos,', 'de bastoners que piquen fort,'],
     despres: 1.8,
     tempsParaules: [
-      [0.0, 0.4, 0.6, 1.0], // Terra · de · gegants · i · capgrossos,
-      [1.5, 1.8, 2.1, 2.5], // de · bastoners · que · piquen · fort,
+      [0.0, 0.4, 0.6, 1.0, 1.4], // Terra · de · gegants · i · capgrossos,
+      [1.8, 2.1, 2.5, 2.9, 3.3], // de · bastoners · que · piquen · fort,
     ],
     posX: 11,
     posY: 16,
@@ -306,8 +306,8 @@ export const FRASES: FraseTerra[] = [
     linies: ['de trabucaires', 'que ens fan saltar del llit'],
     despres: 0.9,
     tempsParaules: [
-      [0.0, 0.4, 0.6], // de · trabucaires
-      [1.5, 1.8, 2.1, 2.5], // que · ens · fan · saltar · del · llit
+      [0.0, 0.5], // de · trabucaires
+      [1.5, 1.8, 2.1, 2.5, 2.9, 3.3], // que · ens · fan · saltar · del · llit
     ],
     posX: 54,
     posY: 38,
@@ -316,8 +316,8 @@ export const FRASES: FraseTerra[] = [
     linies: ['i diables', 'que fan tronar la nit.'],
     despres: 0.4,
     tempsParaules: [
-      [0.0, 0.4, 0.6], // i · diables
-      [1.5, 1.8, 2.1, 2.5], // que · fan · tronar · la · nit.
+      [0.0, 0.5], // i · diables
+      [1.5, 1.8, 2.1, 2.5, 2.9], // que · fan · tronar · la · nit.
     ],
     posX: 26,
     posY: 46,
@@ -334,7 +334,7 @@ export const FRASES: FraseTerra[] = [
     linies: ['flabiol, tible i tenora', 'fan rodar la sardana,'],
     despres: 1.4,
     tempsParaules: [
-      [0.0, 0.4, 0.6], // flabiol, · tible · i · tenora
+      [0.0, 0.4, 0.6, 1.0], // flabiol, · tible · i · tenora
       [1.5, 1.8, 2.1, 2.5], // fan · rodar · la · sardana,
     ],
     posX: 14,
@@ -342,10 +342,10 @@ export const FRASES: FraseTerra[] = [
   },
   {
     linies: ['formant un cercle tancat', 'que és obert a tothom.'],
-    despres: 0.5,
+    despres: 0.8,
     tempsParaules: [
-      [0.0, 0.4, 0.6], // formant · un · cercle · tancat
-      [1.5, 1.8, 2.1, 2.5], // que · és · obert · a · tothom.
+      [0.0, 0.4, 0.6, 1.0], // formant · un · cercle · tancat
+      [1.8, 2.1, 2.5, 2.9, 3.3], // que · és · obert · a · tothom.
     ],
     posX: 50,
     posY: 14,
@@ -354,19 +354,19 @@ export const FRASES: FraseTerra[] = [
   // ── Estrofa 6 · Montserrat ───────────────────────────────────────────
   {
     linies: ["Terra de la Rosa d'abril,", 'la Morena de la serra'],
-    despres: 1.8,
+    despres: 1.0,
     tempsParaules: [
-      [0.0, 0.4, 0.6], // TERRA · DE · LA · ROSA · D'ABRIL,
-      [1.5, 1.8, 2.1], // la · Morena · de · la · serra
+      [0.0, 0.4, 0.6, 1.0, 1.4], // Terra · de · la · rosa · d'abril,
+      [1.8, 2.1, 2.5, 2.9, 3.3], // la · Morena · de · la · serra
     ],
     posX: 12,
     posY: 32,
   },
   {
     linies: ['que vetlla el país', "des de l'abadia,"],
-    despres: 0.2,
+    despres: 1.0,
     tempsParaules: [
-      [0.0, 0.4, 0.6], // que · vetlla · el · país
+      [0.0, 0.4, 0.6, 1.0], // que · vetlla · el · país
       [1.5, 1.8, 2.1], // des · de · l'abadia,
     ],
     posX: 56,
@@ -374,10 +374,10 @@ export const FRASES: FraseTerra[] = [
   },
   {
     linies: ['on escolanets', 'posen veu al silenci.'],
-    despres: 0.2,
+    despres: 1.0,
     tempsParaules: [
-      [0.0, 0.4, 0.6], // on · escolanets
-      [1.5, 1.8, 2.1], // posen · veu · al · silenci.
+      [0.0, 0.5], // on · escolanets
+      [1.8, 2.1, 2.5, 2.9], // posen · veu · al · silenci.
     ],
     posX: 32,
     posY: 12,
@@ -386,10 +386,10 @@ export const FRASES: FraseTerra[] = [
   // ── Estrofa 7 · La taula ─────────────────────────────────────────────
   {
     linies: ['Visc a la terra', 'que ens asseu a taula,'],
-    despres: 1.8,
+    despres: 1.0,
     tempsParaules: [
-      [0.0, 0.4, 0.6], // Visc · a · la · terra
-      [1.5, 1.8, 2.1], // que · ens · asseu · a · taula,
+      [0.0, 0.4, 0.6, 1.0], // Visc · a · la · terra
+      [1.5, 1.8, 2.1, 2.5, 2.9], // que · ens · asseu · a · taula,
     ],
     posX: 14,
     posY: 30,
@@ -398,8 +398,8 @@ export const FRASES: FraseTerra[] = [
     linies: ['amb calçots i mans brutes,', 'botifarra amb mongetes,'],
     despres: 1.0,
     tempsParaules: [
-      [0.0, 0.4, 0.6], // amb · calçots · i · mans · brutes,
-      [1.5, 1.8, 2.1], // botifarra · amb · mongetes,
+      [0.0, 0.4, 0.6, 1.0, 1.4], // amb · calçots · i · mans · brutes,
+      [1.8, 2.1, 2.5], // botifarra · amb · mongetes,
     ],
     posX: 48,
     posY: 42,
@@ -408,8 +408,8 @@ export const FRASES: FraseTerra[] = [
     linies: ['fuet, pa amb tomàquet i allioli,', 'regat amb un porró que ronda.'],
     despres: 0.8,
     tempsParaules: [
-      [0.0, 0.4, 0.6, 1.0], // fuet, · pa · amb · tomàquet · i · allioli,
-      [1.5, 1.8, 2.1, 2.5], // regat · amb · un · porró · que · ronda.
+      [0.0, 0.4, 0.6, 1.0, 1.4, 1.8], // fuet, · pa · amb · tomàquet · i · allioli,
+      [1.8, 2.1, 2.5, 2.9, 3.3, 3.7], // regat · amb · un · porró · que · ronda.
     ],
     posX: 16,
     posY: 16,
@@ -418,21 +418,21 @@ export const FRASES: FraseTerra[] = [
   // ── Final · centrat a pantalla ───────────────────────────────────────
   {
     linies: ['Del mar a la muntanya,', 'de la plaça a la taula,'],
+    despres: 1.0,
     tempsParaules: [
-      [0.0, 0.4, 0.6], // Del · mar · a · la · muntanya,
-      [1.5, 1.8, 2.1], // de · la · plaça · a · la · taula,
+      [0.0, 0.4, 0.6, 1.0, 1.4], // Del · mar · a · la · muntanya,
+      [2.1, 2.5, 2.9, 3.3, 3.7, 4.1], // de · la · plaça · a · la · taula,
     ],
-    despres: 2.2,
     posX: 50,
     posY: 34,
     centrat: true,
   },
   {
     linies: ['amb cava a les copes,', 'tots plegats clamem...'],
-    despres: 1.7,
+    despres: 1.0,
     tempsParaules: [
-      [0.0, 0.4, 0.6], // amb · cava · a · les · copes,
-      [1.5, 1.8, 2.1], // tots · plegats · clamem...
+      [0.0, 0.4, 0.6, 1.0, 1.4], // amb · cava · a · les · copes,
+      [1.8, 2.1, 2.5], // tots · plegats · clamem...
     ],
     posX: 50,
     posY: 52,
@@ -440,7 +440,7 @@ export const FRASES: FraseTerra[] = [
   },
   {
     linies: ['VISCA LA TERRA!'],
-    despres: 1.9,
+    despres: 1.0,
     tempsParaules: [
       [0.0, 0.5, 0.7], // VISCA · LA · TERRA!
     ],

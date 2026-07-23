@@ -92,7 +92,9 @@ export function muntaTerraAnimacio(
       { autoAlpha: 0 }
     )
 
-    const opacitat = frase.destacat ? 1 : OPACITAT_REPOS
+    // El clímax (VISCA LA TERRA!) es fon amb la mateixa opacitat que la resta;
+    // no es destaca ni per mida ni per opacitat.
+    const opacitat = OPACITAT_REPOS
 
     // Label per ancorar-hi el futur efecte especial del clímax.
     if (frase.destacat) tl.addLabel('visca', t)

@@ -4,20 +4,21 @@ Visc a la terra, \
 bella terra mediterrània \
 admirada pels Pirineus \
 que tossen tramuntana, \
-i baixa enrabiada, alçant la veu, \
+baixant enrabiada, alçant la veu, \
 esverant un mar \
-on l'onada esculpeix la roca a cop de sal.
+on l'onada esculpeix la roca \
+a cop de sal.
 
 Terra de camps que respiren història, \
 de cavallers, dracs i princeses, \
 del Sant Jordi del llibre i la rosa, \
 de llegendes que el vent encara escampa \
 de l'Empordà al Montsià, \
-del Segrià al Maresme.
+de l'Aran al Garraf.
 
 Ferma terra de castells i castellers \
 que en germanor aixequen torres \
-comandades pel so de la gralla, \
+a toc de la gralla, \
 alçant l'enxaneta fins a tocar el cel.
 
 Terra de gegants i capgrossos, \
@@ -47,3 +48,6 @@ amb cava a les copes, \
 tots plegats clamem:
 
 VISCA LA TERRA!
+
+Xavi Aguirre Torres & Claude code
+July 2026

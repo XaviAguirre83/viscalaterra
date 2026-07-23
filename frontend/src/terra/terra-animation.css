@@ -47,12 +47,8 @@
   margin-left: 0;
 }
 
-/* Clímax: VISCA LA TERRA! (l'efecte especial s'ancorarà al label 'visca'). */
-.terra-frase--destacada .terra-frase__linia {
-  font-size: clamp(1.7rem, 3.6vw, 2.5rem);
-  font-weight: 700;
-  letter-spacing: 0.05em;
-}
+/* Clímax: VISCA LA TERRA! Es manté igual que la resta del text (mateixa mida i
+   opacitat); el label 'visca' del timeline queda com a àncora per a futurs efectes. */
 
 /* ── Controls provisionals de desenvolupament ──────────────────────────── */
 
