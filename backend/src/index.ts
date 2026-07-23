@@ -5,6 +5,7 @@ import compression from 'compression'
 import rateLimit from 'express-rate-limit'
 import territorisRouter from './routes/territoris'
 import geojsonRouter from './routes/geojson'
+import llocsRouter from './routes/llocs'
 import authRouter from './routes/auth'
 
 const app = express()
@@ -52,6 +53,7 @@ app.get('/health', (_req, res) => {
 app.use('/api/auth', authRouter)
 app.use('/api/territoris', territorisRouter)
 app.use('/api/geojson', geojsonRouter)
+app.use('/api/llocs', llocsRouter)
 
 // Gestor d'errors centralitzat: registra internament i mai filtra detalls al client.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

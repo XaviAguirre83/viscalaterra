@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import TabOn from './TabOn.vue'
 import TabQue from './TabQue.vue'
@@ -136,6 +136,31 @@ watch(
     tabActiva.value = null
   }
 )
+
+// Tanca el desplegable del tab actiu (On?/Què?/Quan?) en clicar fora del seu
+// contingut i fora de la barra: així clicar al mapa el tanca, però canviar de
+// tab o usar el cercador (tots dins la barra) segueix funcionant.
+//
+// Usem composedPath() (el recorregut de l'esdeveniment capturat al dispatch) en
+// lloc de e.target.closest(): quan es clica "Neteja", l'acció buida la selecció
+// i Vue treu la barra d'accions (v-if) durant el microtask checkpoint que hi ha
+// entre listeners, de manera que el target ja està desprès del DOM quan aquest
+// handler corre i closest() retornaria null. composedPath és immune a això.
+function tancaTabPerClicFora(e: MouseEvent) {
+  if (!tabActiva.value) return
+  const dinsPanell = e
+    .composedPath()
+    .some(
+      (el) =>
+        el instanceof HTMLElement &&
+        (el.classList.contains('desplegable') || el.classList.contains('barra'))
+    )
+  if (dinsPanell) return
+  tabActiva.value = null
+}
+
+onMounted(() => document.addEventListener('click', tancaTabPerClicFora))
+onBeforeUnmount(() => document.removeEventListener('click', tancaTabPerClicFora))
 </script>
 
 <template>
@@ -635,7 +660,9 @@ watch(
     border-radius: 0;
     border-left: none;
     border-right: none;
-    max-height: calc(100dvh - 160px);
+    /* Deixa espai per a la capçalera (110px) + la barra de 2 files en mòbil +
+       el peu (32px): així el fons del desplegable no queda tapat pel footer. */
+    max-height: calc(100dvh - 250px);
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }

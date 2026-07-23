@@ -82,6 +82,13 @@
     "mesMunicipis": "Hay {n} municipios más. Afina la búsqueda para verlos.",
     "categoria": "Categoría"
   },
+  "cercaLlocs": {
+    "boto": "Buscar",
+    "cercant": "Buscando…",
+    "triaCategoria": "Elige una categoría (Qué?) para buscar",
+    "resultats": "ningún resultado | {n} resultado | {n} resultados",
+    "error": "No se ha podido completar la búsqueda"
+  },
   "on": {
     "carregant": "Cargando el mapa de Catalunya…",
     "seleccionats": "{n} municipio seleccionado | {n} municipios seleccionados",
@@ -90,6 +97,7 @@
     "replegar": "Plegar"
   },
   "que": {
+    "seleccionades": "{n} categoría seleccionada | {n} categorías seleccionadas",
     "esports": {
       "titol": "Deportes",
       "pingPong": "Mesa de ping-pong",
@@ -139,13 +147,40 @@
       "cim": "Cima (100 cimas)",
       "banyNatural": "Zona de baño natural"
     },
-    "serveisPublics": {
-      "titol": "Servicios públicos",
+    "equipamentsPublics": {
+      "titol": "Equipamientos públicos",
       "wc": "Aseos públicos",
       "fontsAigua": "Fuente de agua potable",
       "dutxes": "Duchas",
       "zonesOmbra": "Zonas de sombra",
       "bancs": "Bancos para sentarse"
+    },
+    "salut": {
+      "titol": "Salud",
+      "cap": "CAP — Centro de Atención Primaria",
+      "cuap": "CUAP — Centro de Urgencias de Atención Primaria",
+      "hospital": "Hospital",
+      "dea": "Desfibrilador (DEA)"
+    },
+    "emergencies": {
+      "titol": "Seguridad y emergencias",
+      "bombers": "Bomberos",
+      "mossos": "Comisaría de los Mossos d'Esquadra",
+      "policiaLocal": "Comisaría de la Policía Local",
+      "policiaNacional": "Comisaría de la Policía Nacional",
+      "guardiaCivil": "Cuartel de la Guardia Civil",
+      "proteccioCivil": "Protección Civil"
+    },
+    "administracio": {
+      "titol": "Administración y trámites",
+      "ajuntament": "Ayuntamiento",
+      "oac": "Oficina de Atención al Ciudadano (OAC)",
+      "registreCivil": "Registro Civil",
+      "jutjatPau": "Juzgado de Paz",
+      "correus": "Oficina de Correos",
+      "oficinaTreball": "Oficina de Trabajo (SOC)",
+      "seguretatSocial": "Oficina de la Seguridad Social",
+      "hisenda": "Agencia Tributaria (Hacienda)"
     }
   },
   "quan": {

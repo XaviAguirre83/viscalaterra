@@ -12,6 +12,7 @@ import {
 } from '@/stores/mapa'
 import { useMapaOpcionsStore } from '@/stores/mapaOpcions'
 import { useEnriquimentStore, type Credit } from '@/stores/enriquiment'
+import { useLlocsStore, type Lloc } from '@/stores/llocs'
 import {
   temaPerProvincia,
   temaPerVegueria,
@@ -25,6 +26,7 @@ const territoris = useTerritorisStore()
 const mapaStore = useMapaStore()
 const mapaOpcions = useMapaOpcionsStore()
 const enriquiment = useEnriquimentStore()
+const llocs = useLlocsStore()
 
 // ── Mode joc (GeoFreak) ────────────────────────────────────────────────────
 // Quan `modeJoc` arriba informat, el mapa serveix el joc: el nivell actiu el
@@ -223,6 +225,11 @@ const filesHover = computed(() => {
 
 // Referència al panell info-territori per ajustar el carrusel (mòbil).
 const infoTerritoriEl = ref<HTMLElement | null>(null)
+// Observador de la mida del panell info-territori (per situar el ⚙️ just a sota
+// en mòbil, on la banda ocupa tot l'ample enganxada a dalt).
+let infoTerritoriRO: ResizeObserver | null = null
+// Botó ⚙️ d'opcions del mapa (per aturar-hi la propagació de clics cap a Leaflet).
+const opcionsBtnEl = ref<HTMLElement | null>(null)
 
 // En mòbil el valor es mostra a la dreta de l'etiqueta; si no hi cap, fa
 // marquee (vaivé) en lloc de truncar. Mesura cada valor i activa/desactiva
@@ -247,14 +254,37 @@ function ajustaCarrusel() {
   })
 }
 
+// Exposa l'alçada del panell info-territori com a variable CSS al contenidor del
+// mapa, perquè el ⚙️ es pugui situar just a sota en mòbil.
+function mesuraInfoTerritori() {
+  const el = infoTerritoriEl.value
+  if (!el) return
+  const cont = el.closest('.mapa-contenidor') as HTMLElement | null
+  cont?.style.setProperty('--info-territori-h', `${el.offsetHeight}px`)
+}
+
 watch(filesHover, () => void nextTick(ajustaCarrusel))
 onMounted(() => {
   window.addEventListener('resize', ajustaCarrusel)
   window.addEventListener('keydown', onTeclaEsc)
+  // Segueix l'alçada del panell info-territori (canvia amb valors llargs o
+  // comarques transfrontereres) per posar-hi el ⚙️ just a sota en mòbil.
+  if (infoTerritoriEl.value && 'ResizeObserver' in window) {
+    infoTerritoriRO = new ResizeObserver(mesuraInfoTerritori)
+    infoTerritoriRO.observe(infoTerritoriEl.value)
+  }
+  // Els overlays damunt del mapa no han de propagar clics/dobles clics al
+  // Leaflet: si no, un doble clic ràpid per seleccionar/deseleccionar dispara el
+  // zoom in del doble clic del mapa. disableClickPropagation atura click,
+  // dblclick, mousedown i touchstart abans que arribin al contenidor del mapa.
+  if (infoTerritoriEl.value) L.DomEvent.disableClickPropagation(infoTerritoriEl.value)
+  if (opcionsBtnEl.value) L.DomEvent.disableClickPropagation(opcionsBtnEl.value)
 })
 onUnmounted(() => {
   window.removeEventListener('resize', ajustaCarrusel)
   window.removeEventListener('keydown', onTeclaEsc)
+  infoTerritoriRO?.disconnect()
+  infoTerritoriRO = null
 })
 
 // Escut/bandera abaix-centre: del territori en hover (desktop) o, si no n'hi
@@ -543,6 +573,14 @@ function estilPerFeature(
   // sempre. La selecció es veu pintada als municipis individuals, independentment
   // del nivell que s'hagi usat per seleccionar-los.
   if (nivell === 'municipis') {
+    // Després d'una cerca de Llocs, el mapa deixa de pintar la selecció (On?) i
+    // pinta els municipis que TENEN resultats, amb el color temàtic de la seva
+    // província (els pins hi afegeixen la categoria). Vegeu actualitzaPins().
+    if (llocs.cercaFeta) {
+      if (!llocs.municipisAmbResultats.has(info.codi)) return baseEstil
+      const tema = temaDeInfo(info)
+      return { color: tema.vora, weight, opacity, fillColor: tema.base, fillOpacity: 0.7 }
+    }
     const estat = estatSeleccioFeature(info, 'municipis')
     if (estat === 'cap') return baseEstil
     const tema = temaDeInfo(info)
@@ -1151,6 +1189,62 @@ function actualitzaEstilsTotes() {
   )
 }
 
+// ── Pins de llocs (resultats de la cerca) ──────────────────────────────────
+// Els pins es dibuixen a partir d'un llindar de zoom: a vista general només es
+// veuen els municipis pintats. Amb volum real de dades, aquí s'hi endollarà el
+// clustering (leaflet.markercluster) sense tocar la resta.
+const LLINDAR_PINS = 10
+let capaPins: L.LayerGroup | null = null
+
+const ICONA_SUBTEMA: Record<string, string> = {
+  'policia-nacional': '👮',
+  'policia-local': '👮',
+  mossos: '👮',
+  'guardia-civil': '👮',
+  bombers: '🚒',
+  'proteccio-civil': '🛟',
+  cap: '🏥',
+  cuap: '🏥',
+  hospital: '🏥',
+  dea: '❤️',
+  ajuntament: '🏛️',
+}
+
+function escapaHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) =>
+    c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '"' ? '&quot;' : '&#39;'
+  )
+}
+
+function creaPinLloc(l: Lloc): L.Marker {
+  const icona = L.divIcon({
+    className: 'pin-lloc',
+    html: `<span class="pin-lloc__bombolla"><span class="pin-lloc__icona">${ICONA_SUBTEMA[l.subtema] ?? '📍'}</span></span>`,
+    iconSize: [30, 38],
+    iconAnchor: [15, 38],
+    popupAnchor: [0, -34],
+  })
+  const marker = L.marker([l.lat, l.lng], { icon: icona, title: l.nom })
+  const linies = [`<strong>${escapaHtml(l.nom)}</strong>`, escapaHtml(l.municipiNom)]
+  if (l.adreca) linies.push(escapaHtml(l.adreca))
+  marker.bindPopup(linies.join('<br>'))
+  return marker
+}
+
+// Refà la capa de pins segons els resultats i el zoom actual. Idempotent.
+function actualitzaPins() {
+  if (!mapa || props.modeJoc) return
+  capaPins ??= L.layerGroup()
+  capaPins.clearLayers()
+  const mostrar = llocs.cercaFeta && mapa.getZoom() >= LLINDAR_PINS
+  if (mostrar) {
+    for (const l of llocs.resultats) creaPinLloc(l).addTo(capaPins)
+    if (!mapa.hasLayer(capaPins)) capaPins.addTo(mapa)
+  } else if (mapa.hasLayer(capaPins)) {
+    mapa.removeLayer(capaPins)
+  }
+}
+
 // Carrega l'enriquiment quan s'activa algun toggle (l'escut/bandera abaix-centre
 // el consumeix via `imatgesDestacat`); lazy, només quan cal.
 watch(
@@ -1208,6 +1302,7 @@ onMounted(() => {
     mapaStore.actualitzaZoom(zoom)
     actualitzaTilesNormal(zoom)
     carregaTotesCapes(zoom)
+    actualitzaPins()
     actualitzaMaxBounds()
     if (zoom <= zoomBase) {
       mapa!.setView(centreBase, zoomBase, { animate: true })
@@ -1268,12 +1363,23 @@ onUnmounted(() => {
   tilesDetall = null
   tilesJoc = null
   mascaraCatalunya = null
+  capaPins = null
 })
 
 // Quan la selecció canvia des del panell On?, re-aplica colors a totes les capes.
 watch(
   () => territoris.municipisSeleccionats.size,
   () => actualitzaEstilsTotes()
+)
+
+// Resultats de la cerca de Llocs: re-pinta els municipis amb resultats i refà
+// els pins (respectant el llindar de zoom).
+watch(
+  () => [llocs.cercaFeta, llocs.resultats] as const,
+  () => {
+    actualitzaEstilsTotes()
+    actualitzaPins()
+  }
 )
 
 // Quan canvien les capes visibles, re-aplica estils (només afecta el dibuix de
@@ -1459,6 +1565,7 @@ watch(
          superior dreta, fent simetria amb el control de zoom (superior esq.). -->
     <button
       v-if="!modeJoc"
+      ref="opcionsBtnEl"
       type="button"
       class="mapa-opcions-btn"
       :class="{ 'mapa-opcions-btn--actiu': mapaOpcions.panelObert }"
@@ -1668,10 +1775,14 @@ watch(
     box-shadow 0.15s;
 }
 
-.info-territori__cap:hover {
-  color: #444;
-  background: #f0f0ec;
-  box-shadow: 0 0 0 3px #f0f0ec;
+/* Només en dispositius amb punter real: en tàctil el :hover s'enganxa després
+   de tocar i el selector semblaria encara actiu. */
+@media (hover: hover) {
+  .info-territori__cap:hover {
+    color: #444;
+    background: #f0f0ec;
+    box-shadow: 0 0 0 3px #f0f0ec;
+  }
 }
 
 /* Capa visible: fons neutre (la fila de valors, en verd, marca la selecció). */
@@ -1705,9 +1816,11 @@ watch(
     box-shadow 0.15s;
 }
 
-.info-territori__val-cel:hover {
-  background: #f0f0ec;
-  box-shadow: 0 0 0 3px #f0f0ec;
+@media (hover: hover) {
+  .info-territori__val-cel:hover {
+    background: #f0f0ec;
+    box-shadow: 0 0 0 3px #f0f0ec;
+  }
 }
 
 /* Nivell de selecció actiu: fons verd suau, sense anell ni vora. */
@@ -1739,11 +1852,12 @@ watch(
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
   }
 
-  /* La banda PVCM ocupa tot l'ample a dalt (top:0); el ⚙️ baixa a la cantonada
-     inferior dreta per no solapar-s'hi (en mòbil no hi ha control de zoom). */
+  /* La banda PVCM ocupa tot l'ample a dalt (top:0); el ⚙️ es col·loca just a sota
+     de la banda (alçada mesurada a --info-territori-h), a la cantonada superior
+     dreta, per coherència amb el desktop. */
   .mapa-opcions-btn {
-    top: auto;
-    bottom: 26px;
+    top: calc(var(--info-territori-h, 72px) + 8px);
+    bottom: auto;
     right: 10px;
   }
 
@@ -2085,5 +2199,38 @@ watch(
   .leaflet-control-zoom {
     display: none;
   }
+}
+
+/* Pins de llocs (resultats de la cerca). El DOM el crea Leaflet dinàmicament,
+   per això l'estil va al bloc global (no scoped). */
+.pin-lloc {
+  background: none;
+  border: none;
+}
+
+.pin-lloc__bombolla {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: #ffffff;
+  border: 2px solid var(--color-marca, #2d6a2d);
+  box-shadow: 0 2px 6px rgba(26, 38, 53, 0.35);
+  font-size: 15px;
+  line-height: 1;
+  transition: transform 0.12s ease;
+}
+
+/* Contrarotació de l'emoji perquè quedi dret dins la gota. */
+.pin-lloc__icona {
+  display: block;
+  transform: rotate(45deg);
+}
+
+.pin-lloc:hover .pin-lloc__bombolla {
+  transform: rotate(-45deg) scale(1.12);
 }
 </style>

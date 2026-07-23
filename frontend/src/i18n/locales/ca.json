@@ -82,6 +82,13 @@
     "mesMunicipis": "Hi ha {n} municipis més. Afina la cerca per veure'ls.",
     "categoria": "Categoria"
   },
+  "cercaLlocs": {
+    "boto": "Cerca",
+    "cercant": "Cercant…",
+    "triaCategoria": "Tria una categoria (Què?) per cercar",
+    "resultats": "cap resultat | {n} resultat | {n} resultats",
+    "error": "No s'ha pogut completar la cerca"
+  },
   "on": {
     "carregant": "Carregant el mapa de Catalunya…",
     "seleccionats": "{n} municipi seleccionat | {n} municipis seleccionats",
@@ -90,6 +97,7 @@
     "replegar": "Replegar"
   },
   "que": {
+    "seleccionades": "{n} categoria seleccionada | {n} categories seleccionades",
     "esports": {
       "titol": "Esports",
       "pingPong": "Taula de ping-pong",
@@ -139,13 +147,40 @@
       "cim": "Cim (100 cims)",
       "banyNatural": "Zona de bany natural"
     },
-    "serveisPublics": {
-      "titol": "Serveis públics",
+    "equipamentsPublics": {
+      "titol": "Equipaments públics",
       "wc": "Lavabos públics",
       "fontsAigua": "Font d'aigua potable",
       "dutxes": "Dutxes",
       "zonesOmbra": "Zones d'ombra",
       "bancs": "Bancs per seure"
+    },
+    "salut": {
+      "titol": "Salut",
+      "cap": "CAP — Centre d'Atenció Primària",
+      "cuap": "CUAP — Centre d'Urgències d'Atenció Primària",
+      "hospital": "Hospital",
+      "dea": "Desfibril·lador (DEA)"
+    },
+    "emergencies": {
+      "titol": "Seguretat i emergències",
+      "bombers": "Bombers",
+      "mossos": "Comissaria dels Mossos d'Esquadra",
+      "policiaLocal": "Comissaria de la Policia Local",
+      "policiaNacional": "Comissaria de la Policia Nacional",
+      "guardiaCivil": "Caserna de la Guàrdia Civil",
+      "proteccioCivil": "Protecció Civil"
+    },
+    "administracio": {
+      "titol": "Administració i tràmits",
+      "ajuntament": "Ajuntament",
+      "oac": "Oficina d'Atenció al Ciutadà (OAC)",
+      "registreCivil": "Registre Civil",
+      "jutjatPau": "Jutjat de Pau",
+      "correus": "Oficina de Correus",
+      "oficinaTreball": "Oficina de Treball (SOC)",
+      "seguretatSocial": "Oficina de la Seguretat Social",
+      "hisenda": "Agència Tributària (Hisenda)"
     }
   },
   "quan": {

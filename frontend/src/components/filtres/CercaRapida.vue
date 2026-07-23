@@ -6,10 +6,12 @@ import { useFiltresStore } from '@/stores/filtres'
 import { TEMES } from '@/data/categories'
 import { normalitza } from '@/data/text'
 import { useFitxaStore } from '@/stores/fitxa'
+import { useLlocsStore } from '@/stores/llocs'
 
 const territoris = useTerritorisStore()
 const filtres = useFiltresStore()
 const fitxa = useFitxaStore()
+const llocs = useLlocsStore()
 const { t } = useI18n()
 
 const queryBruta = ref('') // lligat a l'input (s'actualitza a cada tecla)
@@ -214,6 +216,15 @@ function escTanca() {
   indexActiu.value = -1
   obert.value = false
 }
+
+// El botó "Cerca" executa la cerca de Llocs amb la selecció actual: Què?
+// (categoriesActives) + On? (municipisSeleccionats; buit ⇒ tota Catalunya).
+// El resultat el pinta el mapa (municipis + pins).
+function executaCerca() {
+  if (filtres.categoriesActives.size === 0) return
+  void llocs.cerca([...filtres.categoriesActives], [...territoris.municipisSeleccionats])
+  obert.value = false
+}
 </script>
 
 <template>
@@ -247,8 +258,16 @@ function escTanca() {
         @keydown.enter.prevent="enterSeleccio"
         @keydown.esc.prevent="escTanca"
       />
-      <button class="cerca-btn" tabindex="-1" @mousedown.prevent @click="inputRef?.focus()">
-        {{ $t('cerca.boto') }}
+      <button
+        class="cerca-btn"
+        type="button"
+        tabindex="-1"
+        :disabled="filtres.categoriesActives.size === 0 || llocs.carregant"
+        :title="filtres.categoriesActives.size === 0 ? $t('cercaLlocs.triaCategoria') : ''"
+        @mousedown.prevent
+        @click="executaCerca"
+      >
+        {{ llocs.carregant ? $t('cercaLlocs.cercant') : $t('cerca.boto') }}
       </button>
     </div>
 
@@ -377,8 +396,13 @@ function escTanca() {
   }
 }
 
-.cerca-btn:hover {
+.cerca-btn:hover:not(:disabled) {
   background: var(--color-marca-fosc, #1e4e1e);
+}
+
+.cerca-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ── Dropdown ───────────────────────────────────────────────────────────── */
