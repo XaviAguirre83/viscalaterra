@@ -9,7 +9,10 @@
     "start": "node dist/index.js",
     "seed": "ts-node-dev --transpile-only src/scripts/seed-geodata.ts",
     "enriqueix": "ts-node-dev --transpile-only src/scripts/enriqueix-territoris.ts",
-    "baixa-emblemes": "ts-node-dev --transpile-only src/scripts/baixa-emblemes.ts"
+    "baixa-emblemes": "ts-node-dev --transpile-only src/scripts/baixa-emblemes.ts",
+    "importa-mossos": "ts-node-dev --transpile-only src/scripts/importa-mossos.ts",
+    "importa-equipaments": "ts-node-dev --transpile-only src/scripts/importa-equipaments.ts",
+    "importa-policia-bcn": "ts-node-dev --transpile-only src/scripts/importa-policia-bcn.ts"
   },
   "license": "AGPL-3.0-only",
   "devDependencies": {

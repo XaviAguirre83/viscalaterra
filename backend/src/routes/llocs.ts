@@ -55,11 +55,13 @@ router.post('/cerca', async (req, res, next) => {
   try {
     const { rows } = await pool.query(
       `SELECT l.id, l.nom, l.subtema_codi,
-              l.municipi_codi, m.nom AS municipi_nom, m.comarca_codi,
+              l.municipi_codi, m.nom AS municipi_nom, m.comarca_codi, p.nom AS provincia_nom,
               ST_Y(l.geom) AS lat, ST_X(l.geom) AS lng,
-              l.adreca, l.telefon, l.web
+              l.adreca, l.cp, l.telefon, l.web,
+              l.font_nom, l.font_url, l.font_tipus
        FROM llocs l
        JOIN municipis m ON m.codi = l.municipi_codi
+       LEFT JOIN provincies p ON p.codi = m.provincia_codi
        WHERE l.subtema_codi = ANY($1::text[])
          AND ($2::char(6)[] IS NULL OR l.municipi_codi = ANY($2::char(6)[]))
        ORDER BY m.nom, l.nom`,
@@ -73,11 +75,16 @@ router.post('/cerca', async (req, res, next) => {
       municipiCodi: (r.municipi_codi as string).trim(),
       municipiNom: r.municipi_nom as string,
       comarcaCodi: (r.comarca_codi as string | null)?.trim() ?? null,
+      provinciaNom: r.provincia_nom as string | null,
       lat: r.lat as number,
       lng: r.lng as number,
       adreca: r.adreca as string | null,
+      cp: r.cp as string | null,
       telefon: r.telefon as string | null,
       web: r.web as string | null,
+      fontNom: r.font_nom as string | null,
+      fontUrl: r.font_url as string | null,
+      fontTipus: r.font_tipus as string | null,
     }))
 
     res.json({ total: llocs.length, llocs })

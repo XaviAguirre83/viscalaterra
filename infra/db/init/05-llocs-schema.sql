@@ -13,11 +13,15 @@ CREATE TABLE IF NOT EXISTS llocs (
   subtema_codi   TEXT NOT NULL,                    -- 'policia-nacional', 'cap'… (catàleg Què?)
   municipi_codi  CHAR(6) NOT NULL REFERENCES municipis(codi),
   geom           GEOMETRY(POINT, 4326) NOT NULL,   -- coordenades exactes
-  adreca         TEXT,
+  adreca         TEXT,                             -- carrer i número (pot faltar; les coords no)
+  cp             TEXT,                             -- codi postal
   telefon        TEXT,
   web            TEXT,
-  font           TEXT,                             -- procedència de la dada (CatSalut, ICGC, seed-demo…)
+  font           TEXT,                             -- id del conjunt de dades (dedup): 'mossos-gencat', 'seed-demo'…
   font_id        TEXT,                             -- id extern per deduplicar en reimportar
+  font_nom       TEXT,                             -- nom llegible de la font (per mostrar a la llista)
+  font_url       TEXT,                             -- enllaç a la font oficial on consta la ubicació
+  font_tipus     TEXT DEFAULT 'oficial',           -- 'oficial' | 'usuari' (de moment sempre oficial)
   actualitzat_at TIMESTAMPTZ DEFAULT now(),
   -- Permet upsert idempotent en reimportar d'una font (evita duplicats).
   UNIQUE (font, font_id)
