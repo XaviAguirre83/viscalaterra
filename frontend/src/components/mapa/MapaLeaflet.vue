@@ -2,6 +2,9 @@
 import { onMounted, onUnmounted, watch, ref, computed, nextTick } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import 'leaflet.markercluster'
+import 'leaflet.markercluster/dist/MarkerCluster.css'
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 import { useTerritorisStore } from '@/stores/territoris'
 import {
   useMapaStore,
@@ -574,14 +577,15 @@ function estilPerFeature(
   // sempre. La selecció es veu pintada als municipis individuals, independentment
   // del nivell que s'hagi usat per seleccionar-los.
   if (nivell === 'municipis') {
-    // Després d'una cerca de Llocs, el mapa deixa de pintar la selecció (On?) i
-    // pinta els municipis que TENEN resultats, amb el color temàtic de la seva
-    // província (els pins hi afegeixen la categoria). Vegeu actualitzaPins().
-    if (llocs.cercaFeta) {
-      if (!llocs.municipisAmbResultats.has(info.codi)) return baseEstil
+    // Municipi amb resultats de la cerca: destaca amb farcit al 100% i vora
+    // marcada (sempre visible, independent del toggle de línies) perquè ressalti
+    // per damunt de l'àrea seleccionada, que es manté pintada com abans de cercar.
+    if (llocs.cercaFeta && llocs.municipisAmbResultats.has(info.codi)) {
       const tema = temaDeInfo(info)
-      return { color: tema.vora, weight, opacity, fillColor: tema.base, fillOpacity: 0.7 }
+      return { color: tema.vora, weight: 2, opacity: 1, fillColor: tema.base, fillOpacity: 1 }
     }
+    // Selecció del On?: es pinta igual abans i després de la cerca (així no es
+    // perd la referència del territori seleccionat i seguir seleccionant s'hi veu).
     const estat = estatSeleccioFeature(info, 'municipis')
     if (estat === 'cap') return baseEstil
     const tema = temaDeInfo(info)
@@ -1192,10 +1196,11 @@ function actualitzaEstilsTotes() {
 
 // ── Pins de llocs (resultats de la cerca) ──────────────────────────────────
 // Els pins es dibuixen a partir d'un llindar de zoom: a vista general només es
-// veuen els municipis pintats. Amb volum real de dades, aquí s'hi endollarà el
-// clustering (leaflet.markercluster) sense tocar la resta.
+// veuen els municipis pintats. Amb volum real de dades (centenars de pins per
+// cerca) fem servir leaflet.markercluster: agrupa els pins propers en un sol
+// icona i només renderitza el que és visible, així el mapa no s'alenteix.
 const LLINDAR_PINS = 10
-let capaPins: L.LayerGroup | null = null
+let capaPins: L.MarkerClusterGroup | null = null
 // Registre id → marker, per ressaltar el pin del lloc destacat a la llista.
 let pinsPerId = new Map<number, L.Marker>()
 // Reajusta el mapa quan el contenidor canvia de mida (p. ex. la llista sota).
@@ -1218,6 +1223,11 @@ function creaPinLloc(l: Lloc): L.Marker {
   const marker = L.marker([l.lat, l.lng], { icon: icona, title: l.nom })
   const linies = [`<strong>${escapaHtml(l.nom)}</strong>`, escapaHtml(l.municipiNom)]
   if (l.adreca) linies.push(escapaHtml(l.adreca))
+  if (l.fontUrl) {
+    linies.push(
+      `<a href="${escapaHtml(l.fontUrl)}" target="_blank" rel="noopener noreferrer">Font ↗</a>`
+    )
+  }
   marker.bindPopup(linies.join('<br>'))
   // Sync mapa → llista: clicar el pin destaca la fila corresponent.
   marker.on('click', () => llocs.destaca(l.id))
@@ -1227,7 +1237,11 @@ function creaPinLloc(l: Lloc): L.Marker {
 // Refà la capa de pins segons els resultats i el zoom actual. Idempotent.
 function actualitzaPins() {
   if (!mapa || props.modeJoc) return
-  capaPins ??= L.layerGroup()
+  capaPins ??= L.markerClusterGroup({
+    chunkedLoading: true, // insereix els markers per lots, sense bloquejar el fil
+    showCoverageOnHover: false, // sense el polígon de cobertura en passar per sobre
+    maxClusterRadius: 55,
+  })
   capaPins.clearLayers()
   pinsPerId = new Map()
   const mostrar = llocs.cercaFeta && mapa.getZoom() >= LLINDAR_PINS
@@ -1253,7 +1267,16 @@ function aplicaDestacatPin() {
     marker.getElement()?.classList.toggle('pin-lloc--destacat', actiu)
     marker.setZIndexOffset(actiu ? 1000 : 0)
   })
-  if (id != null) pinsPerId.get(id)?.openPopup()
+  if (id == null) return
+  const marker = pinsPerId.get(id)
+  if (!marker || !capaPins) return
+  // Amb clustering el pin pot estar amagat dins un clúster: el despleguem (fa
+  // zoom o spiderfy si cal) i, quan és visible, li posem el ressalt i n'obrim el
+  // popup. Si ja es veu, el callback s'executa de seguida sense moure el mapa.
+  capaPins.zoomToShowLayer(marker, () => {
+    marker.getElement()?.classList.add('pin-lloc--destacat')
+    marker.openPopup()
+  })
 }
 
 // Carrega l'enriquiment quan s'activa algun toggle (l'escut/bandera abaix-centre
