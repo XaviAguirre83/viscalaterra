@@ -87,7 +87,9 @@
     "cercant": "Cercant…",
     "triaCategoria": "Tria una categoria (Què?) per cercar",
     "resultats": "cap resultat | {n} resultat | {n} resultats",
-    "error": "No s'ha pogut completar la cerca"
+    "error": "No s'ha pogut completar la cerca",
+    "titol": "Resultats",
+    "capResultat": "Cap resultat per a aquesta cerca"
   },
   "on": {
     "carregant": "Carregant el mapa de Catalunya…",

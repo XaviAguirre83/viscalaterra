@@ -87,7 +87,9 @@
     "cercant": "Searching…",
     "triaCategoria": "Pick a category (What?) to search",
     "resultats": "no results | {n} result | {n} results",
-    "error": "The search could not be completed"
+    "error": "The search could not be completed",
+    "titol": "Results",
+    "capResultat": "No results for this search"
   },
   "on": {
     "carregant": "Loading the map of Catalonia…",

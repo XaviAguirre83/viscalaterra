@@ -28,7 +28,8 @@ export const useLlocsStore = defineStore('llocs', () => {
   // resultats". Es reinicia amb neteja().
   const cercaFeta = ref(false)
 
-  // Id del lloc destacat (sincronització futura llista ↔ pin, Fase 4).
+  // Id del lloc destacat: sincronitza la llista de resultats amb el pin del mapa
+  // (clic a la fila ↔ pin ressaltat, i a l'inrevés).
   const llocDestacat = ref<number | null>(null)
 
   // Conjunt de municipis que tenen ≥1 resultat: el mapa els pinta.
@@ -76,6 +77,11 @@ export const useLlocsStore = defineStore('llocs', () => {
     llocDestacat.value = null
   }
 
+  // Destaca (o desmarca amb null) un lloc: ho consumeixen la llista i el mapa.
+  function destaca(id: number | null) {
+    llocDestacat.value = id
+  }
+
   return {
     resultats,
     carregant,
@@ -86,5 +92,6 @@ export const useLlocsStore = defineStore('llocs', () => {
     total,
     cerca,
     neteja,
+    destaca,
   }
 })

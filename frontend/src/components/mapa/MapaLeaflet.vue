@@ -13,6 +13,7 @@ import {
 import { useMapaOpcionsStore } from '@/stores/mapaOpcions'
 import { useEnriquimentStore, type Credit } from '@/stores/enriquiment'
 import { useLlocsStore, type Lloc } from '@/stores/llocs'
+import { emojiSubtema } from '@/data/subtemes'
 import {
   temaPerProvincia,
   temaPerVegueria,
@@ -1195,20 +1196,10 @@ function actualitzaEstilsTotes() {
 // clustering (leaflet.markercluster) sense tocar la resta.
 const LLINDAR_PINS = 10
 let capaPins: L.LayerGroup | null = null
-
-const ICONA_SUBTEMA: Record<string, string> = {
-  'policia-nacional': '👮',
-  'policia-local': '👮',
-  mossos: '👮',
-  'guardia-civil': '👮',
-  bombers: '🚒',
-  'proteccio-civil': '🛟',
-  cap: '🏥',
-  cuap: '🏥',
-  hospital: '🏥',
-  dea: '❤️',
-  ajuntament: '🏛️',
-}
+// Registre id → marker, per ressaltar el pin del lloc destacat a la llista.
+let pinsPerId = new Map<number, L.Marker>()
+// Reajusta el mapa quan el contenidor canvia de mida (p. ex. la llista sota).
+let mapaRO: ResizeObserver | null = null
 
 function escapaHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) =>
@@ -1219,7 +1210,7 @@ function escapaHtml(s: string): string {
 function creaPinLloc(l: Lloc): L.Marker {
   const icona = L.divIcon({
     className: 'pin-lloc',
-    html: `<span class="pin-lloc__bombolla"><span class="pin-lloc__icona">${ICONA_SUBTEMA[l.subtema] ?? '📍'}</span></span>`,
+    html: `<span class="pin-lloc__bombolla"><span class="pin-lloc__icona">${emojiSubtema(l.subtema)}</span></span>`,
     iconSize: [30, 38],
     iconAnchor: [15, 38],
     popupAnchor: [0, -34],
@@ -1228,6 +1219,8 @@ function creaPinLloc(l: Lloc): L.Marker {
   const linies = [`<strong>${escapaHtml(l.nom)}</strong>`, escapaHtml(l.municipiNom)]
   if (l.adreca) linies.push(escapaHtml(l.adreca))
   marker.bindPopup(linies.join('<br>'))
+  // Sync mapa → llista: clicar el pin destaca la fila corresponent.
+  marker.on('click', () => llocs.destaca(l.id))
   return marker
 }
 
@@ -1236,13 +1229,31 @@ function actualitzaPins() {
   if (!mapa || props.modeJoc) return
   capaPins ??= L.layerGroup()
   capaPins.clearLayers()
+  pinsPerId = new Map()
   const mostrar = llocs.cercaFeta && mapa.getZoom() >= LLINDAR_PINS
   if (mostrar) {
-    for (const l of llocs.resultats) creaPinLloc(l).addTo(capaPins)
+    for (const l of llocs.resultats) {
+      const marker = creaPinLloc(l)
+      marker.addTo(capaPins)
+      pinsPerId.set(l.id, marker)
+    }
     if (!mapa.hasLayer(capaPins)) capaPins.addTo(mapa)
   } else if (mapa.hasLayer(capaPins)) {
     mapa.removeLayer(capaPins)
   }
+  aplicaDestacatPin()
+}
+
+// Ressalta el pin del lloc destacat (i n'obre el popup); treu el ressalt de la
+// resta. Idempotent: es crida cada cop que es refan els pins.
+function aplicaDestacatPin() {
+  const id = llocs.llocDestacat
+  pinsPerId.forEach((marker, mid) => {
+    const actiu = mid === id
+    marker.getElement()?.classList.toggle('pin-lloc--destacat', actiu)
+    marker.setZIndexOffset(actiu ? 1000 : 0)
+  })
+  if (id != null) pinsPerId.get(id)?.openPopup()
 }
 
 // Carrega l'enriquiment quan s'activa algun toggle (l'escut/bandera abaix-centre
@@ -1336,6 +1347,18 @@ onMounted(() => {
   actualitzaMaxBounds()
   actualitzaDragging()
 
+  // Leaflet només segueix el resize de la finestra, no el del seu contenidor:
+  // quan apareix o es replega la llista de resultats sota el mapa, el contenidor
+  // canvia d'alçada i cal reajustar-lo perquè els tiles no quedin desquadrats.
+  if ('ResizeObserver' in window) {
+    let rafRedim = 0
+    mapaRO = new ResizeObserver(() => {
+      cancelAnimationFrame(rafRedim)
+      rafRedim = requestAnimationFrame(() => mapa?.invalidateSize())
+    })
+    mapaRO.observe(mapa.getContainer())
+  }
+
   // Si el mapa neix ja en mode joc (la vista del joc el passa des del primer
   // render), el watch de modeJoc no es dispara: s'aplica aquí.
   if (props.modeJoc) entraModeJoc(props.modeJoc)
@@ -1364,6 +1387,9 @@ onUnmounted(() => {
   tilesJoc = null
   mascaraCatalunya = null
   capaPins = null
+  mapaRO?.disconnect()
+  mapaRO = null
+  pinsPerId.clear()
 })
 
 // Quan la selecció canvia des del panell On?, re-aplica colors a totes les capes.
@@ -1379,6 +1405,26 @@ watch(
   () => {
     actualitzaEstilsTotes()
     actualitzaPins()
+  }
+)
+
+// Sync llista → mapa: en destacar un lloc, si queda fora de vista (o a un zoom
+// on encara no es veuen pins) el mapa hi vola; si ja es veu, només el ressalta.
+watch(
+  () => llocs.llocDestacat,
+  (id) => {
+    if (id == null || !mapa || props.modeJoc) return
+    const lloc = llocs.resultats.find((l) => l.id === id)
+    if (!lloc) return
+    const desti = L.latLng(lloc.lat, lloc.lng)
+    const foraDeVista =
+      mapa.getZoom() < LLINDAR_PINS || !mapa.getBounds().pad(-0.15).contains(desti)
+    if (foraDeVista) {
+      mapa.flyTo(desti, Math.max(mapa.getZoom(), LLINDAR_PINS + 1), { duration: 0.6 })
+      mapa.once('moveend', actualitzaPins)
+    } else {
+      aplicaDestacatPin()
+    }
   }
 )
 
@@ -2232,5 +2278,13 @@ watch(
 
 .pin-lloc:hover .pin-lloc__bombolla {
   transform: rotate(-45deg) scale(1.12);
+}
+
+/* Pin destacat des de la llista: més gran, ressaltat i per damunt de la resta. */
+.pin-lloc--destacat .pin-lloc__bombolla {
+  transform: rotate(-45deg) scale(1.3);
+  background: #fff7e0;
+  border-color: var(--color-marca-fosc, #1e4e1e);
+  box-shadow: 0 3px 12px rgba(26, 38, 53, 0.5);
 }
 </style>
