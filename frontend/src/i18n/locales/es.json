@@ -89,7 +89,10 @@
     "resultats": "ningún resultado | {n} resultado | {n} resultados",
     "error": "No se ha podido completar la búsqueda",
     "titol": "Resultados",
-    "capResultat": "Sin resultados para esta búsqueda"
+    "capResultat": "Sin resultados para esta búsqueda",
+    "font": "Fuente",
+    "mostraAlMapa": "Mostrar en el mapa",
+    "obreMaps": "Abrir en Google Maps"
   },
   "on": {
     "carregant": "Cargando el mapa de Catalunya…",
@@ -165,24 +168,39 @@
       "dea": "Desfibrilador (DEA)"
     },
     "emergencies": {
-      "titol": "Seguridad y emergencias",
+      "titol": "Emergencias",
       "bombers": "Bomberos",
       "mossos": "Comisaría de los Mossos d'Esquadra",
       "policiaLocal": "Comisaría de la Policía Local",
       "policiaNacional": "Comisaría de la Policía Nacional",
-      "guardiaCivil": "Cuartel de la Guardia Civil",
       "proteccioCivil": "Protección Civil"
     },
     "administracio": {
-      "titol": "Administración y trámites",
+      "titol": "Administración",
       "ajuntament": "Ayuntamiento",
       "oac": "Oficina de Atención al Ciudadano (OAC)",
       "registreCivil": "Registro Civil",
-      "jutjatPau": "Juzgado de Paz",
       "correus": "Oficina de Correos",
       "oficinaTreball": "Oficina de Trabajo (SOC)",
       "seguretatSocial": "Oficina de la Seguridad Social",
       "hisenda": "Agencia Tributaria (Hacienda)"
+    },
+    "justicia": {
+      "titol": "Justicia",
+      "jutjatPau": "Juzgado de Paz",
+      "primeraInstanciaInstruccio": "Juzgado de Primera Instancia e Instrucción",
+      "primeraInstancia": "Juzgado de Primera Instancia",
+      "instruccio": "Juzgado de Instrucción",
+      "penal": "Juzgado de lo Penal",
+      "social": "Juzgado de lo Social",
+      "guardia": "Juzgado de Guardia",
+      "contencios": "Juzgado de lo Contencioso-Administrativo",
+      "violenciaDona": "Juzgado de Violencia sobre la Mujer",
+      "mercantil": "Juzgado de lo Mercantil",
+      "menors": "Juzgado de Menores",
+      "vigilanciaPenitenciaria": "Juzgado de Vigilancia Penitenciaria",
+      "fiscalia": "Fiscalía",
+      "centrePenitenciari": "Centro penitenciario"
     }
   },
   "quan": {

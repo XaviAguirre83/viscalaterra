@@ -5,7 +5,6 @@ const EMOJI_SUBTEMA: Record<string, string> = {
   'policia-nacional': '👮',
   'policia-local': '👮',
   mossos: '👮',
-  'guardia-civil': '👮',
   bombers: '🚒',
   'proteccio-civil': '🛟',
   // Salut
@@ -17,13 +16,17 @@ const EMOJI_SUBTEMA: Record<string, string> = {
   ajuntament: '🏛️',
   oac: '🏛️',
   'registre-civil': '🏛️',
-  'jutjat-pau': '⚖️',
   correus: '✉️',
   'oficina-treball': '🏢',
   'seguretat-social': '🏢',
   hisenda: '🏢',
+  // Justícia
+  fiscalia: '🔎',
+  'centre-penitenciari': '🔒',
 }
 
 export function emojiSubtema(codi: string): string {
+  // Jutjat de pau i tots els tipus de tribunal comparteixen la balança.
+  if (codi.startsWith('jutjat')) return '⚖️'
   return EMOJI_SUBTEMA[codi] ?? '📍'
 }

@@ -1,4 +1,8 @@
 // Catàleg de categories del filtre Què? — temes amb subtemes.
+//
+// NOTA fonts (2026-07-24): els Agents Rurals / guardes forestals NO tenen
+// inventari obert de seus com a PUNTS (s'organitzen per àrees/polígons) →
+// candidats al model d'àrees futur, no a `llocs`. Vegeu memòria project_llocs_cerca.
 // Llista provisional: la definitiva dependrà de les fonts de dades obertes.
 // Per afegir/treure: edita aquest fitxer i la secció "que" dels locales (ca/es/en).
 
@@ -110,7 +114,6 @@ export const TEMES: Tema[] = [
       { codi: 'mossos', clau: 'que.emergencies.mossos' },
       { codi: 'policia-local', clau: 'que.emergencies.policiaLocal' },
       { codi: 'policia-nacional', clau: 'que.emergencies.policiaNacional' },
-      { codi: 'guardia-civil', clau: 'que.emergencies.guardiaCivil' },
       { codi: 'proteccio-civil', clau: 'que.emergencies.proteccioCivil' },
     ],
   },
@@ -121,11 +124,30 @@ export const TEMES: Tema[] = [
       { codi: 'ajuntament', clau: 'que.administracio.ajuntament' },
       { codi: 'oac', clau: 'que.administracio.oac' },
       { codi: 'registre-civil', clau: 'que.administracio.registreCivil' },
-      { codi: 'jutjat-pau', clau: 'que.administracio.jutjatPau' },
       { codi: 'correus', clau: 'que.administracio.correus' },
       { codi: 'oficina-treball', clau: 'que.administracio.oficinaTreball' },
       { codi: 'seguretat-social', clau: 'que.administracio.seguretatSocial' },
       { codi: 'hisenda', clau: 'que.administracio.hisenda' },
+    ],
+  },
+  {
+    codi: 'justicia',
+    clau: 'que.justicia.titol',
+    subtemes: [
+      { codi: 'jutjat-pau', clau: 'que.justicia.jutjatPau' },
+      { codi: 'jutjat-1a-instancia-instruccio', clau: 'que.justicia.primeraInstanciaInstruccio' },
+      { codi: 'jutjat-1a-instancia', clau: 'que.justicia.primeraInstancia' },
+      { codi: 'jutjat-instruccio', clau: 'que.justicia.instruccio' },
+      { codi: 'jutjat-penal', clau: 'que.justicia.penal' },
+      { codi: 'jutjat-social', clau: 'que.justicia.social' },
+      { codi: 'jutjat-guardia', clau: 'que.justicia.guardia' },
+      { codi: 'jutjat-contencios', clau: 'que.justicia.contencios' },
+      { codi: 'jutjat-violencia-dona', clau: 'que.justicia.violenciaDona' },
+      { codi: 'jutjat-mercantil', clau: 'que.justicia.mercantil' },
+      { codi: 'jutjat-menors', clau: 'que.justicia.menors' },
+      { codi: 'jutjat-vigilancia-penitenciaria', clau: 'que.justicia.vigilanciaPenitenciaria' },
+      { codi: 'fiscalia', clau: 'que.justicia.fiscalia' },
+      { codi: 'centre-penitenciari', clau: 'que.justicia.centrePenitenciari' },
     ],
   },
 ]

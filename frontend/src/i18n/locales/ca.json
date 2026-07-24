@@ -89,7 +89,10 @@
     "resultats": "cap resultat | {n} resultat | {n} resultats",
     "error": "No s'ha pogut completar la cerca",
     "titol": "Resultats",
-    "capResultat": "Cap resultat per a aquesta cerca"
+    "capResultat": "Cap resultat per a aquesta cerca",
+    "font": "Font",
+    "mostraAlMapa": "Mostra-ho al mapa",
+    "obreMaps": "Obre a Google Maps"
   },
   "on": {
     "carregant": "Carregant el mapa de Catalunya…",
@@ -165,24 +168,39 @@
       "dea": "Desfibril·lador (DEA)"
     },
     "emergencies": {
-      "titol": "Seguretat i emergències",
+      "titol": "Emergències",
       "bombers": "Bombers",
       "mossos": "Comissaria dels Mossos d'Esquadra",
       "policiaLocal": "Comissaria de la Policia Local",
       "policiaNacional": "Comissaria de la Policia Nacional",
-      "guardiaCivil": "Caserna de la Guàrdia Civil",
       "proteccioCivil": "Protecció Civil"
     },
     "administracio": {
-      "titol": "Administració i tràmits",
+      "titol": "Administració",
       "ajuntament": "Ajuntament",
       "oac": "Oficina d'Atenció al Ciutadà (OAC)",
       "registreCivil": "Registre Civil",
-      "jutjatPau": "Jutjat de Pau",
       "correus": "Oficina de Correus",
       "oficinaTreball": "Oficina de Treball (SOC)",
       "seguretatSocial": "Oficina de la Seguretat Social",
       "hisenda": "Agència Tributària (Hisenda)"
+    },
+    "justicia": {
+      "titol": "Justícia",
+      "jutjatPau": "Jutjat de Pau",
+      "primeraInstanciaInstruccio": "Jutjat de Primera Instància i Instrucció",
+      "primeraInstancia": "Jutjat de Primera Instància",
+      "instruccio": "Jutjat d'Instrucció",
+      "penal": "Jutjat Penal",
+      "social": "Jutjat Social",
+      "guardia": "Jutjat de Guàrdia",
+      "contencios": "Jutjat Contenciós Administratiu",
+      "violenciaDona": "Jutjat de Violència sobre la Dona",
+      "mercantil": "Jutjat Mercantil",
+      "menors": "Jutjat de Menors",
+      "vigilanciaPenitenciaria": "Jutjat de Vigilància Penitenciària",
+      "fiscalia": "Fiscalia",
+      "centrePenitenciari": "Centre penitenciari"
     }
   },
   "quan": {

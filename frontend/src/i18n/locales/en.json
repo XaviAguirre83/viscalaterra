@@ -89,7 +89,10 @@
     "resultats": "no results | {n} result | {n} results",
     "error": "The search could not be completed",
     "titol": "Results",
-    "capResultat": "No results for this search"
+    "capResultat": "No results for this search",
+    "font": "Source",
+    "mostraAlMapa": "Show on the map",
+    "obreMaps": "Open in Google Maps"
   },
   "on": {
     "carregant": "Loading the map of Catalonia…",
@@ -165,24 +168,39 @@
       "dea": "Defibrillator (AED)"
     },
     "emergencies": {
-      "titol": "Safety & emergencies",
+      "titol": "Emergencies",
       "bombers": "Fire station",
       "mossos": "Mossos d'Esquadra police station",
       "policiaLocal": "Local police station",
       "policiaNacional": "National police station",
-      "guardiaCivil": "Guardia Civil station",
       "proteccioCivil": "Civil Protection"
     },
     "administracio": {
-      "titol": "Administration & paperwork",
+      "titol": "Administration",
       "ajuntament": "Town hall",
       "oac": "Citizen Support Office (OAC)",
       "registreCivil": "Civil Registry",
-      "jutjatPau": "Justice of the Peace court",
       "correus": "Post office",
       "oficinaTreball": "Employment office (SOC)",
       "seguretatSocial": "Social Security office",
       "hisenda": "Tax office"
+    },
+    "justicia": {
+      "titol": "Justice",
+      "jutjatPau": "Justice of the Peace court",
+      "primeraInstanciaInstruccio": "Court of First Instance and Investigation",
+      "primeraInstancia": "Court of First Instance",
+      "instruccio": "Investigating court",
+      "penal": "Criminal court",
+      "social": "Employment tribunal",
+      "guardia": "Duty court",
+      "contencios": "Administrative court",
+      "violenciaDona": "Gender-based violence court",
+      "mercantil": "Commercial court",
+      "menors": "Juvenile court",
+      "vigilanciaPenitenciaria": "Prison supervision court",
+      "fiscalia": "Public prosecutor's office",
+      "centrePenitenciari": "Prison"
     }
   },
   "quan": {
