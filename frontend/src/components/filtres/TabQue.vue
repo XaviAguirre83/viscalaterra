@@ -23,6 +23,7 @@ const COLOR_TEMA: Record<string, string> = {
   salut: '#bf3d7f', // rosa
   emergencies: '#cf3430', // vermell
   administracio: '#5a5fd0', // indi
+  justicia: '#7a4fb5', // violeta
 }
 const COLOR_FALLBACK = '#2d6a2d'
 
@@ -93,6 +94,13 @@ const ICONA_TEMA: Record<string, string[]> = {
     'M18 18v-7',
     'M3 22h18',
     'M6 18v-7',
+  ],
+  justicia: [
+    'M12 3v18',
+    'm19 8 3 8a5 5 0 0 1-6 0zV7',
+    'M3 7h1a17 17 0 0 0 8-2 17 17 0 0 0 8 2h1',
+    'm5 8 3 8a5 5 0 0 1-6 0zV7',
+    'M7 21h10',
   ],
 }
 
@@ -197,11 +205,12 @@ function comptador(tema: Tema): { sel: number; total: number } {
   overflow-y: auto;
 }
 
-/* Graella 5×2 (10 temes). align-items:start perquè cada columna prengui la seva
-   alçada natural i no s'estiri a la de la fila. */
+/* Graella 6×2 (11 temes). A mòbil és una sola columna amb alçada natural
+   (align-items:start); a desktop les dues files tenen la mateixa alçada fixa i
+   cada cel·la scrolleja el seu propi contingut (vegeu la media query de 769px). */
 .grid-temes {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 18px;
   align-items: start;
 }
@@ -356,6 +365,25 @@ function comptador(tema: Tema): { sel: number; total: number } {
 @media (min-width: 769px) {
   .subtemes--plegable {
     display: flex !important;
+  }
+
+  /* Les dues files de temes tenen la mateixa alçada fixa. Cada cel·la scrolleja
+     el seu propi contingut (p. ex. Justícia, amb 14 subtemes), NO el panell
+     sencer. El valor 30vh mostra ~8-11 subtemes segons l'alçada de pantalla. */
+  .grid-temes {
+    grid-auto-rows: 30vh;
+    align-items: stretch;
+  }
+  .columna-tema {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .subtemes {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
   }
 }
 
