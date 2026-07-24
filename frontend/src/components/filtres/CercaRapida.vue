@@ -252,6 +252,7 @@ function executaCerca() {
         autocomplete="off"
         :aria-label="$t('cerca.aria')"
         @focus="obert = true"
+        @input="obert = true"
         @blur="tancaEnBlur"
         @keydown.down.prevent="mouSeleccio(1)"
         @keydown.up.prevent="mouSeleccio(-1)"

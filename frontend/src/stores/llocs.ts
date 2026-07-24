@@ -9,11 +9,17 @@ export interface Lloc {
   municipiCodi: string
   municipiNom: string
   comarcaCodi: string | null
+  provinciaNom: string | null
   lat: number
   lng: number
   adreca: string | null
+  cp: string | null
   telefon: string | null
   web: string | null
+  // Procedència de la dada: nom llegible + enllaç a la font oficial (+ tipus).
+  fontNom: string | null
+  fontUrl: string | null
+  fontTipus: string | null
 }
 
 // Store de la cerca de Llocs (Què? + On?). Independent de filtres/territoris:

@@ -18,6 +18,26 @@ const grups = computed(() => {
   return [...m.entries()].map(([municipi, items]) => ({ municipi, items }))
 })
 
+// Enllaç per obrir la ubicació a Google Maps (les coordenades sempre hi són).
+function urlGoogleMaps(l: Lloc): string {
+  return `https://www.google.com/maps/search/?api=1&query=${l.lat},${l.lng}`
+}
+
+// "17820 - Banyoles (Girona)" — el CP pot faltar.
+function liniaMunicipi(l: Lloc): string {
+  const cp = l.cp ? `${l.cp} - ` : ''
+  const prov = l.provinciaNom ? ` (${l.provinciaNom})` : ''
+  return `${cp}${l.municipiNom}${prov}`
+}
+
+// Coordenades amb coma decimal, com és costum en català/castellà.
+function coordFmt(n: number): string {
+  return n.toFixed(6).replace('.', ',')
+}
+function liniaCoords(l: Lloc): string {
+  return `Lat ${coordFmt(l.lat)}  Lon ${coordFmt(l.lng)}`
+}
+
 // Quan es destaca un lloc (des d'aquí o des del mapa), la fila s'il·lumina i es
 // fa visible dins la llista.
 watch(
@@ -81,13 +101,52 @@ watch(
             :class="{ 'resultats__fila--destacada': l.id === llocs.llocDestacat }"
             :data-id="l.id"
           >
-            <button type="button" class="resultats__item" @click="llocs.destaca(l.id)">
-              <span class="resultats__icona" aria-hidden="true">{{ emojiSubtema(l.subtema) }}</span>
-              <span class="resultats__text">
-                <span class="resultats__nom">{{ l.nom }}</span>
-                <span v-if="l.adreca" class="resultats__adreca">{{ l.adreca }}</span>
-              </span>
-            </button>
+            <div class="resultats__capdamunt">
+              <button
+                type="button"
+                class="resultats__localitza"
+                :aria-label="$t('cercaLlocs.mostraAlMapa')"
+                :title="$t('cercaLlocs.mostraAlMapa')"
+                @click="llocs.destaca(l.id)"
+              >
+                <span class="resultats__icona" aria-hidden="true">{{
+                  emojiSubtema(l.subtema)
+                }}</span>
+              </button>
+              <a
+                v-if="l.web"
+                class="resultats__nom resultats__nom--enllac"
+                :href="l.web"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {{ l.nom }} <span class="resultats__ext" aria-hidden="true">↗</span>
+              </a>
+              <span v-else class="resultats__nom">{{ l.nom }}</span>
+            </div>
+
+            <a
+              class="resultats__ubicacio"
+              :href="urlGoogleMaps(l)"
+              target="_blank"
+              rel="noopener noreferrer"
+              :title="$t('cercaLlocs.obreMaps')"
+            >
+              <span v-if="l.adreca" class="resultats__linia">{{ l.adreca }}</span>
+              <span class="resultats__linia">{{ liniaMunicipi(l) }}</span>
+              <span class="resultats__linia resultats__coords">{{ liniaCoords(l) }}</span>
+            </a>
+
+            <a
+              v-if="l.fontUrl"
+              class="resultats__font"
+              :href="l.fontUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              :title="l.fontNom || l.fontUrl"
+            >
+              {{ $t('cercaLlocs.font') }}: {{ l.fontNom || l.fontUrl }} ↗
+            </a>
           </li>
         </template>
       </ul>
@@ -213,6 +272,7 @@ watch(
 
 .resultats__fila {
   border-bottom: 1px solid #f4f4f0;
+  padding: 7px 14px 10px;
 }
 
 .resultats__fila--destacada {
@@ -220,50 +280,104 @@ watch(
   box-shadow: inset 3px 0 0 var(--color-marca, #2d6a2d);
 }
 
-.resultats__item {
+/* Fila superior: botó de localització (icona) + nom (enllaç a la web si n'hi ha). */
+.resultats__capdamunt {
   display: flex;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 9px 14px;
-  border: none;
-  background: none;
-  font: inherit;
-  text-align: left;
-  color: inherit;
-  cursor: pointer;
+  gap: 8px;
+  min-width: 0;
 }
 
-.resultats__fila:not(.resultats__fila--destacada) .resultats__item:hover {
-  background: #f6f8f6;
+.resultats__localitza {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  transition: background var(--mou-rapid, 0.12s);
+}
+
+.resultats__localitza:hover {
+  background: var(--color-marca-clar, #eaf3ea);
 }
 
 .resultats__icona {
-  flex: 0 0 auto;
   font-size: 1.05rem;
   line-height: 1;
 }
 
-.resultats__text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
 .resultats__nom {
+  min-width: 0;
   font-size: var(--text-sm);
+  font-weight: 600;
   color: var(--color-text, #222);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.resultats__adreca {
+.resultats__nom--enllac {
+  color: var(--color-marca, #2d6a2d);
+  text-decoration: none;
+}
+
+.resultats__nom--enllac:hover {
+  text-decoration: underline;
+}
+
+.resultats__ext {
+  font-size: 0.8em;
+  opacity: 0.75;
+}
+
+/* Direcció + codi postal/població + coordenades: tot el bloc enllaça a Google
+   Maps. La direcció pot faltar; les coordenades sempre hi són. */
+.resultats__ubicacio {
+  display: block;
+  padding-left: 36px;
+  color: var(--color-text-secundari, #6a6f68);
+  text-decoration: none;
+}
+
+.resultats__ubicacio:hover .resultats__linia {
+  text-decoration: underline;
+}
+
+.resultats__linia {
+  display: block;
   font-size: var(--text-xs);
-  color: var(--color-text-secundari, #888);
+  line-height: 1.45;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.resultats__coords {
+  color: var(--color-text-secundari, #8a8f88);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Enllaç a la font oficial de la dada, sota el nom/adreça (fora del botó de la
+   fila perquè no s'imbriqui un <a> dins un <button>). */
+.resultats__font {
+  display: block;
+  margin-top: 4px;
+  padding-left: 36px;
+  font-size: var(--text-xs);
+  color: var(--color-marca, #2d6a2d);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resultats__font:hover {
+  text-decoration: underline;
 }
 
 @media (max-width: 768px) {
@@ -271,8 +385,9 @@ watch(
     max-height: 44%;
   }
 
-  .resultats__item {
-    padding: 11px 14px;
+  .resultats__localitza {
+    width: 34px;
+    height: 34px;
   }
 }
 </style>
