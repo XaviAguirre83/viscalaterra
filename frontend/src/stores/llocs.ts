@@ -34,9 +34,19 @@ export const useLlocsStore = defineStore('llocs', () => {
   // resultats". Es reinicia amb neteja().
   const cercaFeta = ref(false)
 
+  // true si la darrera cerca s'ha fet sense On? (tota Catalunya). Es fixa en
+  // cercar: tocar l'On? després no canvia l'abast del resultat que es mostra.
+  const totaCatalunya = ref(false)
+
   // Id del lloc destacat: sincronitza la llista de resultats amb el pin del mapa
   // (clic a la fila ↔ pin ressaltat, i a l'inrevés).
   const llocDestacat = ref<number | null>(null)
+
+  // Alçada de la llista de resultats triada arrossegant el separador, com a
+  // fracció (0–1) de la columna mapa + llista; null = automàtica (segons el
+  // contingut, amb un màxim). Viu aquí, i no al component, perquè sobrevisqui a
+  // tancar els resultats i tornar a cercar: neteja() no la toca.
+  const fraccioLlista = ref<number | null>(null)
 
   // Conjunt de municipis que tenen ≥1 resultat: el mapa els pinta.
   const municipisAmbResultats = computed(() => {
@@ -65,6 +75,7 @@ export const useLlocsStore = defineStore('llocs', () => {
       if (!res.ok) throw new Error(`Error ${res.status}`)
       const data = (await res.json()) as { total: number; llocs: Lloc[] }
       resultats.value = data.llocs
+      totaCatalunya.value = municipis.length === 0
       cercaFeta.value = true
       llocDestacat.value = null
     } catch (e) {
@@ -79,6 +90,7 @@ export const useLlocsStore = defineStore('llocs', () => {
   function neteja() {
     resultats.value = []
     cercaFeta.value = false
+    totaCatalunya.value = false
     error.value = null
     llocDestacat.value = null
   }
@@ -88,16 +100,23 @@ export const useLlocsStore = defineStore('llocs', () => {
     llocDestacat.value = id
   }
 
+  function defineixFraccioLlista(f: number | null) {
+    fraccioLlista.value = f
+  }
+
   return {
     resultats,
     carregant,
     error,
     cercaFeta,
+    totaCatalunya,
     llocDestacat,
+    fraccioLlista,
     municipisAmbResultats,
     total,
     cerca,
     neteja,
     destaca,
+    defineixFraccioLlista,
   }
 })
