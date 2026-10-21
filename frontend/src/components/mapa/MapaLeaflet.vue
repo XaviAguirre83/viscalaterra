@@ -71,16 +71,21 @@ function esEncertada(info: InfoFeature): boolean {
 let mapa: L.Map | null = null
 let mascaraCatalunya: L.Polygon | null = null
 
-// ── Tiles: base OSM en mode normal, Carto Positron SENSE ETIQUETES en mode
-// joc — cap nom de municipi o ciutat al fons (anti-trampa d'arrel) i el
-// relleu/trama urbana es veu net sota el joc.
-// Basemap "atlas" net (Positron) per a la vista general: deixa que les
-// delimitacions destaquin. A partir de ZOOM_DETALL es passa a un basemap amb
-// més detall de carrers (Voyager), quan ja es mira un municipi de prop i la
+// ── Tiles: Mapa Base de l'ICGC (geoserveis.icgc.cat, llicència CC-BY, sense
+// clau). Abans era Carto, que des d'oct. 2026 exigeix API key i serveix una
+// marca d'aigua a cada tile.
+// Basemap "atlas" en grisos (estandard-gris) per a la vista general: deixa que
+// les delimitacions de colors destaquin. A partir de ZOOM_DETALL es passa al
+// basemap en color (estandard), quan ja es mira un municipi de prop i la
 // perspectiva territorial ja no és l'important.
-const URL_TILES_BASE = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-const URL_TILES_DETALL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-const URL_TILES_JOC = 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png'
+// En mode joc, topogràfic gris MUT (sense topònims): cap nom de municipi o
+// ciutat al fons (anti-trampa d'arrel) i el relleu/trama urbana es veu net.
+// Ull: la web de l'ICGC documenta la capa com `topografic-mut-gris`, però el
+// servei només respon a `topografic-gris-mut` (el nom del WMS).
+const URL_ICGC = 'https://geoserveis.icgc.cat/servei/catalunya/mapa-base/wmts'
+const URL_TILES_BASE = `${URL_ICGC}/estandard-gris/MON3857NW/{z}/{x}/{y}.png`
+const URL_TILES_DETALL = `${URL_ICGC}/estandard/MON3857NW/{z}/{x}/{y}.png`
+const URL_TILES_JOC = `${URL_ICGC}/topografic-gris-mut/MON3857NW/{z}/{x}/{y}.png`
 const ZOOM_DETALL = 13
 let tilesBase: L.TileLayer | null = null
 let tilesDetall: L.TileLayer | null = null
@@ -88,14 +93,15 @@ let tilesJoc: L.TileLayer | null = null
 
 function craftTiles(url: string): L.TileLayer {
   return L.tileLayer(url, {
-    attribution: '© OpenStreetMap contributors © CARTO',
-    subdomains: 'abcd',
+    // Fora de Catalunya el Mapa Base de l'ICGC es fa amb dades d'OpenMapTiles/OSM.
+    attribution:
+      '© <a href="https://www.icgc.cat/ca/Geoinformacio-i-mapes/Servei-de-Mapa-Base">ICGC</a> · © OpenMapTiles © OpenStreetMap contributors',
     maxZoom: 19,
   })
 }
 
-// En mode normal, tria el basemap segons el zoom: Positron (atlas) a la vista
-// general, Voyager (més detall) a partir de ZOOM_DETALL.
+// En mode normal, tria el basemap segons el zoom: estàndard gris (atlas) a la
+// vista general, estàndard en color (més detall) a partir de ZOOM_DETALL.
 function actualitzaTilesNormal(zoom: number) {
   if (!mapa || props.modeJoc) return
   tilesBase ??= craftTiles(URL_TILES_BASE)

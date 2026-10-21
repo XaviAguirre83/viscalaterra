@@ -214,7 +214,7 @@ Cada capa té un estil de línia **fix** (com més gran el territori, més gruix
 
 ### Basemap i màscara
 
-- **Tiles**: Carto Positron net a la vista general; a partir del zoom ~13 es passa a Carto Voyager (més detall de carrers) quan ja es mira un municipi de prop. En mode joc, tiles **sense etiquetes** (anti-trampa).
+- **Tiles**: Mapa Base de l'ICGC — `estandard-gris` a la vista general; a partir del zoom ~13 es passa a `estandard` en color (més detall de carrers) quan ja es mira un municipi de prop. En mode joc, tiles **sense etiquetes** (anti-trampa).
 - **Màscara**: una capa blanca semitransparent tapa tot el món excepte Catalunya (retallada) → el territori destaca i la resta queda atenuada (inspirat en meteo.cat).
 
 ### Restriccions de navegació del mapa
