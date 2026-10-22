@@ -31,10 +31,10 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
-    "@tsconfig/node24": "^24.0.4",
+    "@tsconfig/node24": "^24.0.5",
     "@types/jsdom": "^28.0.1",
     "@types/leaflet": "^1.9.21",
-    "@types/node": "^24.12.2",
+    "@types/node": "^24.19.2",
     "@vitejs/plugin-vue": "^6.0.6",
     "@vitest/eslint-plugin": "^1.6.16",
     "@vue/eslint-config-typescript": "^14.7.0",
@@ -55,6 +55,6 @@
     "vue-tsc": "^3.2.6"
   },
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": ">=24.0.0"
   }
 }

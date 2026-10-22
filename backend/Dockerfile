@@ -3,7 +3,7 @@
 # Etapa 2 (runtime): imatge mínima, només dependències de producció, usuari no-root.
 
 # --- Etapa de build ---
-FROM node:20-alpine AS build
+FROM node:24-alpine AS build
 WORKDIR /app
 COPY package*.json ./
 # npm ci: instal·la EXACTAMENT el package-lock.json (build reproduïble).
@@ -12,7 +12,7 @@ COPY . .
 RUN npm run build
 
 # --- Etapa de runtime ---
-FROM node:20-alpine AS runtime
+FROM node:24-alpine AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 # Només dependències de producció (sense ts-node-dev, typescript, etc.).
