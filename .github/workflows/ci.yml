@@ -21,8 +21,14 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run format:check
-      # Dependències amb vulnerabilitats conegudes (high o superior) trenquen el CI.
+      # Vulnerabilitats conegudes (high o superior) a les dependències de PRODUCCIÓ
+      # (les que acaben al servidor o a la web publicada) trenquen el CI.
+      - run: npm audit --omit=dev --audit-level=high
+      # Les de desenvolupament només s'informen, sense bloquejar: n'hi pot haver sense
+      # versió corregida (p. ex. braces <=3.0.3, GHSA-vfj7-8cjw-p6xm, via
+      # @vue/eslint-config-typescript) i no arriben mai al servidor.
       - run: npm audit --audit-level=high
+        continue-on-error: true
 
   frontend:
     name: Frontend — lint, types & tests

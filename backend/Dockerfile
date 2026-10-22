@@ -15,7 +15,7 @@ RUN npm run build
 FROM node:24-alpine AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
-# Només dependències de producció (sense ts-node-dev, typescript, etc.).
+# Només dependències de producció (sense tsx, typescript, etc.).
 COPY package*.json ./
 RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 # Codi ja compilat des de l'etapa de build.

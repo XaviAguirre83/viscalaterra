@@ -60,7 +60,7 @@ npm run test:e2e           # Playwright
 
 ```bash
 cd backend
-npm run dev                # ts-node-dev con hot-reload
+npm run dev                # tsx watch con hot-reload
 npm run build              # compilación a dist/
 npm start                  # ejecuta dist/index.js
 ```

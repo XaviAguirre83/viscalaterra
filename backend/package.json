@@ -4,15 +4,15 @@
   "description": "viscalaterra.cat — API backend",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "dev": "tsx watch src/index.ts",
     "build": "rimraf dist && tsc",
     "start": "node dist/index.js",
-    "seed": "ts-node-dev --transpile-only src/scripts/seed-geodata.ts",
-    "enriqueix": "ts-node-dev --transpile-only src/scripts/enriqueix-territoris.ts",
-    "baixa-emblemes": "ts-node-dev --transpile-only src/scripts/baixa-emblemes.ts",
-    "importa-mossos": "ts-node-dev --transpile-only src/scripts/importa-mossos.ts",
-    "importa-equipaments": "ts-node-dev --transpile-only src/scripts/importa-equipaments.ts",
-    "importa-policia-bcn": "ts-node-dev --transpile-only src/scripts/importa-policia-bcn.ts"
+    "seed": "tsx src/scripts/seed-geodata.ts",
+    "enriqueix": "tsx src/scripts/enriqueix-territoris.ts",
+    "baixa-emblemes": "tsx src/scripts/baixa-emblemes.ts",
+    "importa-mossos": "tsx src/scripts/importa-mossos.ts",
+    "importa-equipaments": "tsx src/scripts/importa-equipaments.ts",
+    "importa-policia-bcn": "tsx src/scripts/importa-policia-bcn.ts"
   },
   "license": "AGPL-3.0-only",
   "devDependencies": {
@@ -23,7 +23,7 @@
     "@types/node": "^24.19.2",
     "@types/pg": "^8.20.0",
     "rimraf": "^6.1.3",
-    "ts-node-dev": "^2.0.0",
+    "tsx": "^4.23.15",
     "typescript": "^6.0.3"
   },
   "dependencies": {
