@@ -239,7 +239,7 @@ Les taules `COMARCA_NOMPROVINCIES` i `COMARCA_NOMVEGUERIES` a `provincies.ts` ma
 
 ### Backend
 
-- **Entrada**: `backend/src/index.ts`. Express 5 con helmet, compression (gzip/br), CORS por lista blanca (`CORS_ORIGINS`), `express.json({ limit: '100kb' })`, rate limiting global (+ uno más estricto en auth) y gestor de errores centralizado. Endpoint de salud en `GET /health`.
+- **Entrada**: `backend/src/index.ts`. Express 5 con helmet, compression (gzip/br), CORS por lista blanca (`CORS_ORIGINS`), `express.json({ limit: '100kb', inflate: false })` (rechaza cuerpos comprimidos con 415), rate limiting global (+ uno más estricto en auth) y gestor de errores centralizado (los 4xx de los parsers — 400/413/415 — salen con su código y un mensaje genérico; el resto, 500 sin detalles). Endpoint de salud en `GET /health`.
 - **Rutas** (`backend/src/routes/`): `territoris.ts` (`GET /api/territoris/arbre`, con caché en memoria), `geojson.ts` (`GET /api/geojson/:nivell?resolucio=N`, niveles y resoluciones por whitelist, caché en memoria de ficheros), `auth.ts` (`POST /registre`, `POST /login`, `POST /google`, `GET /jo`).
 - **Auth** (`backend/src/auth/`): `jwt.ts` (firma/verificación, `JWT_SECRET` obligatorio — el proceso no arranca sin él), `middleware.ts` (`requereixAuth`, Bearer token), `usuaris.ts` (queries parametrizadas; `password_hash` nunca sale en respuestas). Registro local con bcrypt; login con Google verificado con `audience` + `email_verified` (google-auth-library), con vinculación de cuentas por email verificado.
 - **Conexión a BD**: `backend/src/db.ts` (pool `pg`), vía variables de entorno `DB_*` del `.env`.

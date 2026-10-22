@@ -18,6 +18,9 @@ jobs:
       - uses: actions/setup-node@v4.4.0
         with:
           node-version: 24
+          # Sempre l'última 24.x publicada (pegats de seguretat), no la que el
+          # runner de GitHub porta preinstal·lada.
+          check-latest: true
           cache: npm
       - run: npm ci
       - run: npm run format:check
@@ -39,6 +42,7 @@ jobs:
       - uses: actions/setup-node@v4.4.0
         with:
           node-version: 24
+          check-latest: true
           cache: npm
       - run: npm ci
       - run: npm run type-check
@@ -59,6 +63,7 @@ jobs:
       - uses: actions/setup-node@v4.4.0
         with:
           node-version: 24
+          check-latest: true
           cache: npm
       - run: npm ci
       - run: npm run build

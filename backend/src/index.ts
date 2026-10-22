@@ -34,7 +34,10 @@ const ORIGENS = (process.env.CORS_ORIGINS ?? 'http://localhost:5173')
 app.use(cors({ origin: ORIGENS, credentials: true }))
 
 // Límit explícit de payload (cap endpoint actual consumeix body gran).
-app.use(express.json({ limit: '100kb' }))
+// inflate: false → rebutja (415) els cossos comprimits (gzip/deflate/br): el
+// frontend mai n'envia, i així cap client extern no posa a treballar els
+// descompressors de Node amb dades seves (p. ex. CVE-2026-111497, Brotli).
+app.use(express.json({ limit: '100kb', inflate: false }))
 
 // Rate limiting: protegeix el pool de Postgres i el stream de GeoJSON d'un DoS trivial.
 app.use(
@@ -56,8 +59,16 @@ app.use('/api/geojson', geojsonRouter)
 app.use('/api/llocs', llocsRouter)
 
 // Gestor d'errors centralitzat: registra internament i mai filtra detalls al client.
+// Els errors del client que llança express.json (JSON mal format → 400, cos massa
+// gran → 413, cos comprimit → 415) porten un `status` 4xx: es respon amb aquest
+// codi i un missatge genèric, no com un 500 (no és una fallada del servidor).
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  const status = (err as { status?: unknown } | null)?.status
+  if (typeof status === 'number' && status >= 400 && status < 500) {
+    if (!res.headersSent) res.status(status).json({ error: 'Petició no vàlida' })
+    return
+  }
   console.error(err)
   if (res.headersSent) return
   res.status(500).json({ error: 'Error intern' })
