@@ -190,6 +190,8 @@
     "justicia": {
       "titol": "Justicia",
       "jutjatPau": "Juzgado de Paz",
+      "orientacioJuridica": "Servicio de Orientación Jurídica (SOJ)",
+      "mediacio": "Servicio de Orientación Mediadora (SOM)",
       "civilInstruccio": "Sección Civil y de Instrucción",
       "civil": "Sección Civil",
       "instruccio": "Sección de Instrucción",

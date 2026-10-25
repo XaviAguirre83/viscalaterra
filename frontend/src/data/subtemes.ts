@@ -23,6 +23,8 @@ const EMOJI_SUBTEMA: Record<string, string> = {
   // Justícia (jutjats i seccions dels Tribunals d'Instància: vegeu emojiSubtema)
   'audiencia-provincial': '⚖️',
   tsjc: '⚖️',
+  'orientacio-juridica': '💬',
+  mediacio: '🤝',
   fiscalia: '🔎',
   'centre-penitenciari': '🔒',
 }

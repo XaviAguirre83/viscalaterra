@@ -23,8 +23,8 @@ const FONT_NOM = 'Equipaments de Catalunya (Dades Obertes de la Generalitat)'
 const FONT_URL = `https://analisi.transparenciacatalunya.cat/d/${DATASET}`
 
 // Relació categoria del dataset → subtema del catàleg Què?. El valor de `categoria`
-// és el text exacte de la taxonomia (separada per «|»); cap dels que mapegem porta
-// cometa simple, així que és segur dins un $where SoQL. `web` és una adreça
+// és el text exacte de la taxonomia (separada per «|»); baixaCategoria n'escapa
+// les cometes simples («d'Orientació») per al $where SoQL. `web` és una adreça
 // institucional per defecte (el dataset no en porta una per equipament).
 interface MapaSubtema {
   categoria: string
@@ -81,6 +81,22 @@ const MAPA: MapaSubtema[] = [
     subtema: 'jutjats-tribunals',
     subtemaPerNom: subtemaOrganJudicial,
     subtemesGenerats: SUBTEMES_ORGANS_JUDICIALS,
+  },
+  {
+    // Les oficines del Registre Civil són al mateix calaix (moltes, dins els
+    // edificis judicials): una segona passada que només es queda amb elles.
+    categoria: 'Justícia|Jutjats i tribunals||',
+    subtema: 'registre-civil',
+    subtemaPerNom: (nom) => (/registre civil/i.test(nom) ? 'registre-civil' : null),
+  },
+  {
+    // Primera orientació jurídica gratuïta.
+    categoria: "Justícia|Oficines del Servei d'Orientació Jurídica||",
+    subtema: 'orientacio-juridica',
+  },
+  {
+    categoria: "Justícia|Serveis d'orientació mediadora (SOM)||",
+    subtema: 'mediacio',
   },
   {
     categoria: 'Justícia|Fiscalies||',
@@ -171,6 +187,16 @@ function nomEsCodi(nom: string): boolean {
   return /^[A-Z]\s?\d{3}/.test(nom)
 }
 
+// Correccions manuals de registres amb dades errònies al dataset, verificades a mà
+// i indexades per idequipament. Només s'apliquen mentre el dataset continuï malament
+// (coordenades absurdes o fora del municipi): si la Generalitat ho corregeix, manen
+// les seves dades i el log avisa que la correcció ja sobra.
+const CORRECCIONS: Record<string, { lat: number; lng: number; adreca: string }> = {
+  // Ajuntament de Balenyà: el dataset (modificat el 2026-10-25) el situa a l'Aragó
+  // (41.6123, -0.6973) i a «Pista, 2». Ubicació real verificada al mapa per l'Xavi.
+  '546854': { lat: 41.815613538457924, lng: 2.235165123966623, adreca: 'Plaça Josep Espona, s/n' },
+}
+
 // Construeix l'adreça. Els camps del dataset són heterogenis segons el tipus:
 // als bombers `via` ja porta el número i `num`/`sufix_via` el dupliquen o són
 // soroll truncat («Km», «baixos», «(Pol. ind…»); als ajuntaments `via` no porta
@@ -200,20 +226,23 @@ async function municipiPerPunt(
 }
 
 // Centroide interior del municipi (punt garantit dins el polígon), per quan les
-// coordenades del dataset són errònies.
+// coordenades del dataset falten o són errònies. null si el municipi no té
+// geometria (abans del seed): mai un "centre" amb coordenades buides.
 async function centreMunicipi(
   client: import('pg').PoolClient,
   codi: string
 ): Promise<{ lat: number; lng: number } | null> {
-  const { rows } = await client.query<{ lat: number; lng: number }>(
+  const { rows } = await client.query<{ lat: number | null; lng: number | null }>(
     'SELECT ST_Y(ST_PointOnSurface(geom)) AS lat, ST_X(ST_PointOnSurface(geom)) AS lng FROM municipis WHERE codi = $1',
     [codi]
   )
-  return rows[0] ?? null
+  const r = rows[0]
+  return r && r.lat !== null && r.lng !== null ? { lat: r.lat, lng: r.lng } : null
 }
 
 async function baixaCategoria(categoria: string): Promise<RegistreEquip[]> {
-  const where = encodeURIComponent(`categoria='${categoria}'`)
+  // SoQL escapa la cometa simple doblant-la, com SQL.
+  const where = encodeURIComponent(`categoria='${categoria.replace(/'/g, "''")}'`)
   const url = `https://analisi.transparenciacatalunya.cat/resource/${DATASET}.json?$where=${where}&$limit=5000`
   const res = await fetch(url)
   if (!res.ok) throw new Error(`Error ${res.status} baixant la categoria «${categoria}»`)
@@ -253,12 +282,9 @@ async function processaSubtema(
       continue
     }
 
+    // Pot ser null (falten o són absurdes): si el municipi es coneix pel codi o pel
+    // nom, el pin anirà al centre del municipi (vegeu la coherència geomètrica).
     const coord = parseCoord(r.latitud, r.longitud)
-    if (!coord) {
-      console.warn('  · coordenada dolenta —', nom)
-      saltats++
-      continue
-    }
 
     // Resol el municipi en tres passos, del més fiable al menys:
     //  1) codi_municipi del dataset (recuperant el zero inicial dels municipis de
@@ -279,7 +305,7 @@ async function processaSubtema(
         muniOk = true
       }
     }
-    if (!muniOk) {
+    if (!muniOk && coord) {
       const perPunt = await municipiPerPunt(client, coord.lng, coord.lat)
       if (perPunt) {
         codi = perPunt
@@ -298,18 +324,35 @@ async function processaSubtema(
       continue
     }
 
-    // Coherència geomètrica: si les coordenades no cauen dins el municipi assignat,
-    // són errònies (al dataset n'hi ha unes quantes que apunten a Barcelona ciutat,
-    // p.ex. Rajadell, Campins o Orpí) → fem servir el centroide del municipi perquè
-    // el pin caigui on toca.
+    // Coherència geomètrica: si les coordenades falten, són absurdes o no cauen dins
+    // el municipi assignat (n'hi ha que apunten a Barcelona ciutat, p.ex. Rajadell,
+    // Campins o Orpí) → la correcció manual si n'hi ha (CORRECCIONS) o, si no, el
+    // centroide del municipi, perquè el pin caigui on toca.
     let punt = coord
-    const dins = await client.query<{ ok: boolean }>(
-      'SELECT ST_Contains(geom, ST_SetSRID(ST_MakePoint($1, $2), 4326)) AS ok FROM municipis WHERE codi = $3',
-      [coord.lng, coord.lat, codi]
-    )
-    if (!dins.rows[0]?.ok) {
-      const centre = await centreMunicipi(client, codi)
-      if (centre) punt = centre
+    let adreca = construeixAdreca(r)
+    let dins = false
+    if (coord) {
+      const { rows } = await client.query<{ ok: boolean }>(
+        'SELECT ST_Contains(geom, ST_SetSRID(ST_MakePoint($1, $2), 4326)) AS ok FROM municipis WHERE codi = $3',
+        [coord.lng, coord.lat, codi]
+      )
+      dins = rows[0]?.ok === true
+    }
+    const correccio = CORRECCIONS[idEquip]
+    if (!dins && correccio) {
+      punt = { lat: correccio.lat, lng: correccio.lng }
+      adreca = correccio.adreca
+      console.log('  · correcció manual aplicada —', nom)
+    } else if (!dins) {
+      if (!coord) console.warn('  · coordenada dolenta, al centre del municipi —', nom)
+      punt = (await centreMunicipi(client, codi)) ?? coord
+    } else if (correccio) {
+      console.log('  · el dataset ja és correcte: sobra la correcció manual —', nom)
+    }
+    if (!punt) {
+      console.warn('  · sense coordenades ni centre de municipi —', nom)
+      saltats++
+      continue
     }
 
     await client.query(
@@ -326,7 +369,7 @@ async function processaSubtema(
         codi,
         punt.lng,
         punt.lat,
-        construeixAdreca(r),
+        adreca,
         normalitzaCp(r.cpostal),
         r.telefon1 ?? null,
         m.web ?? null,

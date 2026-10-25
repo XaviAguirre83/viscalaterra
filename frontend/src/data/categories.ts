@@ -137,6 +137,8 @@ export const TEMES: Tema[] = [
     // d'Instància (classificació a backend/src/scripts/organs-judicials.ts).
     subtemes: [
       { codi: 'jutjat-pau', clau: 'que.justicia.jutjatPau' },
+      { codi: 'orientacio-juridica', clau: 'que.justicia.orientacioJuridica' },
+      { codi: 'mediacio', clau: 'que.justicia.mediacio' },
       { codi: 'seccio-civil-instruccio', clau: 'que.justicia.civilInstruccio' },
       { codi: 'seccio-civil', clau: 'que.justicia.civil' },
       { codi: 'seccio-instruccio', clau: 'que.justicia.instruccio' },

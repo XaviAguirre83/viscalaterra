@@ -190,6 +190,8 @@
     "justicia": {
       "titol": "Justice",
       "jutjatPau": "Justice of the Peace court",
+      "orientacioJuridica": "Legal guidance service (SOJ)",
+      "mediacio": "Mediation guidance service (SOM)",
       "civilInstruccio": "Civil and investigation section",
       "civil": "Civil section",
       "instruccio": "Investigation section",
