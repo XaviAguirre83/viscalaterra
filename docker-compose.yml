@@ -1,9 +1,17 @@
+# Logs amb tope i rotació automàtica, com a producció (vegeu docker-compose.prod.yml).
+x-logs: &logs
+  driver: local
+  options:
+    max-size: '10m'
+    max-file: '5'
+
 services:
   db:
     # La mateixa imatge que a producció (docker-compose.prod.yml, on s'explica el volum).
     image: postgis/postgis:18-3.6
     container_name: viscalaterra_db
     restart: unless-stopped
+    logging: *logs
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
@@ -26,6 +34,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: viscalaterra_backend
     restart: unless-stopped
+    logging: *logs
     env_file: .env
     command: sh -c "npm install && npm run dev"
     ports:
@@ -44,6 +53,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: viscalaterra_frontend
     restart: unless-stopped
+    logging: *logs
     environment:
       - VITE_API_URL=${VITE_API_URL}
     command: sh -c "npm install && npm run dev"

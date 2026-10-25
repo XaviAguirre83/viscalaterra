@@ -97,13 +97,13 @@ trivial. Implementat amb un segon compose espillo de producció.
 
 ### Fitxers
 
-| Fitxer                                            | Què fa                                                                                                                          |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `docker-compose.prod.yml`                         | Stack de producció. Projecte aïllat `viscalaterra-prod` (BD, xarxa i volums separats del dev → es poden tenir tots dos alhora). |
-| `backend/Dockerfile`                              | Imatge de prod multi-stage: compila TS → `dist/`, runtime mínim sense devDeps, usuari no-root.                                  |
-| `frontend/Dockerfile`                             | Multi-stage: compila la SPA → estàtics dins d'una imatge **Caddy**.                                                             |
-| `frontend/Caddyfile`                              | Caddy: serveix la SPA, proxy `/api/*` → backend, HTTPS automàtic al VPS.                                                        |
-| `backend/.dockerignore`, `frontend/.dockerignore` | Builds netes.                                                                                                                   |
+| Fitxer                                            | Què fa                                                                                                                                                                                                                      |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docker-compose.prod.yml`                         | Stack de producció. Projecte aïllat `viscalaterra-prod` (BD, xarxa i volums separats del dev → es poden tenir tots dos alhora). Logs amb tope i rotació (driver `local`: 5 × 10 MB per contenidor, s'esborra el més antic). |
+| `backend/Dockerfile`                              | Imatge de prod multi-stage: compila TS → `dist/`, runtime mínim sense devDeps, usuari no-root.                                                                                                                              |
+| `frontend/Dockerfile`                             | Multi-stage: compila la SPA → estàtics dins d'una imatge **Caddy**.                                                                                                                                                         |
+| `frontend/Caddyfile`                              | Caddy: serveix la SPA, proxy `/api/*` → backend, HTTPS automàtic al VPS.                                                                                                                                                    |
+| `backend/.dockerignore`, `frontend/.dockerignore` | Builds netes.                                                                                                                                                                                                               |
 
 ### Arquitectura
 
