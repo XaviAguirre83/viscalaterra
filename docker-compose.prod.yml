@@ -18,14 +18,20 @@ name: viscalaterra-prod
 
 services:
   db:
-    image: postgis/postgis:16-3.4
+    # PostgreSQL 18 + PostGIS 3.6. Quan surti una PostGIS nova, l'etiqueta -3.6
+    # deixarà de regenerar-se (com va passar amb la 16-3.4): cal vigilar-ho.
+    image: postgis/postgis:18-3.6
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - db_data:/var/lib/postgresql/data
+      # Des de la 18 la imatge desa les dades a /var/lib/postgresql/18/docker: el
+      # volum es munta a /var/lib/postgresql (amb la ruta antiga .../data, la imatge
+      # es nega a arrencar). La versió major va al nom del volum: per migrar a una
+      # major nova se'n crea un altre al costat i aquest queda per tornar enrere.
+      - db_pg18:/var/lib/postgresql
       - ./infra/db/init:/docker-entrypoint-initdb.d
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${DB_USER} -d ${DB_NAME}']
@@ -72,6 +78,6 @@ services:
       - backend
 
 volumes:
-  db_data:
+  db_pg18:
   caddy_data:
   caddy_config:

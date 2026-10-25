@@ -1,6 +1,7 @@
 services:
   db:
-    image: postgis/postgis:16-3.4
+    # La mateixa imatge que a producció (docker-compose.prod.yml, on s'explica el volum).
+    image: postgis/postgis:18-3.6
     container_name: viscalaterra_db
     restart: unless-stopped
     environment:
@@ -11,7 +12,7 @@ services:
       # Lligat a loopback: la BD només és accessible des del propi host, mai des de la LAN.
       - '127.0.0.1:${DB_PORT:-5432}:5432'
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - db_pg18:/var/lib/postgresql
       - ./infra/db/init:/docker-entrypoint-initdb.d
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${DB_USER} -d ${DB_NAME}']
@@ -54,4 +55,4 @@ services:
       - backend
 
 volumes:
-  db_data:
+  db_pg18:
