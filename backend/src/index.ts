@@ -33,6 +33,38 @@ const ORIGENS = (process.env.CORS_ORIGINS ?? 'http://localhost:5173')
   .filter(Boolean)
 app.use(cors({ origin: ORIGENS, credentials: true }))
 
+// Anti-CSRF (defensa en profunditat: la cookie de sessió SameSite=Strict ja és
+// la primera barrera). Una petició que canvia coses (POST/PUT/PATCH/DELETE)
+// només s'accepta si ve de la pròpia web:
+//   - navegadors moderns en HTTPS o localhost: ho diu Sec-Fetch-Site;
+//   - si no l'envien (HTTP no segur, p. ex. dev des del mòbil per la LAN, o
+//     navegadors antics), l'Origin ha de ser a CORS_ORIGINS o ser el mateix host
+//     al qual es parla (Caddy i el proxy de Vite conserven el Host);
+//   - sense cap de les dues capçaleres no és un navegador (curl, scripts) i no
+//     hi ha cap cookie de víctima en joc.
+// Staging i producció són el mateix "site" (viscalaterra.cat): per això
+// s'exigeix same-origin, no same-site.
+const METODES_SEGURS = new Set(['GET', 'HEAD', 'OPTIONS'])
+
+function venDeLaPropiaWeb(req: Request): boolean {
+  const lloc = req.headers['sec-fetch-site']
+  if (lloc === 'same-origin' || lloc === 'none') return true
+  const origen = req.headers.origin
+  if (!origen) return lloc === undefined
+  if (ORIGENS.includes(origen)) return true
+  if (lloc !== undefined) return false
+  try {
+    return new URL(origen).host === req.headers.host
+  } catch {
+    return false // Origin mal format, p. ex. "null"
+  }
+}
+
+app.use((req, res, next) => {
+  if (METODES_SEGURS.has(req.method) || venDeLaPropiaWeb(req)) return next()
+  res.status(403).json({ codi: 'origen_no_permes' })
+})
+
 // Límit explícit de payload (cap endpoint actual consumeix body gran).
 // inflate: false → rebutja (415) els cossos comprimits (gzip/deflate/br): el
 // frontend mai n'envia, i així cap client extern no posa a treballar els

@@ -181,11 +181,14 @@ JWT amb expiració, login amb Google (GSI), `ModalAuth` i menú d'usuari.
 
 Queda el **hardening pre-beta** (de l'auditoria 2026-07-02, per ordre):
 
-- **JWT de localStorage → cookie HttpOnly + SameSite** (+ anti-CSRF per Origin,
-  endpoint de logout al servidor, `JWT_EXPIRES_IN` a 24h). Un XSS avui podria
-  exfiltrar el token; amb la cookie HttpOnly el JS no el pot llegir. Estimat:
-  1–2 h + prova manual del login amb Google al navegador. Fer-ho **abans de la
-  beta amb usuaris** (invalida les sessions existents — ara és barat).
+- ~~**JWT de localStorage → cookie HttpOnly + SameSite**~~ — ✅ **FET 2026-10-25**:
+  cookie `HttpOnly` + `SameSite=Strict` (`__Host-sessio` amb `Secure` a producció),
+  anti-CSRF per `Sec-Fetch-Site`/`Origin` i logout al servidor (`POST /api/auth/surt`).
+  A més deixa lliure la capçalera `Authorization` per a la contrasenya de la porta
+  de staging (basic auth): amb el token a `Authorization: Bearer` hi xocaven i cada
+  recàrrega tancava la sessió. `JWT_EXPIRES_IN` es manté a 7 dies: amb la cookie
+  HttpOnly un XSS ja no pot robar el token. Queda la revocació de sessions (lligada
+  al risc d'_account-linking_ amb Google, § 4.6).
 - **Rol de BD sense superusuari** per a l'app (vegeu auditoria 2026-07-02,
   seguretat § MITJÀ 3). Fer-ho **abans de producció real**: script SQL a
   `infra/db/init/` (rol `viscalaterra_app` amb GRANT mínims) + 2 vars d'entorn
@@ -386,7 +389,7 @@ LSSI. La **política de privacitat ha d'existir ABANS de recollir dades**.
 - **Política de privacitat** (RGPD): quines dades, finalitat, base legal, conservació,
   destinataris (tercers), drets i com exercir-los. **Obligatòria des del primer email.**
 - **Política de cookies** + banner: només si hi ha cookies/tracking **no essencials** (analítica).
-  El token de sessió a `localStorage` és essencial → exempt; avui no cal banner.
+  La cookie de sessió (`HttpOnly`) és estrictament necessària → exempta; avui no cal banner.
 - **Condicions d'ús**: claus pel **contingut d'usuaris** (aportacions, esdeveniments, tauler):
   regles, llicència que cedeixen sobre el que publiquen, responsabilitat, moderació, edat mínima.
 

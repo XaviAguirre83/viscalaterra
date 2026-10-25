@@ -10,35 +10,21 @@ export interface Usuari {
   reputacio: number
 }
 
+// Resposta de /api/auth/*: l'usuari (null a /jo si no hi ha sessió).
 interface RespostaAuth {
-  token: string
-  usuari: Usuari
+  usuari: Usuari | null
 }
 
-const CLAU_TOKEN = 'viscalaterra-token'
+// La sessió viu en una cookie HttpOnly que posa i esborra el servidor
+// (backend/src/auth/sessio.ts): el JavaScript no la pot llegir, i per tant un
+// XSS no la pot robar. Les versions anteriors desaven el token en aquesta clau
+// de localStorage; s'esborra perquè no hi quedi cap token vell.
+const CLAU_TOKEN_ANTIC = 'viscalaterra-token'
 
-// localStorage pot llançar (mode privat antic, "bloquejar dades de llocs" al
-// navegador): mai ha de fer caure l'arrencada ni un login que el servidor ja
-// ha acceptat — com a molt, la sessió viu només en memòria.
-function storageGet(clau: string): string | null {
+function esborraTokenAntic() {
+  // localStorage pot llançar (mode privat antic, "bloquejar dades de llocs").
   try {
-    return localStorage.getItem(clau)
-  } catch {
-    return null
-  }
-}
-
-function storageSet(clau: string, valor: string) {
-  try {
-    localStorage.setItem(clau, valor)
-  } catch {
-    // Sessió només en memòria.
-  }
-}
-
-function storageDel(clau: string) {
-  try {
-    localStorage.removeItem(clau)
+    localStorage.removeItem(CLAU_TOKEN_ANTIC)
   } catch {
     // Res a esborrar.
   }
@@ -46,22 +32,18 @@ function storageDel(clau: string) {
 
 export const useAuthStore = defineStore('auth', () => {
   const usuari = ref<Usuari | null>(null)
-  const token = ref<string | null>(storageGet(CLAU_TOKEN))
   const carregant = ref(false)
   const autenticat = computed(() => usuari.value !== null)
 
-  function desaToken(t: string) {
-    token.value = t
-    storageSet(CLAU_TOKEN, t)
-  }
+  esborraTokenAntic()
 
-  function netejaToken() {
-    token.value = null
-    storageDel(CLAU_TOKEN)
-  }
+  // Compta els canvis de sessió (entrar o sortir). Una resposta de /jo que arriba
+  // després d'un canvi pertany a l'estat anterior i s'ignora: si no, el "sense
+  // sessió" de la consulta de l'arrencada podria tancar la sessió acabada d'obrir.
+  let canvis = 0
 
   // POST a /api/auth/*. Llança Error amb el missatge del backend si no és 2xx.
-  async function peticio(ruta: string, cos: Record<string, unknown>): Promise<RespostaAuth> {
+  async function peticio(ruta: string, cos: Record<string, unknown>): Promise<Usuari> {
     const r = await fetch(`/api/auth/${ruta}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -71,12 +53,12 @@ export const useAuthStore = defineStore('auth', () => {
     // El backend retorna un `codi` d'error estable; el component el tradueix amb
     // i18n. Si no n'hi ha (p. ex. error de xarxa), cau al codi genèric.
     if (!r.ok) throw new Error(dades?.codi ?? 'generic')
-    return dades as RespostaAuth
+    return (dades as RespostaAuth).usuari as Usuari
   }
 
-  function aplica(res: RespostaAuth) {
-    desaToken(res.token)
-    usuari.value = res.usuari
+  function aplica(u: Usuari) {
+    canvis++
+    usuari.value = u
   }
 
   async function registra(nom: string, email: string, contrasenya: string) {
@@ -106,35 +88,32 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // En arrencar l'app: si hi ha token desat, recupera l'usuari. Si el token ja no
-  // és vàlid (caducat o secret canviat), el descarta silenciosament.
+  // En arrencar l'app: el JS no pot saber si hi ha cookie de sessió (és
+  // HttpOnly), així que sempre ho pregunta; sense sessió /jo respon usuari null.
   async function carregaJo() {
-    const t = token.value
-    if (!t) return
+    const abans = canvis
     try {
-      const r = await fetch('/api/auth/jo', {
-        headers: { Authorization: `Bearer ${t}` },
-      })
-      // Si mentre esperàvem la resposta l'usuari ha iniciat sessió (token nou),
-      // aquesta resposta pertany al token vell: no s'ha de tocar res — abans,
-      // un 401 del token caducat esborrava el token de la sessió acabada d'obrir.
-      if (token.value !== t) return
-      if (!r.ok) {
-        netejaToken()
-        return
-      }
-      const dades = await r.json()
-      if (token.value !== t) return
-      usuari.value = dades.usuari
+      const r = await fetch('/api/auth/jo')
+      if (!r.ok) return
+      const dades = (await r.json()) as RespostaAuth
+      if (canvis !== abans) return
+      usuari.value = dades.usuari ?? null
     } catch {
-      if (token.value === t) netejaToken()
+      // Sense xarxa: la interfície es queda sense sessió visible.
     }
   }
 
-  function surt() {
+  // Només el servidor pot esborrar la cookie HttpOnly.
+  async function surt() {
+    canvis++
     usuari.value = null
-    netejaToken()
+    try {
+      await fetch('/api/auth/surt', { method: 'POST' })
+    } catch {
+      // Sense xarxa la cookie no s'ha esborrat i, en recarregar, /jo tornaria a
+      // obrir la sessió. És un cas rar i no es reintenta.
+    }
   }
 
-  return { usuari, token, carregant, autenticat, registra, entra, entraAmbGoogle, carregaJo, surt }
+  return { usuari, carregant, autenticat, registra, entra, entraAmbGoogle, carregaJo, surt }
 })

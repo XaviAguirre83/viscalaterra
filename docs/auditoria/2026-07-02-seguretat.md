@@ -22,7 +22,7 @@ era la IP del contenidor de Caddy — idèntica per a tothom — i el limitador 
 la plataforma**. Confirmat als logs de prod (`ERR_ERL_UNEXPECTED_X_FORWARDED_FOR`).
 **Fix aplicat:** `app.set('trust proxy', 1)`.
 
-### 🟠 ALT 2 — JWT a localStorage + 7 dies sense revocació — ⏳ PENDENT (decisió)
+### 🟠 ALT 2 — JWT a localStorage + 7 dies sense revocació — ✅ APLICAT 2026-10-25 (revocació ⏳)
 
 `frontend/src/stores/auth.ts` + `backend/src/routes/auth.ts`. El backend retorna el
 JWT al cos JSON i el frontend el persisteix a localStorage: qualsevol XSS pot
@@ -32,6 +32,12 @@ L'auditoria del 2026-06-13 (M-02) recomanava cookie `HttpOnly + Secure + SameSit
 token. És un canvi de flux sencer — decidir-ho i provar-ho amb calma, incloent el
 login amb Google. Mitigacions vigents: CSP estricta, HS256 fixat, expiració
 configurable per entorn.
+**Fix aplicat (2026-10-25, preparant staging):** el token viatja en una cookie
+`HttpOnly` + `SameSite=Strict` (`__Host-sessio` amb `Secure` a producció) que posa i
+esborra el servidor (`backend/src/auth/sessio.ts`, `POST /api/auth/surt`); el JS ja
+no el veu. Anti-CSRF a `index.ts` (`Sec-Fetch-Site`/`Origin`, _same-origin_). Era
+també imprescindible per a la basic auth de staging, que necessita la capçalera
+`Authorization`. Queda pendent la revocació de sessions abans dels 7 dies.
 
 ### 🟡 MITJÀ 1 — Enumeració d'usuaris per timing al login — ✅ APLICAT / registre ⏳
 

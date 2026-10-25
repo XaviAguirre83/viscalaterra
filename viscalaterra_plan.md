@@ -358,8 +358,8 @@ rate limiting i caché viuen millor en un procés estable i de cost fix.
 
 Necessari per contribuir contingut i participar en el sistema de verificació.
 
-**Estat: implementat.** Registre i login locals (JWT + bcrypt) i login amb Google
-(One Tap / botó GSI) al backend (`/api/auth/registre`, `/login`, `/google`, `/jo`),
+**Estat: implementat.** Registre i login locals (JWT en cookie HttpOnly + bcrypt) i login amb Google
+(One Tap / botó GSI) al backend (`/api/auth/registre`, `/login`, `/google`, `/jo`, `/surt`),
 amb `ModalAuth.vue` i menú d'usuari a la capçalera. La pàgina `/espai` és encara
 un placeholder; la verificació d'email és al roadmap (`full de ruta.md`).
 
@@ -705,8 +705,8 @@ saturar visualment i la UI ho haurà de gestionar.
 
 - `GET /api/territoris/arbre` — retorna l'arbre complet (província → comarca → municipi) en una sola petició. El frontend el carrega a l'inici i navega localment sense més peticions.
 - `GET /api/geojson/:nivell?resolucio=N` — GeoJSON per a Leaflet (nivells: comunitat, provincies, vegueries, comarques, municipis). Alternativa `?zoom=N` (el backend deriva la resolució).
-- `POST /api/auth/registre` · `POST /api/auth/login` · `POST /api/auth/google` · `GET /api/auth/jo` — autenticació implementada (JWT + bcrypt + Google Sign-In).
-- El servidor porta helmet, compressió gzip/br, CORS per llista blanca, rate limiting i gestor d'errors centralitzat (`backend/src/index.ts`).
+- `POST /api/auth/registre` · `POST /api/auth/login` · `POST /api/auth/google` · `GET /api/auth/jo` · `POST /api/auth/surt` — autenticació implementada (JWT en cookie HttpOnly + bcrypt + Google Sign-In).
+- El servidor porta helmet, compressió gzip/br, CORS per llista blanca, anti-CSRF, rate limiting i gestor d'errors centralitzat (`backend/src/index.ts`).
 - Endpoints de `llocs` (Què?) dissenyats però no implementats encara.
 
 ### Plataforma Git i estratègia de branques (maig 2026)

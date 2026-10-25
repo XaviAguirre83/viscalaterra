@@ -15,12 +15,17 @@ export interface PayloadToken {
   uid: number
 }
 
-export function signaToken(idUsuari: number): string {
+// Retorna també quan caduca: la cookie de sessió (sessio.ts) caduca al mateix
+// moment que el token, sigui quin sigui el format de JWT_EXPIRES_IN.
+export function signaToken(idUsuari: number): { token: string; caduca: Date } {
   const opcions: jwt.SignOptions = {
     expiresIn: EXPIRES_IN as jwt.SignOptions['expiresIn'],
     algorithm: 'HS256',
   }
-  return jwt.sign({ uid: idUsuari }, SECRET as jwt.Secret, opcions)
+  const token = jwt.sign({ uid: idUsuari }, SECRET as jwt.Secret, opcions)
+  // `exp` (segons des de 1970) l'acaba de calcular jwt.sign a partir d'expiresIn.
+  const { exp } = jwt.decode(token) as { exp: number }
+  return { token, caduca: new Date(exp * 1000) }
 }
 
 export function verificaToken(token: string): PayloadToken | null {
