@@ -122,7 +122,8 @@ Docker local és **rootless** → no pot usar ports < 1024. Cal mapejar a ports 
 ```bash
 HTTP_PORT=8080 HTTPS_PORT=8443 docker compose -f docker-compose.prod.yml up -d --build
 # Web a http://localhost:8080  (conviu amb el dev a :5173 sense xocar)
-# La BD territorial (panell On?) s'autopobla sola — NO cal cap seed manual.
+# La BD territorial (panell On?) s'autopobla sola. Per a la cerca de llocs cal
+# carregar geometries i llocs (vegeu «Desplegar al VPS», pas 6).
 # Aturar:
 docker compose -f docker-compose.prod.yml down          # afegeix -v per esborrar també la BD
 ```
@@ -131,13 +132,14 @@ docker compose -f docker-compose.prod.yml down          # afegeix -v per esborra
 > → 200 amb 4 províncies / 9 vegueries / 43 comarques / 947 municipis. Simulació plenament
 > funcional sense cap pas manual.
 
-### Dades territorials autopoblades (sense seed)
+### Dades territorials autopoblades
 
 Els límits administratius són **estàtics**. En lloc de sembrar la BD a cada desplegament,
 `infra/db/init/03-territorial-data.sql` (41 KB, al git) conté els atributs (codi, nom, jerarquia)
 i s'executa automàticament en crear la BD. Resultat: **qualsevol `docker compose up` aixeca la BD
-ja poblada**. No porta geometries (geom queda NULL) perquè els polígons es serveixen des dels
-GeoJSON de disc; el seed `seed-geodata.ts` només cal si algun dia es volen geometries a la BD.
+ja poblada**. No porta geometries (geom queda NULL): els polígons del mapa es serveixen des dels
+GeoJSON de disc. Les geometries a la BD les necessiten els importadors de llocs (per saber a
+quin municipi cau cada punt) i les posa `seed-geodata.ts` (pas 6 del desplegament).
 
 ### Desplegar al VPS (el dia D)
 
@@ -146,9 +148,21 @@ GeoJSON de disc; el seed `seed-geodata.ts` només cal si algun dia es volen geom
 3. Crear `.env` amb valors de producció (`DB_HOST=db`, `NODE_ENV=production`,
    `SITE_ADDRESS=viscalaterra.cat`, `CORS_ORIGINS=https://viscalaterra.cat`, `JWT_SECRET`,
    `DB_PASSWORD` forts). **Sense** `HTTP_PORT`/`HTTPS_PORT` → usa 80/443.
-4. Proveir `backend/data/` (no és al git) — **només** per als polígons del mapa (`/api/geojson`).
-   La BD territorial (panell On?) s'autopobla sola; no cal seed.
+4. Proveir `backend/data/` (no és al git): polígons del mapa (`/api/geojson`) i geometries que
+   carrega el seed (pas 6). La BD territorial (panell On?) s'autopobla sola.
 5. `docker compose -f docker-compose.prod.yml up -d --build` → Caddy treu el certificat sol.
+6. Carregar geometries i llocs (per a la cerca de llocs). El seed primer: els importadors el
+   necessiten.
+
+   ```bash
+   docker compose -f docker-compose.prod.yml exec backend node dist/scripts/seed-geodata.js
+   docker compose -f docker-compose.prod.yml exec backend node dist/scripts/importa-equipaments.js
+   docker compose -f docker-compose.prod.yml exec backend node dist/scripts/importa-mossos.js
+   docker compose -f docker-compose.prod.yml exec backend node dist/scripts/importa-policia-bcn.js
+   ```
+
+   Assajat el 2026-10-25 sobre una BD nova (PostGIS 18, scripts en mode dev): 947 municipis
+   amb geometria i els tres importadors sense errors.
 
 CDN opcional després: Cloudflare en mode proxy davant el VPS, sense tocar res del compose.
 

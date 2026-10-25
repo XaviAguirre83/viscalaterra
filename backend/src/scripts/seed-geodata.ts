@@ -1,10 +1,16 @@
 /**
- * Importa les divisions administratives de Catalunya a PostGIS.
+ * Carrega les geometries de les divisions administratives de Catalunya a PostGIS.
  * Font: ICGC divisions-administratives-v2r1 (2024-01-18)
  *
  * Ús: npm run seed (des de backend/)
  * Requereix: backend/data/geojson/ amb els fitxers del ICC
- * Ordre d'inserció: provincies → vegueries → comarques → municipis (per les FK)
+ * Ordre: provincies → vegueries → comarques → municipis (per les FK)
+ *
+ * En una BD nova, infra/db/init/03-territorial-data.sql ja hi ha posat totes les
+ * files (codi, nom, jerarquia) SENSE geometria: aquest script n'hi afegeix la geom
+ * (ON CONFLICT … DO UPDATE). Els atributs del 03 manen; un codi que no hi sigui
+ * s'insereix sencer. És idempotent: es pot tornar a executar.
+ * Els importadors de llocs (importa-*.ts) necessiten aquestes geometries.
  */
 
 import path from 'path'
@@ -42,75 +48,88 @@ interface GeoJSONFeatureCollection {
   features: GeoJSONFeature[]
 }
 
-async function seedProvincies(client: PoolClient) {
-  console.log('  → Inserint províncies...')
+// Cada seed* retorna les files afectades (inserides o amb la geometria posada):
+// el recompte és el de la BD, no el de features del fitxer.
+
+async function seedProvincies(client: PoolClient): Promise<number> {
+  console.log('  → Províncies...')
   const { features } = readGeoJSON(
     'provincies/divisions-administratives-v2r1-provincies-5000-20240118.json'
   )
 
+  let n = 0
   for (const f of features) {
     const p = f.properties
-    await client.query(
+    const r = await client.query(
       `INSERT INTO provincies (codi, nom, geom)
        VALUES ($1, $2, ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON($3), 4326)))
-       ON CONFLICT (codi) DO NOTHING`,
+       ON CONFLICT (codi) DO UPDATE SET geom = EXCLUDED.geom`,
       [p.CODIPROV, p.NOMPROV, JSON.stringify(f.geometry)]
     )
+    n += r.rowCount ?? 0
   }
-  console.log(`     ${features.length} províncies inserides`)
+  console.log(`     ${n} províncies amb geometria`)
+  return n
 }
 
-async function seedVegueries(client: PoolClient) {
-  console.log('  → Inserint vegueries...')
+async function seedVegueries(client: PoolClient): Promise<number> {
+  console.log('  → Vegueries...')
   const { features } = readGeoJSON(
     'vegueries/divisions-administratives-v2r1-vegueries-5000-20240118.json'
   )
 
+  let n = 0
   for (const f of features) {
     const p = f.properties
-    await client.query(
+    const r = await client.query(
       `INSERT INTO vegueries (codi, nom, geom)
        VALUES ($1, $2, ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON($3), 4326)))
-       ON CONFLICT (codi) DO NOTHING`,
+       ON CONFLICT (codi) DO UPDATE SET geom = EXCLUDED.geom`,
       [p.CODIVEGUE, p.NOMVEGUE, JSON.stringify(f.geometry)]
     )
+    n += r.rowCount ?? 0
   }
-  console.log(`     ${features.length} vegueries inserides`)
+  console.log(`     ${n} vegueries amb geometria`)
+  return n
 }
 
-async function seedComarques(client: PoolClient) {
-  console.log('  → Inserint comarques...')
+async function seedComarques(client: PoolClient): Promise<number> {
+  console.log('  → Comarques...')
   const { features } = readGeoJSON(
     'comarques/divisions-administratives-v2r1-comarques-5000-20240118.json'
   )
 
+  let n = 0
   for (const f of features) {
     const p = f.properties
-    await client.query(
+    const r = await client.query(
       `INSERT INTO comarques (codi, nom, cap, geom)
        VALUES ($1, $2, $3, ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON($4), 4326)))
-       ON CONFLICT (codi) DO NOTHING`,
+       ON CONFLICT (codi) DO UPDATE SET geom = EXCLUDED.geom`,
       [p.CODICOMAR, p.NOMCOMAR, p.CAPCOMAR, JSON.stringify(f.geometry)]
     )
+    n += r.rowCount ?? 0
   }
-  console.log(`     ${features.length} comarques inserides`)
+  console.log(`     ${n} comarques amb geometria`)
+  return n
 }
 
-async function seedMunicipis(client: PoolClient) {
-  console.log('  → Inserint municipis (pot trigar uns segons)...')
+async function seedMunicipis(client: PoolClient): Promise<number> {
+  console.log('  → Municipis (pot trigar uns segons)...')
   const { features } = readGeoJSON(
     'municipis/divisions-administratives-v2r1-municipis-5000-20240118.json'
   )
 
+  let n = 0
   for (const f of features) {
     const p = f.properties
     const nomMuni = p.NOMMUNI as string
     const capComar = p.CAPCOMAR as string
     const esCapComarca = nomMuni === capComar || nomMuni.startsWith(capComar + ' ')
-    await client.query(
+    const r = await client.query(
       `INSERT INTO municipis (codi, nom, es_cap_comarca, area_m2, comarca_codi, vegueria_codi, provincia_codi, geom)
        VALUES ($1, $2, $3, $4, $5, $6, $7, ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON($8), 4326)))
-       ON CONFLICT (codi) DO NOTHING`,
+       ON CONFLICT (codi) DO UPDATE SET geom = EXCLUDED.geom`,
       [
         p.CODIMUNI,
         p.NOMMUNI,
@@ -122,8 +141,29 @@ async function seedMunicipis(client: PoolClient) {
         JSON.stringify(f.geometry),
       ]
     )
+    n += r.rowCount ?? 0
   }
-  console.log(`     ${features.length} municipis inserits`)
+  console.log(`     ${n} municipis amb geometria`)
+  return n
+}
+
+// Cap fila no pot quedar sense geometria. Abans, amb ON CONFLICT DO NOTHING, en
+// una BD nova el seed no en carregava cap i deia igualment "947 municipis
+// inserits": la fallada només es veia quan els importadors no trobaven el
+// municipi dels llocs. Ara, si en falta alguna, error i ROLLBACK.
+async function verificaGeometries(client: PoolClient): Promise<void> {
+  const { rows } = await client.query<{ taula: string; sense: string }>(
+    `SELECT 'provincies' AS taula, count(*) AS sense FROM provincies WHERE geom IS NULL
+     UNION ALL SELECT 'vegueries', count(*) FROM vegueries WHERE geom IS NULL
+     UNION ALL SELECT 'comarques', count(*) FROM comarques WHERE geom IS NULL
+     UNION ALL SELECT 'municipis', count(*) FROM municipis WHERE geom IS NULL`
+  )
+  const buides = rows.filter((r) => Number(r.sense) > 0)
+  if (buides.length > 0) {
+    throw new Error(
+      `Files sense geometria: ${buides.map((r) => `${r.taula} ${r.sense}`).join(', ')}`
+    )
+  }
 }
 
 async function main() {
@@ -135,8 +175,9 @@ async function main() {
     await seedVegueries(client)
     await seedComarques(client)
     await seedMunicipis(client)
+    await verificaGeometries(client)
     await client.query('COMMIT')
-    console.log('✓ Seed completat correctament')
+    console.log('✓ Seed completat: totes les files tenen geometria')
   } catch (err) {
     await client.query('ROLLBACK')
     console.error('✗ Error durant el seed:', err)
