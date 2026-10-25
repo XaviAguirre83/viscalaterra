@@ -249,6 +249,10 @@ Les taules `COMARCA_NOMPROVINCIES` i `COMARCA_NOMVEGUERIES` a `provincies.ts` ma
 
 Conventional Commits obligatorio (commitlint). Prefijos habituales: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `style`.
 
+### README por carpeta
+
+Las carpetas cuyo propósito no es obvio llevan un `README.md` breve en catalán (qué es, qué contiene, qué hay que saber), p. ej. `.claude/README.md`. No se crean donde la estructura ya es evidente (`components/`, `views/`) ni se duplica lo que ya dice este archivo. Si cambias la estructura de una carpeta que tiene `README.md` (archivos añadidos, borrados o con otro propósito, reglas de configuración modificadas), actualiza ese README en el mismo cambio.
+
 ### Estrategia de ramas
 
 ```
