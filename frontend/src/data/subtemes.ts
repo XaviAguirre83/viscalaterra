@@ -20,13 +20,16 @@ const EMOJI_SUBTEMA: Record<string, string> = {
   'oficina-treball': '🏢',
   'seguretat-social': '🏢',
   hisenda: '🏢',
-  // Justícia
+  // Justícia (jutjats i seccions dels Tribunals d'Instància: vegeu emojiSubtema)
+  'audiencia-provincial': '⚖️',
+  tsjc: '⚖️',
   fiscalia: '🔎',
   'centre-penitenciari': '🔒',
 }
 
 export function emojiSubtema(codi: string): string {
-  // Jutjat de pau i tots els tipus de tribunal comparteixen la balança.
-  if (codi.startsWith('jutjat')) return '⚖️'
+  // Jutjats de pau i de guàrdia i totes les seccions dels Tribunals d'Instància
+  // comparteixen la balança.
+  if (codi.startsWith('jutjat') || codi.startsWith('seccio-')) return '⚖️'
   return EMOJI_SUBTEMA[codi] ?? '📍'
 }

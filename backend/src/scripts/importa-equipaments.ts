@@ -15,6 +15,7 @@
 //      (dins backend/, o via docker exec al contenidor)
 
 import { pool } from '../db'
+import { SUBTEMES_ORGANS_JUDICIALS, subtemaOrganJudicial } from './organs-judicials'
 
 const DATASET = '8gmd-gz7i'
 const FONT = 'equipaments-gencat'
@@ -29,13 +30,11 @@ interface MapaSubtema {
   categoria: string
   subtema: string
   web?: string
-  // Filtre opcional pel nom: quan la categoria del dataset barreja coses (p. ex.
-  // «Jutjats i tribunals» inclou deganats, serveis processals, arxius…), només
-  // importem els registres el nom dels quals compleix aquest predicat.
-  filtreNom?: (nom: string) => boolean
   // Deriva el subtema del nom del registre (p. ex. classificar «Jutjats i
-  // tribunals» per tipus de jutjat). Si no hi és, s'usa `subtema`.
-  subtemaPerNom?: (nom: string) => string
+  // tribunals» per tipus d'òrgan). null: el registre no s'importa (la categoria
+  // del dataset barreja coses, com serveis interns o arxius). Si no hi és, tots
+  // els registres van a `subtema`.
+  subtemaPerNom?: (nom: string) => string | null
   // Tots els subtemes que subtemaPerNom pot generar, per esborrar-los abans de
   // reinserir (idempotència). Si no hi és, s'esborra només `subtema`.
   subtemesGenerats?: string[]
@@ -44,45 +43,9 @@ interface MapaSubtema {
   excloreMunicipis?: string[]
 }
 
-// Treu accents i passa a minúscules (per classificar pel nom sense tocar articles).
+// Treu accents i passa a minúscules (per comparar noms de municipi).
 function sensAccents(s: string): string {
   return (s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
-}
-
-// Subtemes que pot generar la classificació de «Jutjats i tribunals» (l'últim és
-// el calaix de reserva). Serveix per esborrar-los tots en reimportar.
-const SUBTEMES_JUTJATS = [
-  'jutjat-1a-instancia-instruccio',
-  'jutjat-1a-instancia',
-  'jutjat-instruccio',
-  'jutjat-penal',
-  'jutjat-social',
-  'jutjat-guardia',
-  'jutjat-contencios',
-  'jutjat-violencia-dona',
-  'jutjat-mercantil',
-  'jutjat-menors',
-  'jutjat-vigilancia-penitenciaria',
-  'jutjats-tribunals',
-]
-
-// Classifica un jutjat pel seu tipus a partir del nom. L'ordre importa: els
-// patrons més específics (mixt, violència, vigilància) es comproven abans que els
-// que en són subcadena («primera instancia i instruccio» conté «instruccio»).
-function tipusJutjat(nom: string): string {
-  const n = sensAccents(nom)
-  if (n.includes('primera instancia i instruccio')) return 'jutjat-1a-instancia-instruccio'
-  if (n.includes('violencia sobre la dona')) return 'jutjat-violencia-dona'
-  if (n.includes('vigilancia penitenciaria')) return 'jutjat-vigilancia-penitenciaria'
-  if (n.includes('contencios administratiu')) return 'jutjat-contencios'
-  if (n.includes('primera instancia')) return 'jutjat-1a-instancia'
-  if (n.includes('instruccio')) return 'jutjat-instruccio'
-  if (n.includes('mercantil')) return 'jutjat-mercantil'
-  if (n.includes('menors')) return 'jutjat-menors'
-  if (n.includes('penal')) return 'jutjat-penal'
-  if (n.includes('social')) return 'jutjat-social'
-  if (n.includes('guardia')) return 'jutjat-guardia'
-  return 'jutjats-tribunals'
 }
 
 const MAPA: MapaSubtema[] = [
@@ -109,15 +72,15 @@ const MAPA: MapaSubtema[] = [
     subtema: 'jutjat-pau',
   },
   {
-    // El calaix «Jutjats i tribunals» barreja jutjats reals amb deganats, serveis
-    // comuns processals, unitats, oficines d'atenció, arxius, medicina legal…
-    // Ens quedem només amb els que són pròpiament un «Jutjat …» i els classifiquem
-    // per tipus (primera instància, penal, social, mercantil, menors…).
+    // El calaix «Jutjats i tribunals» barreja els òrgans judicials (des de la LO
+    // 1/2025, seccions dels Tribunals d'Instància, a més de l'Audiència Provincial,
+    // el TSJC i els jutjats de guàrdia) amb serveis interns, oficines, arxius,
+    // medicina legal… organs-judicials.ts els classifica pel nom i descarta la resta.
+    // `subtema` aquí només és la clau del grup (per a la línia d'ordres i el log).
     categoria: 'Justícia|Jutjats i tribunals||',
     subtema: 'jutjats-tribunals',
-    filtreNom: (nom) => /^jutjat/i.test(nom),
-    subtemaPerNom: tipusJutjat,
-    subtemesGenerats: SUBTEMES_JUTJATS,
+    subtemaPerNom: subtemaOrganJudicial,
+    subtemesGenerats: SUBTEMES_ORGANS_JUDICIALS,
   },
   {
     categoria: 'Justícia|Fiscalies||',
@@ -282,7 +245,10 @@ async function processaSubtema(
       saltats++
       continue
     }
-    if (m.filtreNom && !m.filtreNom(nom)) {
+    // El subtema pot derivar del nom (classificació dels òrgans judicials); null
+    // vol dir que el registre no s'importa (p. ex. un servei intern).
+    const subtema = m.subtemaPerNom ? m.subtemaPerNom(nom) : m.subtema
+    if (!subtema) {
       saltats++
       continue
     }
@@ -345,9 +311,6 @@ async function processaSubtema(
       const centre = await centreMunicipi(client, codi)
       if (centre) punt = centre
     }
-
-    // El subtema pot derivar del nom (classificació dels jutjats per tipus).
-    const subtema = m.subtemaPerNom ? m.subtemaPerNom(nom) : m.subtema
 
     await client.query(
       `INSERT INTO llocs
