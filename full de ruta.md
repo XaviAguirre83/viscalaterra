@@ -145,9 +145,10 @@ quin municipi cau cada punt) i les posa `seed-geodata.ts` (pas 6 del desplegamen
 
 1. VPS nou: instal·lar Docker.
 2. `git clone` del repo.
-3. Crear `.env` amb valors de producció (`DB_HOST=db`, `NODE_ENV=production`,
-   `SITE_ADDRESS=viscalaterra.cat`, `CORS_ORIGINS=https://viscalaterra.cat`, `JWT_SECRET`,
-   `DB_PASSWORD` forts, `GOOGLE_CLIENT_ID`). **Sense** `HTTP_PORT`/`HTTPS_PORT` → usa 80/443.
+3. Crear `.env` amb valors de producció (`SITE_ADDRESS=viscalaterra.cat`,
+   `CORS_ORIGINS=https://viscalaterra.cat`, `JWT_SECRET`, `DB_PASSWORD` i `DB_APP_PASSWORD`
+   forts i diferents, `GOOGLE_CLIENT_ID`; `NODE_ENV` i `DB_HOST` ja els posa el compose).
+   **Sense** `HTTP_PORT`/`HTTPS_PORT` → usa 80/443.
    A **staging**, a més: `CADDY_ENTORN=staging` i `STAGING_HASH='…'` (vegeu `.env.example`),
    amb `SITE_ADDRESS`/`CORS_ORIGINS` de `staging.viscalaterra.cat`.
 4. Proveir `backend/data/` (no és al git): polígons del mapa (`/api/geojson`) i geometries que
@@ -205,13 +206,13 @@ Queda el **hardening pre-beta** (de l'auditoria 2026-07-02, per ordre):
   recàrrega tancava la sessió. `JWT_EXPIRES_IN` es manté a 7 dies: amb la cookie
   HttpOnly un XSS ja no pot robar el token. Queda la revocació de sessions (lligada
   al risc d'_account-linking_ amb Google, § 4.6).
-- **Rol de BD sense superusuari** per a l'app (vegeu auditoria 2026-07-02,
-  seguretat § MITJÀ 3). Fer-ho **abans de producció real**: script SQL a
-  `infra/db/init/` (rol `viscalaterra_app` amb GRANT mínims) + 2 vars d'entorn
-  - `db.ts`. Si es deixa escrit a `init/` abans del dia del VPS, producció
-    naixerà ben configurada de fàbrica; en local implica recrear el volum
-    (`down -v` + seed, es perden els usuaris de prova) o aplicar el SQL a mà.
-    Estimat: 30–45 min.
+- ~~**Rol de BD sense superusuari** per a l'app~~ — ✅ **FET 2026-10-26**:
+  `infra/db/init/06-rol-aplicacio.sh` crea el rol de la web (`DB_APP_USER`) amb només
+  `SELECT/INSERT/UPDATE/DELETE` i seqüències; el backend s'hi connecta i ja no rep el
+  `.env` sencer (llista explícita d'`environment:` als compose). Provat amb l'stack de
+  producció: web, seed i importadors funcionen; DDL, `TRUNCATE`, crear rols i
+  `COPY … PROGRAM`, denegats. En local cal afegir `DB_APP_USER`/`DB_APP_PASSWORD` al
+  `.env` i recrear el volum (la BD local encara és de la 16).
 
 **4.4 Sistema de contribucions i verificació col·lectiva**
 El nucli diferenciador de viscalaterra. Vegeu secció 4.4 detallada més avall.

@@ -13,9 +13,12 @@ services:
     restart: unless-stopped
     logging: *logs
     environment:
+      # Administrador i rol de la web, com a producció (vegeu docker-compose.prod.yml).
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+      DB_APP_USER: ${DB_APP_USER:?falta DB_APP_USER al .env (vegeu .env.example)}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:?falta DB_APP_PASSWORD al .env (vegeu .env.example)}
     ports:
       # Lligat a loopback: la BD només és accessible des del propi host, mai des de la LAN.
       - '127.0.0.1:${DB_PORT:-5432}:5432'
@@ -35,7 +38,25 @@ services:
     container_name: viscalaterra_backend
     restart: unless-stopped
     logging: *logs
-    env_file: .env
+    # Com a producció: només les variables que fa servir i el rol de la web (sense
+    # superusuari), perquè en local es provi amb els mateixos permisos.
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_APP_USER:?falta DB_APP_USER al .env (vegeu .env.example)}
+      DB_PASSWORD: ${DB_APP_PASSWORD:?falta DB_APP_PASSWORD al .env (vegeu .env.example)}
+      JWT_SECRET: ${JWT_SECRET:?falta JWT_SECRET al .env}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      COOKIE_SECURE: ${COOKIE_SECURE:-}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-120}
+      AUTH_RATE_LIMIT_WINDOW_MS: ${AUTH_RATE_LIMIT_WINDOW_MS:-60000}
+      AUTH_RATE_LIMIT_MAX: ${AUTH_RATE_LIMIT_MAX:-20}
     command: sh -c "npm install && npm run dev"
     ports:
       # Lligat a loopback: el frontend hi accedeix per la xarxa interna de Docker

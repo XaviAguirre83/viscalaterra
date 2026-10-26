@@ -53,13 +53,18 @@ resposta uniforme necessita el flux de verificació per email (roadmap beta).
 vite 8.0.14 (HIGH). Totes dev-only. **Fix aplicat:** audit fix + vite 8.0.16 als
 tres lockfiles (arrel sincronitzat, frontend, backend) → 0 vulnerabilitats.
 
-### 🟡 MITJÀ 3 — L'app es connecta a PostgreSQL com a superusuari — ⏳ PENDENT
+### 🟡 MITJÀ 3 — L'app es connecta a PostgreSQL com a superusuari — ✅ APLICAT 2026-10-26
 
 `backend/src/db.ts` + composes: el mateix `DB_USER` és el rol d'arrencada de la
 imatge PostGIS (superusuari) i el de l'app. Si mai entrés una SQLi en endpoints
 futurs, l'impacte seria total. **Fix recomanat:** rol d'aplicació amb privilegis
 mínims abans de producció real (tocarà `infra/db/init/` + `.env` — coordinar amb
 la recreació del volum de dades).
+**Fix aplicat (2026-10-26, preparant staging):** `infra/db/init/06-rol-aplicacio.sh`
+crea el rol de la web (`DB_APP_USER`, només DML i seqüències, `spatial_ref_sys` de
+lectura) i el backend s'hi connecta; a més, el backend ja no rep el `.env` sencer.
+Verificat: el superusuari executava `COPY … FROM PROGRAM 'id'`; el rol de la web té
+denegats DDL, `TRUNCATE`, `CREATE/ALTER ROLE` i `COPY … PROGRAM`.
 
 ### 🟡 MITJÀ 4 — CI sense npm audit — ✅ APLICAT
 

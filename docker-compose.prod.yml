@@ -34,9 +34,14 @@ services:
     restart: unless-stopped
     logging: *logs
     environment:
+      # Administrador (superusuari): crea la BD i les taules en néixer el volum i
+      # serveix per al manteniment (migracions, còpies). La web no l'usa mai.
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+      # Rol de la web, sense superusuari: el crea infra/db/init/06-rol-aplicacio.sh.
+      DB_APP_USER: ${DB_APP_USER:?falta DB_APP_USER al .env (vegeu .env.example)}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:?falta DB_APP_PASSWORD al .env (vegeu .env.example)}
     volumes:
       # Des de la 18 la imatge desa les dades a /var/lib/postgresql/18/docker: el
       # volum es munta a /var/lib/postgresql (amb la ruta antiga .../data, la imatge
@@ -57,9 +62,27 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     logging: *logs
-    env_file: .env
+    # Només les variables que fa servir, no tot el .env: la contrasenya
+    # d'administrador de la BD i el hash de la porta de staging no hi arriben.
     environment:
-      - NODE_ENV=production
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      # Es connecta amb el rol de la web (sense superusuari), no amb l'administrador.
+      DB_USER: ${DB_APP_USER:?falta DB_APP_USER al .env (vegeu .env.example)}
+      DB_PASSWORD: ${DB_APP_PASSWORD:?falta DB_APP_PASSWORD al .env (vegeu .env.example)}
+      JWT_SECRET: ${JWT_SECRET:?falta JWT_SECRET al .env}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      CORS_ORIGINS: ${CORS_ORIGINS:?falta CORS_ORIGINS al .env (l'origen públic de la web)}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      COOKIE_SECURE: ${COOKIE_SECURE:-}
+      # Mai buits: el backend els passa per Number() i un buit seria 0.
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-120}
+      AUTH_RATE_LIMIT_WINDOW_MS: ${AUTH_RATE_LIMIT_WINDOW_MS:-60000}
+      AUTH_RATE_LIMIT_MAX: ${AUTH_RATE_LIMIT_MAX:-20}
     volumes:
       # Geodades de l'ICC (no són al git): muntades en NOMÉS-LECTURA des del host.
       - ./backend/data:/app/data:ro
