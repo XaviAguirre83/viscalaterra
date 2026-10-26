@@ -1,9 +1,33 @@
-# Configuració de Caddy — puerta única de la web en producció.
+# Configuració de Caddy — porta única de la web, a producció i a staging.
 #
 # {$SITE_ADDRESS} ve del docker-compose.prod.yml:
 #   - En local:  :80              → HTTP sense certificat (simulació)
 #   - Al VPS:    viscalaterra.cat → Caddy treu i RENOVA el certificat HTTPS tot sol
+#
+# {$CADDY_ENTORN} tria el bloc d'entorn: «produccio» (per defecte) o «staging».
+# Mateix Caddyfile per als dos servidors; el que canvia és el .env de cadascun.
+
+# Producció: res de més.
+(entorn_produccio) {
+}
+
+# Staging: porta amb una contrasenya compartida (basic auth) davant de TOT (web i
+# API) i cartell «no m'indexis» per als cercadors. Usuari fix «viscalaterra»: amb
+# una contrasenya compartida, la seguretat la dona la contrasenya (llarga i
+# aleatòria). El hash (mai la contrasenya) ve del .env del servidor, que no és al
+# git (el repositori és públic); si falta, Caddy no arrenca: millor no obrir que
+# obrir sense porta. Caddy recorda les contrasenyes ja verificades, així que el
+# bcrypt (lent a propòsit) només es paga a la primera petició.
+(entorn_staging) {
+	basic_auth bcrypt "viscalaterra.cat (staging)" {
+		viscalaterra {$STAGING_HASH}
+	}
+	header X-Robots-Tag "noindex, nofollow"
+}
+
 {$SITE_ADDRESS} {
+	import entorn_{$CADDY_ENTORN:produccio}
+
 	# Compressió dels estàtics (HTML/JS/CSS/GeoJSON via proxy).
 	encode gzip zstd
 
@@ -13,9 +37,10 @@
 		# Content-Security-Policy: la SPA carrega els seus propis assets, tiles
 		# de mapa (Mapa Base de l'ICGC) i fa fetch a la mateixa API. 'unsafe-inline' a
 		# style perquè Leaflet i Vue injecten estils en línia. Els orígens
-		# d'accounts.google.com (script/connect/frame) són per al login amb
-		# Google (GSI) — sense ells el botó de Google queda bloquejat per la CSP.
-		Content-Security-Policy "default-src 'self'; script-src 'self' https://accounts.google.com; img-src 'self' data: https://geoserveis.icgc.cat; style-src 'self' 'unsafe-inline'; connect-src 'self' https://accounts.google.com; frame-src https://accounts.google.com; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+		# d'accounts.google.com (script/connect/frame i el full d'estil gsi/style)
+		# són per al login amb Google (GSI), tal com demana la seva documentació —
+		# sense ells el botó de Google queda bloquejat per la CSP.
+		Content-Security-Policy "default-src 'self'; script-src 'self' https://accounts.google.com; img-src 'self' data: https://geoserveis.icgc.cat; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; connect-src 'self' https://accounts.google.com; frame-src https://accounts.google.com; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
 		# Clickjacking i sniffing.
 		X-Frame-Options "DENY"
 		X-Content-Type-Options "nosniff"

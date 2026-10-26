@@ -10,6 +10,10 @@ COPY package*.json ./
 # npm ci: instal·la EXACTAMENT el package-lock.json (build reproduïble).
 RUN npm ci
 COPY . .
+# Client ID de Google (és públic) per al botó «Continua amb Google». Arriba del
+# GOOGLE_CLIENT_ID del .env del servidor via docker-compose.prod.yml (build.args);
+# Vite el llegeix de l'entorn en compilar. Buit → el botó no apareix.
+ARG VITE_GOOGLE_CLIENT_ID=
 RUN npm run build
 
 # --- Etapa de runtime (Caddy) ---

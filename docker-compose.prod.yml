@@ -72,12 +72,19 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        # Botó de Google: el mateix Client ID (públic) que verifica el backend.
+        VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
     restart: unless-stopped
     logging: *logs
     environment:
       # En local, sense definir SITE_ADDRESS → ':80' (HTTP).
       # Al VPS, posa SITE_ADDRESS=viscalaterra.cat al .env → HTTPS automàtic.
       - SITE_ADDRESS=${SITE_ADDRESS:-:80}
+      # Entorn del Caddyfile: «produccio» (per defecte) o «staging» (porta amb
+      # contrasenya compartida + noindex). El hash, només a staging.
+      - CADDY_ENTORN=${CADDY_ENTORN:-produccio}
+      - STAGING_HASH=${STAGING_HASH:-}
     ports:
       # Per defecte 80/443 (correcte al VPS). En local amb Docker rootless, els
       # ports < 1024 no es poden usar: posa HTTP_PORT=8080 i HTTPS_PORT=8443 al .env.

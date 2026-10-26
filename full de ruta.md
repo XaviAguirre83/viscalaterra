@@ -102,7 +102,7 @@ trivial. Implementat amb un segon compose espillo de producció.
 | `docker-compose.prod.yml`                         | Stack de producció. Projecte aïllat `viscalaterra-prod` (BD, xarxa i volums separats del dev → es poden tenir tots dos alhora). Logs amb tope i rotació (driver `local`: 5 × 10 MB per contenidor, s'esborra el més antic). |
 | `backend/Dockerfile`                              | Imatge de prod multi-stage: compila TS → `dist/`, runtime mínim sense devDeps, usuari no-root.                                                                                                                              |
 | `frontend/Dockerfile`                             | Multi-stage: compila la SPA → estàtics dins d'una imatge **Caddy**.                                                                                                                                                         |
-| `frontend/Caddyfile`                              | Caddy: serveix la SPA, proxy `/api/*` → backend, HTTPS automàtic al VPS.                                                                                                                                                    |
+| `frontend/Caddyfile`                              | Caddy: serveix la SPA, proxy `/api/*` → backend, HTTPS automàtic al VPS. Amb `CADDY_ENTORN=staging`: porta amb contrasenya compartida (usuari `viscalaterra`, hash a `STAGING_HASH`) i `X-Robots-Tag: noindex`.             |
 | `backend/.dockerignore`, `frontend/.dockerignore` | Builds netes.                                                                                                                                                                                                               |
 
 ### Arquitectura
@@ -147,7 +147,9 @@ quin municipi cau cada punt) i les posa `seed-geodata.ts` (pas 6 del desplegamen
 2. `git clone` del repo.
 3. Crear `.env` amb valors de producció (`DB_HOST=db`, `NODE_ENV=production`,
    `SITE_ADDRESS=viscalaterra.cat`, `CORS_ORIGINS=https://viscalaterra.cat`, `JWT_SECRET`,
-   `DB_PASSWORD` forts). **Sense** `HTTP_PORT`/`HTTPS_PORT` → usa 80/443.
+   `DB_PASSWORD` forts, `GOOGLE_CLIENT_ID`). **Sense** `HTTP_PORT`/`HTTPS_PORT` → usa 80/443.
+   A **staging**, a més: `CADDY_ENTORN=staging` i `STAGING_HASH='…'` (vegeu `.env.example`),
+   amb `SITE_ADDRESS`/`CORS_ORIGINS` de `staging.viscalaterra.cat`.
 4. Proveir `backend/data/` (no és al git): polígons del mapa (`/api/geojson`) i geometries que
    carrega el seed (pas 6). La BD territorial (panell On?) s'autopobla sola.
 5. `docker compose -f docker-compose.prod.yml up -d --build` → Caddy treu el certificat sol.

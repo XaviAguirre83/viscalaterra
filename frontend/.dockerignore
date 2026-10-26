@@ -1,4 +1,6 @@
 node_modules
 dist
-.env
+# Cap fitxer d'entorn local dins la imatge (p. ex. .env.local amb valors de
+# desenvolupament): els de producció arriben com a build args del .env del servidor.
+.env*
 *.log
