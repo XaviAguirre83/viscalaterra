@@ -154,6 +154,8 @@ quin municipi cau cada punt) i les posa `seed-geodata.ts` (pas 6 del desplegamen
 4. Proveir `backend/data/` (no és al git): polígons del mapa (`/api/geojson`) i geometries que
    carrega el seed (pas 6). La BD territorial (panell On?) s'autopobla sola.
 5. `docker compose -f docker-compose.prod.yml up -d --build` → Caddy treu el certificat sol.
+   Una BD nova ja hi aplica les migracions en néixer; a cada actualització posterior del codi:
+   `docker compose -f docker-compose.prod.yml exec db sh /migracions/migra.sh`.
 6. Carregar geometries i llocs (per a la cerca de llocs). El seed primer: els importadors el
    necessiten.
 
@@ -204,8 +206,9 @@ Queda el **hardening pre-beta** (de l'auditoria 2026-07-02, per ordre):
   A més deixa lliure la capçalera `Authorization` per a la contrasenya de la porta
   de staging (basic auth): amb el token a `Authorization: Bearer` hi xocaven i cada
   recàrrega tancava la sessió. `JWT_EXPIRES_IN` es manté a 7 dies: amb la cookie
-  HttpOnly un XSS ja no pot robar el token. Queda la revocació de sessions (lligada
-  al risc d'_account-linking_ amb Google, § 4.6).
+  HttpOnly un XSS ja no pot robar el token. **Revocació de sessions FETA 2026-10-26**
+  (`usuaris.sessio_versio`, primera migració): en vincular Google a un compte existent
+  s'anul·la la contrasenya i es tanquen totes les sessions (contra el _pre-hijacking_).
 - ~~**Rol de BD sense superusuari** per a l'app~~ — ✅ **FET 2026-10-26**:
   `infra/db/init/06-rol-aplicacio.sh` crea el rol de la web (`DB_APP_USER`) amb només
   `SELECT/INSERT/UPDATE/DELETE` i seqüències; el backend s'hi connecta i ja no rep el
@@ -376,7 +379,9 @@ Necessari per seguretat i RGPD. Depèn del **servei d'email** (vegeu 4.5).
 - **Establir contrasenya en comptes de Google**: avui un compte creat amb Google no té
   contrasenya i no se'n pot afegir → queda "atrapat" en només-Google. Cal un flux per posar-ne.
 - **Risc d'account-linking**: la vinculació automàtica Google↔local pel mateix email només és
-  segura si el registre local verifica l'email; per això aquesta tasca el desbloqueja.
+  segura si el registre local verifica l'email. _Mitigat 2026-10-26_: en vincular s'anul·la la
+  contrasenya (no verificada) i es tanquen les sessions; amb verificació d'email es podrà
+  conservar la contrasenya dels comptes ja verificats.
 
 ### Secció 4.7 — Espai d'usuari (/espai) — _pendent_
 

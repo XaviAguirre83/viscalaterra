@@ -12,6 +12,9 @@ SQL d'inicialització de la base de dades (PostgreSQL + PostGIS).
 | `init/04-usuaris-schema.sql`     | Taula `usuaris` (login local amb bcrypt i Google OAuth)                                  |
 | `init/05-llocs-schema.sql`       | Taula `llocs` (punts d'interès atemporals) i els seus índexs                             |
 | `init/06-rol-aplicacio.sh`       | Rol de la web **sense superusuari** (`DB_APP_USER`): només llegeix i escriu dades        |
+| `init/07-migracions.sh`          | En néixer la BD, hi aplica totes les migracions de `migracions/`                         |
+| `migracions/migra.sh`            | Aplica les migracions pendents, en ordre i un sol cop (com a administrador)              |
+| `migracions/NNN-*.sql`           | Canvis d'estructura posteriors a la línia base (`init/`), numerats                       |
 | `seed-llocs-demo.sql`            | Llocs de **demo** (font `seed-demo`). No s'executa sol; no és la ingesta real            |
 | `README.md`                      | Aquest fitxer                                                                            |
 
@@ -21,10 +24,25 @@ Postgres executa els `.sql` i els `.sh` de `/docker-entrypoint-initdb.d` en **or
 
 Conseqüències:
 
-- Modificar un fitxer d'`init/` **no canvia una BD ja creada**. Cal aplicar el canvi a mà (`docker exec … psql`) o recrear el volum.
+- Modificar un fitxer d'`init/` **no canvia una BD ja creada**: per això els canvis d'estructura van a `migracions/` (vegeu més avall), no a `init/`.
 - Un volum nou (p. ex. en canviar de versió de Postgres) comença buit i es reinicialitza amb aquests fitxers.
 - Des de la imatge `postgis/postgis:18-3.6` el volum (`db_pg18`) es munta a `/var/lib/postgresql`; amb l'antiga ruta `.../data` la imatge es nega a arrencar.
 - L'ordre importa: `llocs` referencia `municipis`, que referencia `comarques`, `vegueries` i `provincies`.
+
+## Migracions: canviar l'estructura d'una BD que ja té dades
+
+`init/` és la **línia base**: només corre quan neix el volum. Quan una BD ja té dades reals (staging, producció) no es pot recrear per canviar una taula; per això, des de la línia base, **tot canvi d'estructura va en una migració** de `migracions/`, i `init/` no es toca.
+
+- Fitxers `NNN-descripcio.sql` (tres xifres, minúscules i guions), aplicats en ordre per `migra.sh`, que registra cadascun a `control.migracions` i no el torna a aplicar mai.
+- Cada migració va en **una sola transacció** amb el seu registre: si falla, es desfà sencera i el procés s'atura. Per això el fitxer no porta `BEGIN`/`COMMIT` ni res que no admeti transaccions (p. ex. `CREATE INDEX CONCURRENTLY`).
+- Una migració aplicada **no s'edita mai**: un canvi nou és una migració nova.
+- S'aplica com a **administrador**, dins del contenedor de la BD (el rol de la web no pot canviar l'estructura, a propòsit); les taules noves hereten els permisos del rol de la web. `control` és un esquema a part on la web no hi té accés.
+- Una BD nova les aplica totes en néixer (`init/07-migracions.sh`). En una d'existent, després d'actualitzar el codi:
+
+```bash
+docker compose exec db sh /migracions/migra.sh                              # dev
+docker compose -f docker-compose.prod.yml exec db sh /migracions/migra.sh   # servidor
+```
 
 ## Rols: administrador i web
 

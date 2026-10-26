@@ -22,7 +22,7 @@ era la IP del contenidor de Caddy — idèntica per a tothom — i el limitador 
 la plataforma**. Confirmat als logs de prod (`ERR_ERL_UNEXPECTED_X_FORWARDED_FOR`).
 **Fix aplicat:** `app.set('trust proxy', 1)`.
 
-### 🟠 ALT 2 — JWT a localStorage + 7 dies sense revocació — ✅ APLICAT 2026-10-25 (revocació ⏳)
+### 🟠 ALT 2 — JWT a localStorage + 7 dies sense revocació — ✅ APLICAT 2026-10-25 (revocació 2026-10-26)
 
 `frontend/src/stores/auth.ts` + `backend/src/routes/auth.ts`. El backend retorna el
 JWT al cos JSON i el frontend el persisteix a localStorage: qualsevol XSS pot
@@ -37,7 +37,10 @@ configurable per entorn.
 esborra el servidor (`backend/src/auth/sessio.ts`, `POST /api/auth/surt`); el JS ja
 no el veu. Anti-CSRF a `index.ts` (`Sec-Fetch-Site`/`Origin`, _same-origin_). Era
 també imprescindible per a la basic auth de staging, que necessita la capçalera
-`Authorization`. Queda pendent la revocació de sessions abans dels 7 dies.
+`Authorization`. **Revocació (2026-10-26):** el token porta la versió de sessió de
+l'usuari (`usuaris.sessio_versio`, migració 001) i cada petició autenticada la
+compara amb la BD; vincular Google a un compte existent anul·la la contrasenya i
+incrementa la versió (tanca totes les sessions).
 
 ### 🟡 MITJÀ 1 — Enumeració d'usuaris per timing al login — ✅ APLICAT / registre ⏳
 

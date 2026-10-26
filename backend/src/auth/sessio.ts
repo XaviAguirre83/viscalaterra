@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express'
 import { signaToken, verificaToken } from './jwt'
+import { buscaPerId, publicDe, type UsuariPublic, type UsuariSessio } from './usuaris'
 
 // La sessió viatja en una cookie HttpOnly que posa i esborra el servidor, no en
 // una capçalera que hagi de posar el JavaScript de la pàgina:
@@ -26,8 +27,8 @@ export const NOM_COOKIE = SEGURA ? '__Host-sessio' : 'sessio'
 // pàgina, així que ni arribar-hi des d'un enllaç extern no la necessita.
 const OPCIONS = { httpOnly: true, secure: SEGURA, sameSite: 'strict', path: '/' } as const
 
-export function obreSessio(res: Response, idUsuari: number): void {
-  const { token, caduca } = signaToken(idUsuari)
+export function obreSessio(res: Response, usuari: UsuariSessio): void {
+  const { token, caduca } = signaToken(usuari.id, usuari.sessio_versio)
   res.cookie(NOM_COOKIE, token, { ...OPCIONS, expires: caduca })
 }
 
@@ -35,11 +36,17 @@ export function tancaSessio(res: Response): void {
   res.clearCookie(NOM_COOKIE, OPCIONS)
 }
 
-// Id de l'usuari de la cookie de sessió, o null si no n'hi ha o no és vàlida
-// (caducada, manipulada o signada amb un altre JWT_SECRET).
-export function idDeLaSessio(req: Request): number | null {
+// Usuari de la cookie de sessió, o null si no n'hi ha o no és vàlida: caducada,
+// manipulada, signada amb un altre JWT_SECRET, d'un usuari que ja no existeix o
+// revocada (la versió de sessió de la BD ha canviat des que es va obrir). Fa una
+// consulta a la BD a cada crida: és el preu de poder tancar sessions a distància.
+export async function usuariDeLaSessio(req: Request): Promise<UsuariPublic | null> {
   const token = llegeixCookie(req, NOM_COOKIE)
-  return token ? (verificaToken(token)?.uid ?? null) : null
+  const payload = token ? verificaToken(token) : null
+  if (!payload) return null
+  const usuari = await buscaPerId(payload.uid)
+  if (!usuari || usuari.sessio_versio !== payload.sv) return null
+  return publicDe(usuari)
 }
 
 // Lector mínim de la capçalera Cookie ("a=1; b=2"): no val la pena una

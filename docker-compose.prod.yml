@@ -49,6 +49,9 @@ services:
       # major nova se'n crea un altre al costat i aquest queda per tornar enrere.
       - db_pg18:/var/lib/postgresql
       - ./infra/db/init:/docker-entrypoint-initdb.d
+      # Migracions d'estructura: s'apliquen amb /migracions/migra.sh (com a
+      # administrador) i, en néixer la BD, totes (init/07-migracions.sh).
+      - ./infra/db/migracions:/migracions:ro
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${DB_USER} -d ${DB_NAME}']
       interval: 10s

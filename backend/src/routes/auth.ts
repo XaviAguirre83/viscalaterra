@@ -2,15 +2,15 @@ import { Router, type Request, type Response } from 'express'
 import rateLimit from 'express-rate-limit'
 import bcrypt from 'bcryptjs'
 import { OAuth2Client } from 'google-auth-library'
-import { NOM_COOKIE, idDeLaSessio, obreSessio, tancaSessio } from '../auth/sessio'
+import { NOM_COOKIE, obreSessio, tancaSessio, usuariDeLaSessio } from '../auth/sessio'
 import {
-  buscaPerId,
   buscaPerEmail,
   buscaPerGoogleId,
   creaLocal,
   creaGoogle,
+  publicDe,
   vinculaGoogle,
-  type UsuariPublic,
+  type UsuariSessio,
 } from '../auth/usuaris'
 
 const router = Router()
@@ -53,11 +53,11 @@ function normalitzaEmail(v: unknown): string {
   return typeof v === 'string' ? v.trim().toLowerCase() : ''
 }
 
-// Obre la sessió (cookie HttpOnly) i retorna l'usuari. El token no va al cos:
-// el JavaScript de la pàgina no l'ha de veure mai.
-function resposta(res: Response, usuari: UsuariPublic): void {
-  obreSessio(res, usuari.id)
-  res.json({ usuari })
+// Obre la sessió (cookie HttpOnly) i retorna l'usuari (només els camps públics).
+// El token no va al cos: el JavaScript de la pàgina no l'ha de veure mai.
+function resposta(res: Response, usuari: UsuariSessio): void {
+  obreSessio(res, usuari)
+  res.json({ usuari: publicDe(usuari) })
 }
 
 // ── Registre (compte local email + contrasenya) ───────────────────────────
@@ -100,14 +100,7 @@ router.post('/login', limitAuth, async (req: Request, res: Response) => {
   const correcte = await bcrypt.compare(contrasenya, usuari.password_hash)
   if (!correcte) return res.status(401).json({ codi: 'credencials_incorrectes' })
 
-  return resposta(res, {
-    id: usuari.id,
-    nom: usuari.nom,
-    email: usuari.email,
-    proveidor: usuari.proveidor,
-    nivell: usuari.nivell,
-    reputacio: usuari.reputacio,
-  })
+  return resposta(res, usuari)
 })
 
 // ── Login / registre amb Google ───────────────────────────────────────────
@@ -139,18 +132,11 @@ router.post('/google', limitAuth, async (req: Request, res: Response) => {
   // 1) Ja vinculat amb Google → entra.
   let usuari = await buscaPerGoogleId(googleId)
   if (!usuari) {
-    // 2) Compte local amb el mateix email → vincula Google a aquest compte.
     const existent = await buscaPerEmail(email)
     if (existent) {
-      await vinculaGoogle(existent.id, googleId)
-      usuari = {
-        id: existent.id,
-        nom: existent.nom,
-        email: existent.email,
-        proveidor: existent.proveidor,
-        nivell: existent.nivell,
-        reputacio: existent.reputacio,
-      }
+      // 2) Compte amb el mateix email → s'hi vincula Google, i s'anul·len la
+      //    contrasenya (no verificada) i les sessions obertes: vegeu vinculaGoogle.
+      usuari = await vinculaGoogle(existent.id, googleId)
     } else {
       // 3) Usuari nou.
       usuari = await creaGoogle(nom, email, googleId)
@@ -164,10 +150,9 @@ router.post('/google', limitAuth, async (req: Request, res: Response) => {
 // HttpOnly per saber si hi ha sessió. Sense sessió respon 200 amb usuari null
 // (no 401), perquè cada visitant anònim no deixi un error a la consola.
 router.get('/jo', async (req: Request, res: Response) => {
-  const id = idDeLaSessio(req)
-  const usuari = id === null ? null : await buscaPerId(id)
-  // Cookie caducada, manipulada o d'un usuari que ja no existeix: s'esborra
-  // perquè el navegador no la torni a enviar.
+  const usuari = await usuariDeLaSessio(req)
+  // Cookie caducada, manipulada, revocada o d'un usuari que ja no existeix:
+  // s'esborra perquè el navegador no la torni a enviar.
   if (!usuari && req.headers.cookie?.includes(NOM_COOKIE)) tancaSessio(res)
   return res.json({ usuari })
 })

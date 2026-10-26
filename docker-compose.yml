@@ -25,6 +25,7 @@ services:
     volumes:
       - db_pg18:/var/lib/postgresql
       - ./infra/db/init:/docker-entrypoint-initdb.d
+      - ./infra/db/migracions:/migracions:ro
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${DB_USER} -d ${DB_NAME}']
       interval: 10s
