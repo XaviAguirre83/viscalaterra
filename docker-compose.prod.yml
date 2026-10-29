@@ -1,7 +1,7 @@
 # ================================================================
 # Stack de PRODUCCIÓ — viscalaterra.cat
 #
-# El MATEIX fitxer corre en local (per simular) i al VPS de Hetzner:
+# El MATEIX fitxer corre en local (per simular) i al VPS:
 #   Local:  docker compose -f docker-compose.prod.yml up --build
 #   VPS:    docker compose -f docker-compose.prod.yml up -d --build
 #
@@ -26,6 +26,11 @@ x-logs: &logs
     max-size: '10m'
     max-file: '5'
 
+# Cap procés dels contenidors no pot guanyar privilegis nous (programes setuid,
+# capacitats de fitxer…): si algú hi entrés, no podria escalar per aquesta via.
+x-sense-privilegis: &sense-privilegis
+  - no-new-privileges:true
+
 services:
   db:
     # PostgreSQL 18 + PostGIS 3.6. Quan surti una PostGIS nova, l'etiqueta -3.6
@@ -33,6 +38,9 @@ services:
     image: postgis/postgis:18-3.6
     restart: unless-stopped
     logging: *logs
+    # La BD necessita les seves capacitats per arrencar (canvia el propietari de
+    # les dades i passa a l'usuari postgres): només se li prohibeix guanyar-ne més.
+    security_opt: *sense-privilegis
     environment:
       # Administrador (superusuari): crea la BD i les taules en néixer el volum i
       # serveix per al manteniment (migracions, còpies). La web no l'usa mai.
@@ -89,6 +97,24 @@ services:
     volumes:
       # Geodades de l'ICC (no són al git): muntades en NOMÉS-LECTURA des del host.
       - ./backend/data:/app/data:ro
+    # Corre com a usuari «node», sense cap capacitat del sistema i sense poder
+    # escriure al seu propi disc: si algú hi entrés, no hi podria instal·lar res.
+    # /tmp, en memòria.
+    security_opt: *sense-privilegis
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: [/tmp]
+    healthcheck:
+      # /health comprova també la BD (SELECT 1). La imatge no porta curl: fetch de Node.
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     depends_on:
       db:
         condition: service_healthy
@@ -120,8 +146,18 @@ services:
       # Persisteixen els certificats TLS entre reinicis (no tornar a demanar-los a Let's Encrypt).
       - caddy_data:/data
       - caddy_config:/config
+    # Caddy només necessita obrir els ports 80/443, i només escriu als seus volums
+    # (/data, /config: certificats i configuració). /tmp, en memòria.
+    security_opt: *sense-privilegis
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    read_only: true
+    tmpfs: [/tmp]
     depends_on:
-      - backend
+      # No obre la porta fins que el backend està sa: sense això, els primers
+      # segons després d'arrencar responia 502.
+      backend:
+        condition: service_healthy
 
 volumes:
   db_pg18:

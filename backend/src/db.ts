@@ -6,6 +6,9 @@ export const pool = new Pool({
   database: process.env.DB_NAME ?? 'viscalaterra',
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
+  // Sense límit, si la BD no respon una petició es queda penjada esperant
+  // connexió; així falla als 5 s (i /health ho detecta).
+  connectionTimeoutMillis: 5000,
 })
 
 // Sense aquest listener, un client idle que perd la connexió (reinici de la BD,

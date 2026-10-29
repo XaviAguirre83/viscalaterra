@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import { urlSegura } from '@/data/url'
 
 // Un Lloc tal com el retorna GET/POST /api/llocs/cerca (camelCase).
 export interface Lloc {
@@ -74,7 +75,12 @@ export const useLlocsStore = defineStore('llocs', () => {
       })
       if (!res.ok) throw new Error(`Error ${res.status}`)
       const data = (await res.json()) as { total: number; llocs: Lloc[] }
-      resultats.value = data.llocs
+      // web i fontUrl venen de datasets externs i acaben en hrefs: només http(s).
+      resultats.value = data.llocs.map((l) => ({
+        ...l,
+        web: urlSegura(l.web),
+        fontUrl: urlSegura(l.fontUrl),
+      }))
       totaCatalunya.value = municipis.length === 0
       cercaFeta.value = true
       llocDestacat.value = null

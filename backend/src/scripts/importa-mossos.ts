@@ -8,6 +8,7 @@
 // Ús: npm run importa-mossos  (dins backend/, o via docker exec al contenidor)
 
 import { pool } from '../db'
+import { fetchAmbReintents } from './xarxa'
 
 const DATASET = '8jxf-yu8c'
 const URL_DADES = `https://analisi.transparenciacatalunya.cat/resource/${DATASET}.json?$limit=1000`
@@ -70,7 +71,7 @@ async function centreMunicipi(codi: string): Promise<{ lat: number; lng: number 
 
 async function main() {
   console.log('Baixant el dataset dels Mossos…', URL_DADES)
-  const res = await fetch(URL_DADES)
+  const res = await fetchAmbReintents(URL_DADES)
   if (!res.ok) throw new Error(`Error ${res.status} baixant el dataset`)
   const tots = (await res.json()) as RegistreMossos[]
 

@@ -16,6 +16,7 @@
 
 import { pool } from '../db'
 import { SUBTEMES_ORGANS_JUDICIALS, subtemaOrganJudicial } from './organs-judicials'
+import { fetchAmbReintents } from './xarxa'
 
 const DATASET = '8gmd-gz7i'
 const FONT = 'equipaments-gencat'
@@ -244,7 +245,7 @@ async function baixaCategoria(categoria: string): Promise<RegistreEquip[]> {
   // SoQL escapa la cometa simple doblant-la, com SQL.
   const where = encodeURIComponent(`categoria='${categoria.replace(/'/g, "''")}'`)
   const url = `https://analisi.transparenciacatalunya.cat/resource/${DATASET}.json?$where=${where}&$limit=5000`
-  const res = await fetch(url)
+  const res = await fetchAmbReintents(url)
   if (!res.ok) throw new Error(`Error ${res.status} baixant la categoria «${categoria}»`)
   return (await res.json()) as RegistreEquip[]
 }

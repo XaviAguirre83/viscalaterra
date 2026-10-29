@@ -17,7 +17,9 @@
 # aleatòria). El hash (mai la contrasenya) ve del .env del servidor, que no és al
 # git (el repositori és públic); si falta, Caddy no arrenca: millor no obrir que
 # obrir sense porta. Caddy recorda les contrasenyes ja verificades, així que el
-# bcrypt (lent a propòsit) només es paga a la primera petició.
+# bcrypt (lent a propòsit) només es paga a la primera petició; però cada intent
+# fallit amb una contrasenya nova també el paga: el hash es genera amb cost 10
+# (vegeu .env.example), perquè uns quants intents per segon no saturin la CPU.
 (entorn_staging) {
 	basic_auth bcrypt "viscalaterra.cat (staging)" {
 		viscalaterra {$STAGING_HASH}

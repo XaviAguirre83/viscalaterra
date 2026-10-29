@@ -8,14 +8,23 @@ on:
   pull_request:
     branches: [main, develop]
 
+# Permisos mínims del token del CI: només llegir el codi (cap job no escriu res al
+# repositori). Les accions van fixades per SHA (la seva empremta exacta) i no per
+# etiqueta, que es podria moure cap a un altre codi; el comentari diu la versió.
+permissions:
+  contents: read
+
 # It consists of three jobs:
 jobs:
   quality:
     name: Format check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4.2.2
-      - uses: actions/setup-node@v4.4.0
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # No deixar el token del CI desat a .git/config durant la resta del job.
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
           # Sempre l'última 24.x publicada (pegats de seguretat), no la que el
@@ -38,8 +47,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: [quality]
     steps:
-      - uses: actions/checkout@v4.2.2
-      - uses: actions/setup-node@v4.4.0
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # No deixar el token del CI desat a .git/config durant la resta del job.
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
           check-latest: true
@@ -59,8 +71,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: [quality]
     steps:
-      - uses: actions/checkout@v4.2.2
-      - uses: actions/setup-node@v4.4.0
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # No deixar el token del CI desat a .git/config durant la resta del job.
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
           check-latest: true

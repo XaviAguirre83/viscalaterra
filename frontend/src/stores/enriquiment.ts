@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { clauNom } from '@/data/text'
+import { urlSegura } from '@/data/url'
 import type { NivellTerritorial } from '@/stores/mapa'
 
 // Enriquiment de territoris (web, Viquipèdia, escut, bandera) generat de
@@ -33,6 +34,28 @@ interface DadesEnriquiment {
   provincies: Record<string, Enriquiment>
 }
 
+// Els enllaços venen de Wikidata i acaben en hrefs: només es conserven els http(s).
+function ambEnllacosSegurs(e: Enriquiment): Enriquiment {
+  const credit = (c?: Credit) => c && { ...c, pagina: urlSegura(c.pagina) ?? undefined }
+  return {
+    ...e,
+    web: urlSegura(e.web) ?? undefined,
+    wiki: urlSegura(e.wiki) ?? undefined,
+    escutCredit: credit(e.escutCredit),
+    banderaCredit: credit(e.banderaCredit),
+  }
+}
+
+function netejaEnllacos(d: DadesEnriquiment): DadesEnriquiment {
+  const neteja = (r: Record<string, Enriquiment>) =>
+    Object.fromEntries(Object.entries(r).map(([k, e]) => [k, ambEnllacosSegurs(e)]))
+  return {
+    municipis: neteja(d.municipis),
+    comarques: neteja(d.comarques),
+    provincies: neteja(d.provincies),
+  }
+}
+
 export const useEnriquimentStore = defineStore('enriquiment', () => {
   const dades = ref<DadesEnriquiment | null>(null)
   const carregant = ref(false)
@@ -45,7 +68,7 @@ export const useEnriquimentStore = defineStore('enriquiment', () => {
     promesa = fetch('/data/territoris-enriquiment.json')
       .then((r) => (r.ok ? (r.json() as Promise<DadesEnriquiment>) : Promise.reject(r.status)))
       .then((d) => {
-        dades.value = d
+        dades.value = netejaEnllacos(d)
       })
       .catch(() => {
         // Error transitori (xarxa mòbil intermitent): NO es cachea el fallo —

@@ -39,10 +39,17 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID
 const googleClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID) : null
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+// Límit pràctic d'una adreça de correu (RFC 5321).
+const MAX_EMAIL = 254
+const MAX_NOM = 80
 const MIN_CONTRASENYA = 8
-// bcrypt només considera els primers 72 bytes; acceptar més enganya l'usuari
-// (creuria tenir una contrasenya més llarga del que realment es verifica).
-const MAX_CONTRASENYA = 72
+// bcrypt només considera els primers 72 BYTES; acceptar més enganya l'usuari
+// (creuria tenir una contrasenya més llarga del que realment es verifica). Es
+// compten bytes UTF-8, no caràcters: una lletra amb accent n'ocupa 2, un emoji 4.
+const MAX_CONTRASENYA_BYTES = 72
+
+// Codi de PostgreSQL per a una clau única duplicada.
+const PG_UNIQUE_VIOLATION = '23505'
 
 // Hash esquer per al login quan l'email no existeix: es paga el mateix cost de
 // bcrypt que amb un compte real, i la latència no revela quins emails hi ha
@@ -67,11 +74,14 @@ router.post('/registre', limitAuth, async (req: Request, res: Response) => {
   const contrasenya = typeof req.body?.contrasenya === 'string' ? req.body.contrasenya : ''
 
   if (!nom) return res.status(400).json({ codi: 'nom_obligatori' })
-  if (!EMAIL_RE.test(email)) return res.status(400).json({ codi: 'email_no_valid' })
+  if (nom.length > MAX_NOM) return res.status(400).json({ codi: 'nom_llarg' })
+  if (email.length > MAX_EMAIL || !EMAIL_RE.test(email)) {
+    return res.status(400).json({ codi: 'email_no_valid' })
+  }
   if (contrasenya.length < MIN_CONTRASENYA) {
     return res.status(400).json({ codi: 'contrasenya_curta' })
   }
-  if (contrasenya.length > MAX_CONTRASENYA) {
+  if (Buffer.byteLength(contrasenya, 'utf8') > MAX_CONTRASENYA_BYTES) {
     return res.status(400).json({ codi: 'contrasenya_llarga' })
   }
 
@@ -80,8 +90,17 @@ router.post('/registre', limitAuth, async (req: Request, res: Response) => {
   }
 
   const hash = await bcrypt.hash(contrasenya, 10)
-  const usuari = await creaLocal(nom, email, hash)
-  return resposta(res, usuari)
+  try {
+    const usuari = await creaLocal(nom, email, hash)
+    return resposta(res, usuari)
+  } catch (err) {
+    // Dos registres simultanis del mateix email: tots dos passen la comprovació
+    // d'abans i el segon topa amb la clau única. És un duplicat, no un error intern.
+    if ((err as { code?: string }).code === PG_UNIQUE_VIOLATION) {
+      return res.status(409).json({ codi: 'email_duplicat' })
+    }
+    throw err
+  }
 })
 
 // ── Login (compte local) ──────────────────────────────────────────────────
@@ -127,7 +146,7 @@ router.post('/google', limitAuth, async (req: Request, res: Response) => {
   }
   const googleId = payload.sub
   const email = payload.email.toLowerCase()
-  const nom = payload.name?.trim() || (email.split('@')[0] ?? 'Usuari')
+  const nom = (payload.name?.trim() || (email.split('@')[0] ?? 'Usuari')).slice(0, MAX_NOM)
 
   // 1) Ja vinculat amb Google → entra.
   let usuari = await buscaPerGoogleId(googleId)

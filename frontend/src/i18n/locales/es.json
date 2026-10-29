@@ -23,9 +23,10 @@
     "errors": {
       "generic": "Ha habido un error. Inténtalo de nuevo.",
       "nom_obligatori": "El nombre es obligatorio",
+      "nom_llarg": "El nombre no puede superar los 80 caracteres",
       "email_no_valid": "El correo electrónico no es válido",
       "contrasenya_curta": "La contraseña debe tener 8 caracteres o más",
-      "contrasenya_llarga": "La contraseña no puede superar los 72 caracteres",
+      "contrasenya_llarga": "La contraseña es demasiado larga (máximo 72 caracteres; las letras con tilde y los emojis cuentan como más de uno)",
       "email_duplicat": "Ya existe una cuenta con este correo",
       "credencials_incorrectes": "Correo o contraseña incorrectos",
       "google_no_configurat": "El acceso con Google no está configurado",

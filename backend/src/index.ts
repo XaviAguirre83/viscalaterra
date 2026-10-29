@@ -7,6 +7,7 @@ import territorisRouter from './routes/territoris'
 import geojsonRouter from './routes/geojson'
 import llocsRouter from './routes/llocs'
 import authRouter from './routes/auth'
+import { pool } from './db'
 
 const app = express()
 const port = process.env.PORT ?? 3000
@@ -81,8 +82,16 @@ app.use(
   })
 )
 
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', project: 'viscalaterra' })
+// Salut: 200 només si el procés respon I la BD també (SELECT 1); si no, 503. El
+// fa servir el healthcheck dels compose (el servidor web no arrenca fins que el
+// backend està sa). No és públic: Caddy només passa /api/* al backend.
+app.get('/health', async (_req, res) => {
+  try {
+    await pool.query('SELECT 1')
+    res.json({ status: 'ok', project: 'viscalaterra' })
+  } catch {
+    res.status(503).json({ status: 'bd_no_disponible' })
+  }
 })
 
 app.use('/api/auth', authRouter)

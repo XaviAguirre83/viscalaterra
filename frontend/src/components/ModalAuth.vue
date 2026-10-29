@@ -143,11 +143,11 @@ onMounted(async () => {
       <form class="modal-auth__form" @submit.prevent="enviar">
         <label v-if="mode === 'registra'" class="modal-auth__camp">
           <span>{{ $t('auth.nom') }}</span>
-          <input v-model="nom" type="text" autocomplete="name" />
+          <input v-model="nom" type="text" autocomplete="name" maxlength="80" />
         </label>
         <label class="modal-auth__camp">
           <span>{{ $t('auth.email') }}</span>
-          <input v-model="email" type="email" autocomplete="email" required />
+          <input v-model="email" type="email" autocomplete="email" maxlength="254" required />
         </label>
         <label class="modal-auth__camp">
           <span>{{ $t('auth.contrasenya') }}</span>

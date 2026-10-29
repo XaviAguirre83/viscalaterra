@@ -13,6 +13,7 @@
 // Ús: npm run importa-policia-bcn  (dins backend/ o via docker exec al contenidor)
 
 import { pool } from '../db'
+import { fetchAmbReintents } from './xarxa'
 
 const URL_DADES =
   'https://opendata-ajuntament.barcelona.cat/data/dataset/04649b6a-f620-4046-879e-5b458eb090cd/resource/9148c81a-4eb2-45f8-9d2a-c771de456e83/download'
@@ -60,7 +61,7 @@ function construeixAdreca(addr?: Adreca): string | null {
 
 async function main() {
   console.log('Baixant el dataset de comissaries de Barcelona…')
-  const res = await fetch(URL_DADES)
+  const res = await fetchAmbReintents(URL_DADES)
   if (!res.ok) throw new Error(`Error ${res.status} baixant el dataset`)
   const tots = (await res.json()) as Equip[]
 
