@@ -4,27 +4,36 @@
 #   - En local:  :80              → HTTP sense certificat (simulació)
 #   - Al VPS:    viscalaterra.cat → Caddy treu i RENOVA el certificat HTTPS tot sol
 #
-# {$CADDY_ENTORN} tria el bloc d'entorn: «produccio» (per defecte) o «staging».
-# Mateix Caddyfile per als dos servidors; el que canvia és el .env de cadascun.
+# {$CADDY_ENTORN} tria el bloc d'entorn: «produccio» (per defecte), «staging» o
+# «staging_tancat». Mateix Caddyfile per als dos servidors; el que canvia és el
+# .env de cadascun.
 
 # Producció: res de més.
 (entorn_produccio) {
 }
 
-# Staging: porta amb una contrasenya compartida (basic auth) davant de TOT (web i
-# API) i cartell «no m'indexis» per als cercadors. Usuari fix «viscalaterra»: amb
-# una contrasenya compartida, la seguretat la dona la contrasenya (llarga i
-# aleatòria). El hash (mai la contrasenya) ve del .env del servidor, que no és al
-# git (el repositori és públic); si falta, Caddy no arrenca: millor no obrir que
-# obrir sense porta. Caddy recorda les contrasenyes ja verificades, així que el
-# bcrypt (lent a propòsit) només es paga a la primera petició; però cada intent
-# fallit amb una contrasenya nova també el paga: el hash es genera amb cost 10
-# (vegeu .env.example), perquè uns quants intents per segon no saturin la CPU.
+# Staging: obert a tothom (qui hi pot crear un compte ho decideix el backend, amb
+# REGISTRE=invitacio), amb el cartell «no m'indexis» per als cercadors, perquè no
+# competeixi amb producció com a contingut duplicat. És una capçalera i no un
+# robots.txt: un cercador ha de poder llegir la pàgina per veure-hi el cartell.
 (entorn_staging) {
+	header X-Robots-Tag "noindex, nofollow"
+}
+
+# Staging tancat: a més, porta amb una contrasenya compartida (basic auth) davant
+# de TOT (web i API). Usuari fix «viscalaterra»: amb una contrasenya compartida,
+# la seguretat la dona la contrasenya (llarga i aleatòria). El hash (mai la
+# contrasenya) ve del .env del servidor, que no és al git (el repositori és
+# públic); si falta, Caddy no arrenca: millor no obrir que obrir sense porta.
+# Caddy recorda les contrasenyes ja verificades, així que el bcrypt (lent a
+# propòsit) només es paga a la primera petició; però cada intent fallit amb una
+# contrasenya nova també el paga: el hash es genera amb cost 10 (vegeu
+# .env.example), perquè uns quants intents per segon no saturin la CPU.
+(entorn_staging_tancat) {
+	import entorn_staging
 	basic_auth bcrypt "viscalaterra.cat (staging)" {
 		viscalaterra {$STAGING_HASH}
 	}
-	header X-Robots-Tag "noindex, nofollow"
 }
 
 {$SITE_ADDRESS} {

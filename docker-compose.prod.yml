@@ -89,6 +89,9 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:?falta CORS_ORIGINS al .env (l'origen públic de la web)}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       COOKIE_SECURE: ${COOKIE_SECURE:-}
+      # Qui pot crear un compte: «invitacio» (només els emails de la taula
+      # `convidats`) o «obert». Tancat mentre no es digui el contrari.
+      REGISTRE: ${REGISTRE:-invitacio}
       # Mai buits: el backend els passa per Number() i un buit seria 0.
       RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
       RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-120}
@@ -133,8 +136,9 @@ services:
       # En local, sense definir SITE_ADDRESS → ':80' (HTTP).
       # Al VPS, posa SITE_ADDRESS=viscalaterra.cat al .env → HTTPS automàtic.
       - SITE_ADDRESS=${SITE_ADDRESS:-:80}
-      # Entorn del Caddyfile: «produccio» (per defecte) o «staging» (porta amb
-      # contrasenya compartida + noindex). El hash, només a staging.
+      # Entorn del Caddyfile: «produccio» (per defecte), «staging» (obert, amb
+      # noindex) o «staging_tancat» (a més, porta amb contrasenya compartida). El
+      # hash, només amb la porta.
       - CADDY_ENTORN=${CADDY_ENTORN:-produccio}
       - STAGING_HASH=${STAGING_HASH:-}
     ports:

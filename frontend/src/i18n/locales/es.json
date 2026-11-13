@@ -28,6 +28,7 @@
       "contrasenya_curta": "La contraseña debe tener 8 caracteres o más",
       "contrasenya_llarga": "La contraseña es demasiado larga (máximo 72 caracteres; las letras con tilde y los emojis cuentan como más de uno)",
       "email_duplicat": "Ya existe una cuenta con este correo",
+      "registre_per_invitacio": "De momento, el registro es solo por invitación",
       "credencials_incorrectes": "Correo o contraseña incorrectos",
       "google_no_configurat": "El acceso con Google no está configurado",
       "google_falta_credential": "No se ha recibido la credencial de Google",

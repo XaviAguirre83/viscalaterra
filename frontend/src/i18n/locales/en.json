@@ -28,6 +28,7 @@
       "contrasenya_curta": "The password must be at least 8 characters",
       "contrasenya_llarga": "The password is too long (72 characters max; accented letters and emoji count as more than one)",
       "email_duplicat": "An account with this email already exists",
+      "registre_per_invitacio": "For now, sign-up is by invitation only",
       "credencials_incorrectes": "Incorrect email or password",
       "google_no_configurat": "Google sign-in is not configured",
       "google_falta_credential": "No Google credential received",

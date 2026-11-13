@@ -102,7 +102,7 @@ trivial. Implementat amb un segon compose espillo de producció.
 | `docker-compose.prod.yml`                         | Stack de producció. Projecte aïllat `viscalaterra-prod` (BD, xarxa i volums separats del dev → es poden tenir tots dos alhora). Logs amb tope i rotació (driver `local`: 5 × 10 MB per contenidor, s'esborra el més antic). Contenidors blindats (`no-new-privileges`; backend i Caddy sense capacitats —Caddy només la d'obrir ports— i amb el disc de només lectura) i healthcheck del backend (la web espera que estigui sa). |
 | `backend/Dockerfile`                              | Imatge de prod multi-stage: compila TS → `dist/`, runtime mínim sense devDeps, usuari no-root.                                                                                                                                                                                                                                                                                                                                   |
 | `frontend/Dockerfile`                             | Multi-stage: compila la SPA → estàtics dins d'una imatge **Caddy**.                                                                                                                                                                                                                                                                                                                                                              |
-| `frontend/Caddyfile`                              | Caddy: serveix la SPA, proxy `/api/*` → backend, HTTPS automàtic al VPS. Amb `CADDY_ENTORN=staging`: porta amb contrasenya compartida (usuari `viscalaterra`, hash a `STAGING_HASH`) i `X-Robots-Tag: noindex`.                                                                                                                                                                                                                  |
+| `frontend/Caddyfile`                              | Caddy: serveix la SPA, proxy `/api/*` → backend, HTTPS automàtic al VPS. Amb `CADDY_ENTORN=staging`: web oberta amb `X-Robots-Tag: noindex`; amb `staging_tancat`: a més, porta amb contrasenya compartida (usuari `viscalaterra`, hash a `STAGING_HASH`).                                                                                                                                                                       |
 | `backend/.dockerignore`, `frontend/.dockerignore` | Builds netes.                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
 ### Arquitectura
@@ -124,6 +124,7 @@ HTTP_PORT=8080 HTTPS_PORT=8443 docker compose -f docker-compose.prod.yml up -d -
 # Web a http://localhost:8080  (conviu amb el dev a :5173 sense xocar)
 # La BD territorial (panell On?) s'autopobla sola. Per a la cerca de llocs cal
 # carregar geometries i llocs (vegeu «Desplegar al VPS», pas 6).
+# El registre hi és per invitació, com al servidor: REGISTRE=obert al davant per obrir-lo.
 # Aturar:
 docker compose -f docker-compose.prod.yml down          # afegeix -v per esborrar també la BD
 ```
@@ -149,8 +150,13 @@ quin municipi cau cada punt) i les posa `seed-geodata.ts` (pas 6 del desplegamen
    `CORS_ORIGINS=https://viscalaterra.cat`, `JWT_SECRET`, `DB_PASSWORD` i `DB_APP_PASSWORD`
    forts i diferents, `GOOGLE_CLIENT_ID`; `NODE_ENV` i `DB_HOST` ja els posa el compose).
    **Sense** `HTTP_PORT`/`HTTPS_PORT` → usa 80/443.
-   A **staging**, a més: `CADDY_ENTORN=staging` i `STAGING_HASH='…'` (vegeu `.env.example`),
-   amb `SITE_ADDRESS`/`CORS_ORIGINS` de `staging.viscalaterra.cat`.
+   A **staging**, a més: `CADDY_ENTORN=staging` (web oberta, sense indexar; `staging_tancat` +
+   `STAGING_HASH='…'` per posar-hi la porta amb contrasenya, vegeu `.env.example`), amb
+   `SITE_ADDRESS`/`CORS_ORIGINS` de `staging.viscalaterra.cat`.
+   El registre és **per invitació** mentre no es posi `REGISTRE=obert`: només creen compte els
+   emails de la llista blanca, que s'omple amb
+   `docker compose -f docker-compose.prod.yml exec backend node dist/scripts/convida.js <email> [nota]`
+   (sense arguments la mostra; `--treu <email>` en treu un).
 4. Proveir `backend/data/` (no és al git): polígons del mapa (`/api/geojson`) i geometries que
    carrega el seed (pas 6). La BD territorial (panell On?) s'autopobla sola.
 5. `docker compose -f docker-compose.prod.yml up -d --build` → Caddy treu el certificat sol.
@@ -307,7 +313,7 @@ usuaris
 
 ---
 
-### Secció 4.5 — Beta tancada per invitació (vouching) — _disseny, sense implementar_
+### Secció 4.5 — Beta per invitació (vouching) — _fase 1 feta; la resta, disseny_
 
 Mecanisme per controlar qui entra a **staging** (i, més endavant, a la beta de producció):
 creixement orgànic però controlat, on **cada usuari nou ve avalat per un d'existent**
@@ -352,8 +358,11 @@ dates); la **llista blanca** = invitacions aprovades + arrels. Comprovació a `/
 
 #### Fases
 
-- **Fase 1 — Llista blanca + comprovació**: rebutjar registre/login d'emails no autoritzats;
-  arrels a mà. Dona la beta tancada **ja**, sense dependre de l'email. _Cimentació._
+- **Fase 1 — Llista blanca + comprovació** — ✅ **FETA 2026-11-13**: amb `REGISTRE=invitacio`
+  (el valor per defecte al servidor) només creen compte, local o amb Google, els emails de la
+  taula `convidats` (migració 002); arrels a mà amb `backend/src/scripts/convida.ts`. Els comptes
+  que ja existeixen entren igual. Staging passa a ser **visible per a tothom** (sense indexar):
+  el que es controla és qui hi crea un compte, no qui el veu. _Cimentació._
 - **Fase 2 — Vouching complet**: formulari de sol·licitud + taula `invitacions` + emails amb
   enllaços d'aval. **Requereix servei d'email transaccional.**
 - **Fase 3 (futur)** — promoció staging → producció.
@@ -440,6 +449,16 @@ previ demostrable (domini `.cat`, dates) + nul·litat de la marca del tercer per
 ---
 
 ## 5. Decisions preses (registre)
+
+- **2026-11-13** — **Staging obert, registre per invitació.** La porta amb contrasenya
+  compartida impedia que hi entressin eines (un agent que el visita com a convidat) i no
+  protegia el que importa: veure la web no compromet res; crear-hi comptes sense textos legals,
+  sí. Staging queda visible per a tothom (amb `noindex`) i només creen compte els emails de la
+  llista blanca (fase 1 de 4.5). La porta es conserva com a opció (`CADDY_ENTORN=staging_tancat`).
+  Risc acceptat: el registre local no verifica l'email, així que qui conegui l'email d'un
+  convidat s'hi podria registrar abans que ell (si després el convidat entra amb Google, la
+  contrasenya de l'intrús s'anul·la). I mentre l'app OAuth de Google sigui en mode «Prova»,
+  qui entri amb Google ha de ser també a la llista d'usuaris de prova de la seva consola.
 
 - **2026-06-18** — Registrar la **marca "viscalaterra"** (OEPM / EUIPO) quan el projecte agafi
   tracció, abans de difusió pública o monetització. El ™ no protegeix per si sol a Espanya/UE; la

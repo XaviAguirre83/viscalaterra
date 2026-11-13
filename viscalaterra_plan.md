@@ -360,7 +360,8 @@ Necessari per contribuir contingut i participar en el sistema de verificació.
 
 **Estat: implementat.** Registre i login locals (JWT en cookie HttpOnly + bcrypt) i login amb Google
 (One Tap / botó GSI) al backend (`/api/auth/registre`, `/login`, `/google`, `/jo`, `/surt`),
-amb `ModalAuth.vue` i menú d'usuari a la capçalera. La pàgina `/espai` és encara
+amb `ModalAuth.vue` i menú d'usuari a la capçalera. Crear un compte pot estar limitat a una
+llista blanca d'emails convidats (`REGISTRE=invitacio`, el que fa servir staging). La pàgina `/espai` és encara
 un placeholder; la verificació d'email és al roadmap (`full de ruta.md`).
 
 ### Contribució de contingut

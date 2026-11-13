@@ -3,6 +3,7 @@ import rateLimit from 'express-rate-limit'
 import bcrypt from 'bcryptjs'
 import { OAuth2Client } from 'google-auth-library'
 import { NOM_COOKIE, obreSessio, tancaSessio, usuariDeLaSessio } from '../auth/sessio'
+import { potRegistrarSe } from '../auth/convidats'
 import {
   buscaPerEmail,
   buscaPerGoogleId,
@@ -85,6 +86,12 @@ router.post('/registre', limitAuth, async (req: Request, res: Response) => {
     return res.status(400).json({ codi: 'contrasenya_llarga' })
   }
 
+  // Abans de mirar si l'email ja té compte: a qui no és convidat se li respon
+  // sempre el mateix, i no pot saber quins emails hi ha registrats.
+  if (!(await potRegistrarSe(email))) {
+    return res.status(403).json({ codi: 'registre_per_invitacio' })
+  }
+
   if (await buscaPerEmail(email)) {
     return res.status(409).json({ codi: 'email_duplicat' })
   }
@@ -157,7 +164,10 @@ router.post('/google', limitAuth, async (req: Request, res: Response) => {
       //    contrasenya (no verificada) i les sessions obertes: vegeu vinculaGoogle.
       usuari = await vinculaGoogle(existent.id, googleId)
     } else {
-      // 3) Usuari nou.
+      // 3) Usuari nou: com al registre local, només si pot crear un compte.
+      if (!(await potRegistrarSe(email))) {
+        return res.status(403).json({ codi: 'registre_per_invitacio' })
+      }
       usuari = await creaGoogle(nom, email, googleId)
     }
   }
