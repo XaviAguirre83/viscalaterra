@@ -44,14 +44,32 @@ function tancaSessio() {
 
 // ── Animació tipogràfica "La terra" ─────────────────────────────────────
 const terraEl = ref<HTMLElement | null>(null)
+const logoEl = ref<HTMLElement | null>(null)
+const nomEl = ref<HTMLElement | null>(null)
+const controlsEl = ref<HTMLElement | null>(null)
 let terraAnim: TerraAnimacio | null = null
+
+/** Zones on el poema no pot escriure: el logo, el nom i els controls (píxels de la capçalera). */
+function zonesReservades() {
+  const origen = terraEl.value?.getBoundingClientRect()
+  if (!origen) return []
+  return [logoEl, nomEl, controlsEl].flatMap((el) => {
+    const caixa = el.value?.getBoundingClientRect()
+    if (!caixa || caixa.width === 0) return []
+    return [
+      { x: caixa.left - origen.left, y: caixa.top - origen.top, w: caixa.width, h: caixa.height },
+    ]
+  })
+}
 
 onMounted(() => {
   // En desenvolupament, `?terra-dev` a l'adreça mostra els controls de revisió
   // (play/pausa, reinici i barra de temps) per comprovar la sincronia amb el poema.
   const controlsDev =
     import.meta.env.DEV && new URLSearchParams(window.location.search).has('terra-dev')
-  if (terraEl.value) terraAnim = muntaTerraAnimacio(terraEl.value, { controlsDev })
+  if (terraEl.value) {
+    terraAnim = muntaTerraAnimacio(terraEl.value, { controlsDev, reserves: zonesReservades })
+  }
 })
 
 onBeforeUnmount(() => {
@@ -71,12 +89,14 @@ onBeforeUnmount(() => {
 
     <!-- Identitat (esquerra) -->
     <RouterLink to="/llocs" class="cabecera__identitat">
-      <img :src="logoUrl" alt="viscalaterra" class="cabecera__logo" />
-      <span class="cabecera__nom">viscalaterra<span class="cabecera__nom-tld">.cat</span></span>
+      <img ref="logoEl" :src="logoUrl" alt="viscalaterra" class="cabecera__logo" />
+      <span ref="nomEl" class="cabecera__nom"
+        >viscalaterra<span class="cabecera__nom-tld">.cat</span></span
+      >
     </RouterLink>
 
     <!-- Controls globals (dreta) -->
-    <div class="cabecera__controls">
+    <div ref="controlsEl" class="cabecera__controls">
       <div class="selector-idioma">
         <button
           type="button"
@@ -218,31 +238,11 @@ onBeforeUnmount(() => {
   z-index: 2100; /* per sobre de la barra de navegació (2000): el desplegable d'idioma hi flota a sobre */
   width: 100%;
   height: 110px;
-  /* Tres capes (de dalt a baix): corbes de nivell topogràfiques (guiny al
-     territori), halo verd bosc a la dreta i gradient de nit com a base. */
-  background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='130'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.05' stroke-width='1.3'%3E%3Cpath d='M0 14 q32.5 -11 65 0 t65 0 t65 0 t65 0'/%3E%3Cpath d='M0 40 q32.5 13 65 0 t65 0 t65 0 t65 0'/%3E%3Cpath d='M0 66 q32.5 -9 65 0 t65 0 t65 0 t65 0'/%3E%3Cpath d='M0 92 q32.5 11 65 0 t65 0 t65 0 t65 0'/%3E%3Cpath d='M0 118 q32.5 -13 65 0 t65 0 t65 0 t65 0'/%3E%3C/g%3E%3C/svg%3E")
-      repeat,
-    radial-gradient(ellipse 60% 130% at 88% 15%, rgba(45, 106, 45, 0.4), transparent 65%),
-    linear-gradient(110deg, #131d29 0%, #1a2635 58%, #1d3226 100%);
+  background: var(--nit-900);
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-
-.cabecera::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to right,
-    rgba(0, 0, 0, 0.45) 0%,
-    rgba(0, 0, 0, 0.1) 45%,
-    transparent 75%
-  );
-  z-index: 1;
-  pointer-events: none;
 }
 
 /* Franja identitària: els colors de les quatre províncies (BCN/GIR/LLE/TAR),
@@ -274,8 +274,8 @@ onBeforeUnmount(() => {
   z-index: 0;
 }
 
-/* Capa de l'animació "La terra": per sobre del gradient (1) perquè el text
-   no s'enfosqueixi, per sota de la franja de províncies (3) i dels controls. */
+/* Capa de l'animació "La terra": per sobre del vídeo (0), per sota de la
+   franja de províncies (3) i dels controls. */
 .cabecera__terra {
   position: absolute;
   inset: 0;

@@ -9,16 +9,16 @@ describe('creaGuio', () => {
         linies: ['Visc a la terra,'],
         tempsEntrada: 1,
         tempsParaules: [[0, 1, 2, 3]],
-        posX: 50,
-        posY: 50,
+        x: 0,
+        y: 40,
       },
-      { linies: ['bella terra', 'mediterrània'], despres: 2, posX: 50, posY: 50 },
+      { linies: ['bella terra', 'mediterrània'], despres: 2, x: 0, y: 40 },
       {
         linies: ['VISCA LA TERRA!'],
         tempsEntrada: 20,
         tempsParaules: [[0, 0.5, 1]],
-        posX: 50,
-        posY: 50,
+        x: 0,
+        y: 40,
       },
     ])
   )

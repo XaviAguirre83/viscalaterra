@@ -1,7 +1,7 @@
 /**
  * Escena 4 · Cercavila i foc («Terra de gegants… que fan tronar la nit»).
  *
- * Es fa fosc i la festa surt al carrer: desfilen els gegants, els capgrossos i
+ * En ple migdia la festa surt al carrer: desfilen els gegants, els capgrossos i
  * els bastoners; els trabucaires engeguen un tret que desperta el poble (les
  * finestres s'encenen), i els diables tanquen la corrua sota una pluja
  * d'espurnes.
@@ -135,7 +135,6 @@ export function escenaCercavila(e: Escenari, poble: Poble): void {
   const q = guio.quan
   const rnd = atzar(907)
 
-  const tNit = guio.frase('gegants').entra
   const tFi = guio.frase('festiva').entra
   /** Velocitat de la corrua, en unitats de món per segon (cap a l'esquerra). */
   const PAS = -22
@@ -309,7 +308,6 @@ export function escenaCercavila(e: Escenari, poble: Poble): void {
     e.sacseja(t, 2.6)
     poble.encen(t + 0.15, i === 0 ? 0.3 : 0.4, e.on(t, -30))
   })
-  poble.encen(tNit, 0.14, e.on(tNit + 2, 0))
 
   // ── Diables: correfoc. Forques amb carretilles i pluja d'espurnes ───────
   const tDiables = q('diables')

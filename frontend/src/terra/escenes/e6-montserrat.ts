@@ -1,7 +1,7 @@
 /**
  * Escena 6 · Montserrat («Terra de la Rosa d'abril… posen veu al silenci»).
  *
- * La serra de les agulles s'alça en plena nit. Hi floreix la Rosa d'abril i,
+ * La serra de les agulles s'alça mentre el sol es pon. Hi floreix la Rosa d'abril i,
  * en obrir-se, hi apareix la Moreneta, que vetlla el país: la seva claror
  * recorre la plana i els pobles s'hi van encenent. A sota, l'abadia; i al
  * davant, els escolanets, que posen veu al silenci.

@@ -10,8 +10,10 @@
  * rellotge, mateix bucle, i es poden treure sense tocar el text.
  */
 import type gsap from 'gsap'
+import { centreEscena, compressio, escalaEscena } from '../composicio'
 import { DURADA_TOTAL } from '../terra-timeline'
 import { muntaAmbient } from './ambient'
+import { creaDia } from './dia'
 import { escenaPaisatge, type Paisatge } from './e1-paisatge'
 import { escenaLlegenda, type Llegenda } from './e2-llegenda'
 import { escenaCastell } from './e3-castell'
@@ -28,7 +30,6 @@ import {
   degradat,
   entra,
   grup,
-  limita,
   pilot,
   ritmePilots,
   surt,
@@ -39,26 +40,6 @@ import { muntaPoble, type Poble } from './poble'
 
 export interface Escenes {
   destrueix: () => void
-}
-
-/** Amplada a partir de la qual l'escena es veu a mida real; per sota, s'encongeix. */
-const AMPLADA_PLENA = 900
-const ESCALA_MINIMA = 0.6
-
-/** Amplada a partir de la qual cada cosa és al seu lloc; per sota, tot s'acosta al centre. */
-const AMPLADA_COMPOSICIO = 1000
-const COMPRESSIO_MINIMA = 0.45
-
-/** En pantalles estretes el logo tapa mitja capçalera: l'escena es corre cap a la dreta. */
-const AMPLADA_ESTRETA = 700
-const DESPLACAMENT_ESTRET = 60
-
-/**
- * Compressió horitzontal de la composició per a una amplada de capçalera, en
- * passos de 0,05 (perquè no canviï a cada píxel mentre s'estira la finestra).
- */
-function compressio(ampla: number): number {
-  return Math.round(limita(ampla / AMPLADA_COMPOSICIO, COMPRESSIO_MINIMA, 1) * 20) / 20
 }
 
 interface Muntatge {
@@ -89,7 +70,8 @@ function construeix(
   capa: HTMLElement,
   mestre: gsap.core.Timeline,
   k: number,
-  deCop: boolean
+  deCop: boolean,
+  enCanviarCel?: (color: string) => void
 ): Muntatge {
   const svg = crea('svg', { class: 'terra-escenes', 'aria-hidden': 'true', focusable: 'false' })
   capa.prepend(svg)
@@ -104,11 +86,11 @@ function construeix(
   // L'origen (x = 0) és al centre de l'escena. En pantalles estretes tot
   // s'encongeix ancorat a baix, perquè hi càpiga més escena.
   let mig = 800
+  let escala = 1
   function ajusta() {
     const ampla = capa.clientWidth || 1600
-    const escala = limita(ampla / AMPLADA_PLENA, ESCALA_MINIMA, 1)
-    const centre =
-      ampla / 2 + DESPLACAMENT_ESTRET * limita((AMPLADA_ESTRETA - ampla) / (AMPLADA_ESTRETA - 400))
+    escala = escalaEscena(ampla)
+    const centre = centreEscena(ampla)
     mig = Math.max(centre, ampla - centre) / escala
     arrel.setAttribute(
       'transform',
@@ -122,6 +104,14 @@ function construeix(
   ritmePilots(k < 0.8 ? 20 : 30)
 
   const guio = creaGuio()
+  const dia = creaDia(guio)
+  let colorCel = ''
+  const pintaCel = (color: string) => {
+    if (color === colorCel) return
+    colorCel = color
+    capa.style.backgroundColor = color
+    enCanviarCel?.(color)
+  }
   const sacsejades: { t: number; forca: number }[] = []
   const camera = creaCamera(clausCamera(guio), DURADA_TOTAL)
   const timelines: gsap.core.Timeline[] = []
@@ -132,6 +122,8 @@ function construeix(
     part({
       tl,
       guio,
+      dia,
+      pintaCel,
       cel,
       mon,
       davant,
@@ -141,6 +133,7 @@ function construeix(
       cam: camera.x,
       on: (t, sx) => camera.x(t) + sx * k,
       mig: () => mig,
+      escala: () => escala,
       sacseja: (t, forca) => sacsejades.push({ t, forca }),
     })
     // En afegir-lo, GSAP el pinta de seguida a l'instant en què ja va el poema.
@@ -216,6 +209,7 @@ function construeix(
     destrueix() {
       anulaPendent?.()
       for (const tl of timelines) tl.kill()
+      pintaCel('')
       svg.remove()
     },
   }
@@ -224,6 +218,8 @@ function construeix(
 export interface OpcionsEscenes {
   /** Munta totes les escenes de cop, sense repartir la feina (tests i eines). */
   deCop?: boolean
+  /** Avisa cada cop que canvia el color del cel ('' = el fons de sempre de la capçalera). */
+  enCanviarCel?: (color: string) => void
 }
 
 export function muntaEscenes(
@@ -232,7 +228,13 @@ export function muntaEscenes(
   opcions: OpcionsEscenes = {}
 ): Escenes {
   const amplada = () => capa.clientWidth || 1600
-  let muntatge = construeix(capa, mestre, compressio(amplada()), opcions.deCop === true)
+  let muntatge = construeix(
+    capa,
+    mestre,
+    compressio(amplada()),
+    opcions.deCop === true,
+    opcions.enCanviarCel
+  )
 
   // En canviar l'amplada, l'escena es recentra; i si la composició ja no hi cap
   // igual (canvia la compressió), es torna a muntar sencera al mateix instant
@@ -246,7 +248,7 @@ export function muntaEscenes(
             muntatge.ajusta()
           } else {
             muntatge.destrueix()
-            muntatge = construeix(capa, mestre, k, true)
+            muntatge = construeix(capa, mestre, k, true, opcions.enCanviarCel)
           }
         })
   observador?.observe(capa)

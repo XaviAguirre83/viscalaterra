@@ -6,6 +6,7 @@
  * és el centre de la pantalla i creix cap a la dreta.
  */
 import gsap from 'gsap'
+import type { Dia } from './dia'
 import type { Guio } from './guio'
 
 export const NS = 'http://www.w3.org/2000/svg'
@@ -30,6 +31,10 @@ export const VERD = '#86c486'
 export const COS = '#aeaca3'
 export const COS_FOSC = '#7d7f7e'
 export const NIT = '#172231'
+// Fons de la capçalera: de nit, el seu color de sempre (--nit-900); de dia,
+// més clar i menys saturat, però prou fosc perquè el poema (en crema) s'hi llegeixi.
+export const FONS_NIT = '#131d29'
+export const FONS_DIA = '#313b47'
 
 // ── SVG ───────────────────────────────────────────────────────────────────
 
@@ -137,6 +142,17 @@ export function tramTerra(terra: SVGGElement, x0: number, x1: number): void {
   linia(terra, x0, TERRA_Y, x1, TERRA_Y)
 }
 
+/** y (en unitats de l'escena) que es veu arran del sostre de la capçalera amb l'escala donada. */
+export const sostre = (escala: number) => ALCADA - ALCADA / escala
+
+/**
+ * Alçada d'una cosa del cel: `y` és on es vol veure si l'escena anés a mida
+ * real (0 = sostre, TERRA_Y = horitzó). Quan l'escena s'encongeix, el cel
+ * s'estira perquè continuï arribant fins al sostre de la capçalera.
+ */
+export const alCel = (y: number, escala: number) =>
+  TERRA_Y - ((TERRA_Y - y) * (TERRA_Y - sostre(escala))) / TERRA_Y
+
 /** Arrodoneix a una desena: prou precisió per a un camí i cadenes `d` curtes. */
 export const f1 = (v: number) => Math.round(v * 10) / 10
 
@@ -172,6 +188,13 @@ export function corba(punts: Punt[]): string {
 export const limita = (v: number, min = 0, max = 1) => Math.min(max, Math.max(min, v))
 
 export const barreja = (a: number, b: number, p: number) => a + (b - a) * p
+
+/** Color entre dos colors `#rrggbb` (p = 0: el primer; p = 1: el segon). */
+export function barrejaColor(a: string, b: string, p: number): string {
+  const canal = (i: number) =>
+    Math.round(barreja(parseInt(a.slice(i, i + 2), 16), parseInt(b.slice(i, i + 2), 16), p))
+  return `rgb(${canal(1)}, ${canal(3)}, ${canal(5)})`
+}
 
 /** Corba en S entre 0 i 1 (derivada nul·la als extrems). */
 export const suau = (p: number) => {
@@ -395,6 +418,10 @@ export interface Escenari {
   tl: gsap.core.Timeline
   /** Temps del poema: quan entra cada paraula. */
   guio: Guio
+  /** El dia: on són el sol i la lluna i quanta claror hi ha a cada instant. */
+  dia: Dia
+  /** Pinta el fons de tota la capçalera; amb '' torna a ser el de sempre. */
+  pintaCel: (color: string) => void
   /** Capes, del fons cap endavant. `cel` i `davant` són fixes a la pantalla;
    *  `mon` es desplaça amb la càmera. */
   cel: SVGGElement
@@ -416,6 +443,11 @@ export interface Escenari {
   on: (t: number, sx: number) => number
   /** Meitat de l'amplada visible ara mateix, en unitats (canvia amb la finestra). */
   mig: () => number
+  /**
+   * Escala de l'escena ara mateix: 1 en pantalles amples; menys en estretes, on
+   * tot s'encongeix ancorat a baix (i per dalt es veu més amunt de y = 0).
+   */
+  escala: () => number
   /** Programa una estrebada de la càmera a l'instant t (trets, trons…). */
   sacseja: (t: number, forca: number) => void
 }

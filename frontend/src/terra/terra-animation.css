@@ -40,14 +40,37 @@
   }
 }
 
+/* Capa del text: per sobre de les escenes, de la mida de tota la capçalera. */
+.terra-text {
+  position: absolute;
+  inset: 0;
+}
+
 .terra-frase {
   position: absolute;
-  color: #f5f1e8;
+  /* La tinta és tènue pel color (--terra-tinta), no per l'opacitat de l'element. */
+  color: rgb(245 241 232 / var(--terra-tinta, 0.55));
   /* Veu pròpia del poema: garalda en cursiva, res a veure amb la UI. */
   font-family: 'Cormorant Garamond Variable', Georgia, serif;
   font-style: italic;
-  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.4);
+  text-shadow: 0 1px 6px rgb(0 0 0 / 0.45);
   will-change: transform, opacity;
+}
+
+/* Clariana: una taca difosa del color del cel (el pinten les escenes a
+   --terra-cel; de nit és el fons de sempre) sota el text. Esborrona la
+   il·lustració al voltant de la frase perquè es llegeixi; com que el fons és
+   llis, no es veu cap caixa. */
+.terra-frase__clariana {
+  position: absolute;
+  inset: 2px -6px;
+  z-index: -1;
+  border-radius: 12px;
+  background: var(--terra-cel, var(--nit-900, #131d29));
+  box-shadow: 0 0 14px 12px var(--terra-cel, var(--nit-900, #131d29));
+  visibility: hidden;
+  /* Capa pròpia: l'ombra difosa no s'ha de repintar cada cop que entra una paraula. */
+  will-change: opacity;
 }
 
 .terra-frase__linia {
@@ -82,6 +105,16 @@
 
 /* Clímax: VISCA LA TERRA! Es manté igual que la resta del text (mateixa mida i
    opacitat); el label 'visca' del timeline queda com a àncora per a futurs efectes. */
+
+/* En pantalles estretes el text va sempre a la franja de dalt, que és per on
+   passen el sol i la lluna: la clariana hi és més fina perquè no els apagui. */
+@media (max-width: 699px) {
+  .terra-frase__clariana {
+    background: color-mix(in srgb, var(--terra-cel, var(--nit-900, #131d29)) 50%, transparent);
+    box-shadow: 0 0 14px 12px
+      color-mix(in srgb, var(--terra-cel, var(--nit-900, #131d29)) 50%, transparent);
+  }
+}
 
 /* ── Controls provisionals de desenvolupament ──────────────────────────── */
 

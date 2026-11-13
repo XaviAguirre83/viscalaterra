@@ -1,9 +1,10 @@
 /**
  * Escena 1 · El paisatge («Visc a la terra… a cop de sal»).
  *
- * El mapa de Catalunya es dibuixa sota «Visc a la terra», s'ajeu i es fa
- * paisatge: els Pirineus a un costat, el mar a l'altre. La tramuntana baixa de
- * les muntanyes i ens empeny cap al mar, on l'onada trenca contra la roca.
+ * El mapa de Catalunya es dibuixa sota «Visc a la terra», s'esquerda per les
+ * comarques com un trencadís i esclata; darrere hi queda el paisatge: els
+ * Pirineus a un costat, el mar a l'altre. La tramuntana baixa de les muntanyes
+ * i ens empeny cap al mar, on l'onada trenca contra la roca.
  */
 import { CONTORN, COSTA } from './mapa-dades'
 import {
@@ -12,6 +13,7 @@ import {
   TERRA_Y,
   TINTA,
   VERD,
+  alCel,
   atribut,
   atzar,
   barreja,
@@ -20,6 +22,7 @@ import {
   corba,
   degradat,
   entra,
+  esclat,
   f1,
   grup,
   limita,
@@ -34,6 +37,10 @@ import {
   type Escenari,
   type Punt,
 } from './nucli'
+import { PREPARACIO_ESCLAT, muntaTrencadis } from './trencadis'
+
+/** On va la rosa dels vents (posició de pantalla): entre el vers i el sol que puja. */
+const ROSA_VENTS: Punt = [250, 44]
 
 /** Centre vertical i escala del mapa inicial (les dades fan 100 d'alçada). */
 const MAPA_Y = 55
@@ -257,10 +264,15 @@ export function escenaPaisatge(e: Escenari): Paisatge {
   const tFi = guio.frase('camps').entra
 
   // ── El mapa: es dibuixa sota «Visc», s'omple amb «a la terra» ───────────
+  // De baix a dalt: el farcit, les peces del trencadís i la tinta (esquerdes,
+  // contorn i ones de la costa).
   const marc = grup(e.cel, { transform: `translate(0 ${MAPA_Y}) scale(${MAPA_ESCALA})` })
   const mapa = pivot(grup(marc), 0, 0)
   const farcit = cami(mapa, CONTORN, { fill: TINTA, 'fill-opacity': 0.12 })
-  const vora = cami(mapa, CONTORN, {
+  const peces = grup(mapa)
+  const tinta = grup(mapa)
+  const esquerdes = grup(tinta)
+  const vora = cami(tinta, CONTORN, {
     fill: 'none',
     stroke: TINTA,
     'stroke-opacity': 0.8,
@@ -280,7 +292,7 @@ export function escenaPaisatge(e: Escenari): Paisatge {
 
   // «bella terra mediterrània»: la costa fa ones cap a mar, com en una carta nàutica.
   const ecos = [0, 1, 2].map((i) =>
-    cami(mapa, COSTA, {
+    cami(tinta, COSTA, {
       fill: 'none',
       stroke: BLAU,
       'stroke-opacity': 0.75 - i * 0.2,
@@ -298,20 +310,31 @@ export function escenaPaisatge(e: Escenari): Paisatge {
     )
   })
 
-  // El mapa s'ajeu: s'aplana sobre la línia de terra i es fa paisatge.
-  const tAjeu = tAdmirada - 0.45
+  // El batec esquerda el mapa per les comarques i cada peça pren color, com un
+  // trencadís; quan arriben els Pirineus, esclata i les peces surten disparades.
+  const tEsclat = tAdmirada - 0.4
+  muntaTrencadis(e, peces, esquerdes, {
+    tQuebra: tTerra + 0.3,
+    tEsclat,
+    escala: MAPA_ESCALA,
+    yCentre: MAPA_Y,
+  })
+  // Just abans, el mapa s'infla i la tinta s'esvaeix: queden les peces soles.
   tl.to(
     mapa,
-    {
-      scaleX: 4.4,
-      scaleY: 0.05,
-      y: (TERRA_Y - MAPA_Y) / MAPA_ESCALA,
-      duration: 1.2,
-      ease: 'power2.inOut',
-    },
-    tAjeu
+    { scale: 1.06, duration: PREPARACIO_ESCLAT, ease: 'power2.in' },
+    tEsclat - PREPARACIO_ESCLAT
   )
-  surt(tl, mapa, tAjeu + 0.7, 0.5)
+  surt(tl, [farcit, tinta], tEsclat - PREPARACIO_ESCLAT, PREPARACIO_ESCLAT - 0.05)
+  // L'ona de l'esclat.
+  const ona = cercle(marc, 0, 0, 4, { fill: 'none', stroke: TINTA, 'stroke-width': 1.4 })
+  esclat(
+    tl,
+    ona,
+    tEsclat,
+    { attr: { r: 4 }, autoAlpha: 0.6 },
+    { attr: { r: 170 }, autoAlpha: 0, duration: 0.8, ease: 'power2.out' }
+  )
 
   // ── Geografia de l'escena (coordenades de món) ──────────────────────────
   const xPirineus = e.on(tPirineus, -190)
@@ -408,6 +431,81 @@ export function escenaPaisatge(e: Escenari): Paisatge {
         )
       }
     })
+
+  // ── Rosa dels vents: surt amb «tramuntana», amb la punta del nord remarcada ─
+  // Com a les cartes de navegar: vuit puntes partides en dues meitats (una de
+  // plena i una de buida) i una T, de tramuntana, damunt del nord. És discreta
+  // (tinta molt aigualida) tret de la punta de la tramuntana.
+  const tTramuntana = q('tramuntana')
+  const rosa = grup(e.cel, {
+    transform: `translate(${f1(ROSA_VENTS[0] * e.k)} ${f1(alCel(ROSA_VENTS[1], e.escala()))})`,
+  })
+  const agulles = pivot(grup(rosa), 0, 0)
+  cercle(agulles, 0, 0, 15, {
+    fill: 'none',
+    stroke: TINTA,
+    'stroke-opacity': 0.24,
+    'stroke-width': 0.6,
+  })
+  /** Punta de la rosa cap a `graus` (0 = nord, en sentit horari): [meitat plena, meitat buida]. */
+  const punta = (graus: number, llarg: number, ample: number): [string, string] => {
+    const cap = (g: number, r: number): Punt => [
+      Math.sin((g * Math.PI) / 180) * r,
+      -Math.cos((g * Math.PI) / 180) * r,
+    ]
+    const cim = cap(graus, llarg)
+    return [
+      poligonal([[0, 0], cap(graus - 45, ample), cim], true),
+      poligonal([[0, 0], cim, cap(graus + 45, ample)], true),
+    ]
+  }
+  const dibuixaPunta = (pare: SVGGElement, [plena, buida]: [string, string], forca: number) => {
+    cami(pare, plena, { fill: TINTA, 'fill-opacity': forca })
+    cami(pare, buida, { fill: TINTA, 'fill-opacity': forca * 0.3 })
+    cami(pare, plena + buida, {
+      fill: 'none',
+      stroke: TINTA,
+      'stroke-opacity': Math.min(1, forca * 1.5),
+      'stroke-width': 0.5,
+      'stroke-linejoin': 'round',
+    })
+  }
+  // Primer els vents de quart (gregal, xaloc, llebeig i mestral), més curts…
+  for (const graus of [45, 135, 225, 315]) dibuixaPunta(agulles, punta(graus, 13, 3.4), 0.16)
+  // …després llevant, migjorn i ponent…
+  for (const graus of [90, 180, 270]) dibuixaPunta(agulles, punta(graus, 20, 4.4), 0.26)
+  // …i la tramuntana: més llarga, ben marcada, i amb la seva T.
+  const nord = pivot(grup(agulles), 0, 0)
+  dibuixaPunta(nord, punta(0, 27, 5), 0.9)
+  const lletra = cami(agulles, 'M-2.6 -35h5.2M0 -35v5.4', {
+    fill: 'none',
+    stroke: TINTA,
+    'stroke-opacity': 0.85,
+    'stroke-width': 1,
+    'stroke-linecap': 'round',
+  })
+  // Entra girant, com una brúixola que troba el nord…
+  tl.fromTo(
+    agulles,
+    { autoAlpha: 0, rotation: -75, scale: 0.6 },
+    { autoAlpha: 1, rotation: 0, scale: 1, duration: 1.1, ease: 'back.out(1.5)' },
+    tTossen - 0.2
+  )
+  // …i amb «tramuntana» hi creix la punta del nord, que batega mentre bufa.
+  tl.fromTo(
+    nord,
+    { autoAlpha: 0, scale: 0.35 },
+    { autoAlpha: 1, scale: 1, duration: 0.5, ease: 'back.out(2.4)' },
+    tTramuntana
+  )
+  entra(tl, lletra, tTramuntana + 0.25, 0.4)
+  tl.to(
+    nord,
+    { scale: 1.13, duration: 0.45, ease: 'sine.inOut', yoyo: true, repeat: 5 },
+    tTramuntana + 0.6
+  )
+  // Se'n va abans que el sol, que puja, li passi pel damunt.
+  surt(tl, rosa, tAlcant - 0.5, 0.8)
 
   // ── Tramuntana: baixa enrabiada (ratxes) i alça la veu (més i més gruixudes) ─
   // Cada ràfega escombra la pantalla d'esquerra a dreta: les ratxes de més a

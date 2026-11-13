@@ -46,12 +46,13 @@ describe('terra-timeline', () => {
     )
   })
 
-  it('les àncores respecten la zona segura del 8%', () => {
+  it('les posicions cauen dins la zona segura d’una capçalera de 1280 px', () => {
     for (const frase of FRASES) {
-      expect(frase.posX).toBeGreaterThanOrEqual(8)
-      expect(frase.posX).toBeLessThanOrEqual(92)
-      expect(frase.posY).toBeGreaterThanOrEqual(8)
-      expect(frase.posY).toBeLessThanOrEqual(92)
+      expect(frase.x).toBeGreaterThanOrEqual(-530)
+      expect(frase.x).toBeLessThanOrEqual(465)
+      // Hi ha d'haver lloc per a totes les línies (28 px cadascuna) dins dels 110 px.
+      expect(frase.y).toBeGreaterThanOrEqual(3)
+      expect(frase.y + frase.linies.length * 28).toBeLessThanOrEqual(104)
     }
   })
 
@@ -67,10 +68,10 @@ describe('terra-timeline', () => {
 describe('resolFrases', () => {
   it('encadena `despres` a partir de l’última paraula de la frase anterior', () => {
     const resoltes = resolFrases([
-      { linies: ['un dos'], tempsEntrada: 1, tempsParaules: [[0, 0.5]], posX: 50, posY: 50 },
-      { linies: ['tres'], despres: 1, posX: 50, posY: 50 },
-      { linies: ['quatre'], tempsEntrada: 9, posX: 50, posY: 50 },
-      { linies: ['cinc'], despres: 0.5, posX: 50, posY: 50 },
+      { linies: ['un dos'], tempsEntrada: 1, tempsParaules: [[0, 0.5]], x: 0, y: 40 },
+      { linies: ['tres'], despres: 1, x: 0, y: 40 },
+      { linies: ['quatre'], tempsEntrada: 9, x: 0, y: 40 },
+      { linies: ['cinc'], despres: 0.5, x: 0, y: 40 },
     ])
     expect(resoltes[0]!.t).toBe(1)
     // 1 (entrada) + 0.5 (última paraula) + 1 (despres)
@@ -83,8 +84,8 @@ describe('resolFrases', () => {
 
   it('sense tempsEntrada ni despres, encadena immediatament (despres = 0)', () => {
     const resoltes = resolFrases([
-      { linies: ['un'], tempsEntrada: 2, posX: 50, posY: 50 },
-      { linies: ['dos'], posX: 50, posY: 50 },
+      { linies: ['un'], tempsEntrada: 2, x: 0, y: 40 },
+      { linies: ['dos'], x: 0, y: 40 },
     ])
     expect(resoltes[1]!.t).toBe(2)
   })

@@ -39,4 +39,5 @@ Mateix estil que el logo (vora d'adhesiu, filet, poques línies rectes), però d
 - Els trossos de menys del 6 % de la comarca van amb la província dominant: Gósol (Berguedà), la part barcelonina de la Selva i Vidrà (Osona).
 - Simplificació: tolerància 5 al contorn i 2,5 a les fronteres entre peces.
 - Cada comarca és un `<g id="cCC-PP">` (codi de comarca i de província) amb `data-nom` i `data-nivell`.
+- L'animació de la capçalera en fa servir els colors (el mapa del principi es trenca en aquestes peces): si es retoca, cal tornar a generar `frontend/src/terra/escenes/mapa-dades.ts` amb `npm --prefix backend run genera-mapa-terra`.
 - Es genera amb `docs/privat/eines/trencadis.py` (fora de git, necessita shapely): `trencadis.py comarques.svg bocí=0 lluentor=0 junta_comarca=0.8 junta_provincia=0.8`. Amb `bocí` > 0 trenca cada comarca en bocins de trencadís.
