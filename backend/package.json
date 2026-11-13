@@ -10,6 +10,7 @@
     "seed": "tsx src/scripts/seed-geodata.ts",
     "enriqueix": "tsx src/scripts/enriqueix-territoris.ts",
     "baixa-emblemes": "tsx src/scripts/baixa-emblemes.ts",
+    "genera-mapa-terra": "tsx src/scripts/genera-mapa-terra.ts",
     "importa-mossos": "tsx src/scripts/importa-mossos.ts",
     "importa-equipaments": "tsx src/scripts/importa-equipaments.ts",
     "importa-policia-bcn": "tsx src/scripts/importa-policia-bcn.ts"

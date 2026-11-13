@@ -1,11 +1,13 @@
 /**
- * Animació tipogràfica "La terra" — fase 1: només les frases.
+ * Animació "La terra" de la capçalera: les frases del poema (fase 1) i, a
+ * sota, les escenes il·lustrades que les acompanyen (fase 2).
  *
  * Mòdul autònom que es munta sobre un contenidor de la capçalera. Tot penja
- * d'un únic timeline GSAP de DURADA_TOTAL segons, perquè les fases futures
- * (línia SVG animada, pista d'àudio amb locució) s'hi puguin sincronitzar.
+ * d'un únic timeline GSAP de DURADA_TOTAL segons, perquè les escenes i la
+ * futura pista d'àudio amb locució hi vagin sincronitzades.
  *
- * El guió (frases, temps, posicions) viu a ./terra-timeline.ts.
+ * El guió (frases, temps, posicions) viu a ./terra-timeline.ts; les escenes,
+ * a ./escenes/ (es carreguen a part, quan el text ja ha arrencat).
  */
 import gsap from 'gsap'
 import {
@@ -37,13 +39,27 @@ export interface TerraAnimacio {
   destrueix: () => void
 }
 
+export interface OpcionsTerra {
+  /** Controls de revisió (play/pausa, reinici i barra de temps). */
+  controlsDev?: boolean
+  /** Escenes il·lustrades sota el text. Per defecte: sí. */
+  escenes?: boolean
+}
+
+declare global {
+  interface Window {
+    /** Només en desenvolupament: l'animació, a mà des de la consola. */
+    __terra?: TerraAnimacio
+  }
+}
+
 /**
  * Munta l'animació dins `contenidor` i arrenca el timeline.
  * Retorna null si l'usuari prefereix moviment reduït (no es munta res).
  */
 export function muntaTerraAnimacio(
   contenidor: HTMLElement,
-  opcions: { controlsDev?: boolean } = {}
+  opcions: OpcionsTerra = {}
 ): TerraAnimacio | null {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return null
 
@@ -125,14 +141,35 @@ export function muntaTerraAnimacio(
   let desmuntaControls: (() => void) | null = null
   if (opcions.controlsDev) desmuntaControls = muntaControlsDev(capa, tl)
 
-  return {
+  // Escenes il·lustrades: s'importen a part perquè no pesin a l'arrencada (el
+  // text ja corre mentre arriben) i s'afegeixen al mateix timeline. Si la
+  // càrrega falla, el poema continua sol.
+  let viva = true
+  let escenes: { destrueix: () => void } | null = null
+  if (opcions.escenes !== false) {
+    import('./escenes')
+      .then(({ muntaEscenes }) => {
+        if (viva) escenes = muntaEscenes(capa, tl)
+      })
+      .catch((error: unknown) => {
+        console.warn('La terra: no s’han pogut carregar les escenes', error)
+      })
+  }
+
+  const animacio: TerraAnimacio = {
     timeline: tl,
     destrueix() {
+      viva = false
+      escenes?.destrueix()
       desmuntaControls?.()
       tl.kill()
       capa.remove()
     },
   }
+  // En desenvolupament queda a mà des de la consola del navegador, per saltar
+  // a qualsevol segon: `__terra.timeline.pause().seek(40)`.
+  if (import.meta.env.DEV) window.__terra = animacio
+  return animacio
 }
 
 /**

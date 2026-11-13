@@ -47,8 +47,11 @@ const terraEl = ref<HTMLElement | null>(null)
 let terraAnim: TerraAnimacio | null = null
 
 onMounted(() => {
-  // controlsDev: true torna a mostrar els controls de revisió (play/scrub).
-  if (terraEl.value) terraAnim = muntaTerraAnimacio(terraEl.value, { controlsDev: false })
+  // En desenvolupament, `?terra-dev` a l'adreça mostra els controls de revisió
+  // (play/pausa, reinici i barra de temps) per comprovar la sincronia amb el poema.
+  const controlsDev =
+    import.meta.env.DEV && new URLSearchParams(window.location.search).has('terra-dev')
+  if (terraEl.value) terraAnim = muntaTerraAnimacio(terraEl.value, { controlsDev })
 })
 
 onBeforeUnmount(() => {
@@ -63,7 +66,7 @@ onBeforeUnmount(() => {
       <!-- <source src="/video/highlights.mp4" type="video/mp4" /> -->
     </video>
 
-    <!-- Animació tipogràfica "La terra" (fase 1: frases; després SVG + àudio) -->
+    <!-- Animació "La terra": les frases del poema i, a sota, les escenes il·lustrades -->
     <div ref="terraEl" class="cabecera__terra" aria-hidden="true" />
 
     <!-- Identitat (esquerra) -->

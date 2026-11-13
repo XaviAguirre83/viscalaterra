@@ -7,6 +7,39 @@
   pointer-events: none;
 }
 
+/* Escenes il·lustrades (SVG creat per JS): ocupen tota la capa, sota el text.
+   S'esvaeixen cap als extrems perquè no competeixin amb el logo ni amb els
+   controls de la capçalera. */
+.terra-escenes {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    rgba(0, 0, 0, 0.3) 140px,
+    #000 300px,
+    #000 calc(100% - 240px),
+    rgba(0, 0, 0, 0.3) calc(100% - 110px),
+    transparent 100%
+  );
+}
+
+/* En mòbil el logo ja tapa l'esquerra (queda per sobre de la capa): només cal
+   esvair una mica les vores. */
+@media (max-width: 768px) {
+  .terra-escenes {
+    mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 70px,
+      #000 calc(100% - 70px),
+      transparent 100%
+    );
+  }
+}
+
 .terra-frase {
   position: absolute;
   color: #f5f1e8;
