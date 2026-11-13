@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-4.5 -4.5 110 109" role="img">
+  <title>viscalaterra.cat</title>
+  <!-- Logo de viscalaterra.cat. Font i paràmetres: docs/marca/README.md -->
+  <!-- tolerància 5 (fronteres 8), vora 3.5, separació 2.4, filet 0.5 -->
+  <path id="filet" d="M7.2 68.1L39.4 55.5L53.7 24.1L50.2 16L41.3 18.4L38.3 6.2L16.6 0.3L19.5 22.2L5.4 50.9ZM39.4 55.5L7.2 68.1L0 90.4L11.4 100L22.5 92.9L17.3 88.2L26.3 78.2L47.5 71.6ZM53.7 24.1L39.4 55.5L47.5 71.6L83.6 52.2ZM50.2 16L53.7 24.1L83.6 52.2L97.2 41.9L94.2 28.6L101 23.5L91.8 16.8L75.7 22.9Z" fill="#000" fill-opacity="0.13" stroke="#000" stroke-opacity="0.13" stroke-width="8" stroke-linejoin="round"/>
+  <path id="adhesiu" d="M7.2 68.1L39.4 55.5L53.7 24.1L50.2 16L41.3 18.4L38.3 6.2L16.6 0.3L19.5 22.2L5.4 50.9ZM39.4 55.5L7.2 68.1L0 90.4L11.4 100L22.5 92.9L17.3 88.2L26.3 78.2L47.5 71.6ZM53.7 24.1L39.4 55.5L47.5 71.6L83.6 52.2ZM50.2 16L53.7 24.1L83.6 52.2L97.2 41.9L94.2 28.6L101 23.5L91.8 16.8L75.7 22.9Z" fill="#fcfcfc" stroke="#fcfcfc" stroke-width="7" stroke-linejoin="round"/>
+  <path id="lleida" d="M7.2 68.1L39.4 55.5L53.7 24.1L50.2 16L41.3 18.4L38.3 6.2L16.6 0.3L19.5 22.2L5.4 50.9Z" fill="#f2b818"/>
+  <path id="tarragona" d="M39.4 55.5L7.2 68.1L0 90.4L11.4 100L22.5 92.9L17.3 88.2L26.3 78.2L47.5 71.6Z" fill="#2979c2"/>
+  <path id="barcelona" d="M53.7 24.1L39.4 55.5L47.5 71.6L83.6 52.2Z" fill="#e34440"/>
+  <path id="girona" d="M50.2 16L53.7 24.1L83.6 52.2L97.2 41.9L94.2 28.6L101 23.5L91.8 16.8L75.7 22.9Z" fill="#1f884f"/>
+  <path id="fronteres" d="M7.2 68.1L39.4 55.5M53.7 24.1L39.4 55.5M39.4 55.5L47.5 71.6M83.6 52.2L53.7 24.1M50.2 16L53.7 24.1" fill="none" stroke="#fcfcfc" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
