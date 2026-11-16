@@ -8,12 +8,17 @@
 // Les imatges es desen a frontend/public/emblemes/.
 //
 //   npm --prefix backend run baixa-emblemes
+//   npm --prefix backend run baixa-emblemes -- --credits
 //
 // Idempotent: les entrades que ja apunten a /emblemes/ es salten. Cal executar-lo
 // DESPRÉS de `enriqueix` (que regenera el JSON amb URLs de Commons).
+// Amb --credits no baixa res: només torna a demanar l'atribució de les imatges
+// que ja són locals (a la pàgina de Commons desada al seu crèdit). Si a Commons
+// hi ha una versió més nova que la còpia local, aquell crèdit no es toca.
 // Variable opcional EMBLEMES_LIMIT=N per limitar (proves).
 
-import { writeFile, mkdir, readFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import { writeFile, mkdir, readFile, stat } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 
 const ARREL = resolve(__dirname, '../../../frontend/public')
@@ -22,6 +27,7 @@ const DIR_EMBLEMES = resolve(ARREL, 'emblemes')
 const API = 'https://commons.wikimedia.org/w/api.php'
 const UA = "viscalaterra-dev/1.0 (descàrrega d'emblemes; x.tecnic@gmail.com)"
 const LIMIT = Number(process.env.EMBLEMES_LIMIT ?? 0)
+const NOMES_CREDITS = process.argv.includes('--credits')
 
 interface Credit {
   autor?: string
@@ -53,6 +59,12 @@ function titolDeUrl(url: string): string | null {
   return 'File:' + decodeURIComponent(url.slice(i + 'Special:FilePath/'.length))
 }
 
+// "https://commons.wikimedia.org/wiki/File:Escut_de_X.svg" → "File:Escut_de_X.svg"
+function titolDePagina(url: string | undefined): string | null {
+  const m = url?.match(/\/wiki\/(File:.+)$/)
+  return m ? decodeURIComponent(m[1]) : null
+}
+
 function canon(titol: string): string {
   return titol.replace(/_/g, ' ').trim()
 }
@@ -64,6 +76,43 @@ function netejaHtml(s: string | undefined): string | undefined {
     .replace(/\s+/g, ' ')
     .trim()
   return t || undefined
+}
+
+// Camp d'autor de la plantilla d'informació del fitxer ({{Information|author=}} o
+// {{COAInformation|artist=}}, la dels escuts) passat a text pla. Si hi queda
+// marcatge que no sabem llegir, millor sense autor que amb brossa.
+function autorDeWikitext(wikitext: string | undefined): string | undefined {
+  for (const [, valor] of (wikitext ?? '').matchAll(/^\s*\|\s*(?:author|artist)\s*=(.*)$/gim)) {
+    const t = valor
+      .replace(/^\s*[*#]+/, '') // vinyeta de llista
+      .replace(/<!--.*?-->/g, '')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\{\{\s*(?:u|uw|ut|user)\s*\|\s*([^|{}]+)[^{}]*\}\}/gi, '$1') // {{U|nom}}
+      .replace(/\{\{\s*(?:attrib\w*|thv)\b[^{}]*\}\}/gi, '') // notes al costat del nom
+      .replace(/\[\[[^\]|]*\|([^\]]*)\]\]/g, '$1') // [[User:nom|text]]
+      .replace(/\[\[(?:[^\]:]*:)*([^\]]*)\]\]/g, '$1') // [[User:nom]]
+      .replace(/\[(?:https?:)?\/\/\S+\s+([^\]]*)\]/g, '$1') // [https://… text]
+      .replace(/'{2,}/g, '')
+      .replace(/\}\}\s*$/, '') // tancament de la plantilla a la mateixa línia
+      .replace(/\s+/g, ' ')
+      .trim()
+    if (t && !/[{}[\]|<>=]/.test(t)) return t
+  }
+  return undefined
+}
+
+// L'autor no sempre és a `Artist`: els escuts amb {{COAInformation}} no l'hi
+// exposen, i llavors surt a l'atribució que demana la llicència
+// ({{self|author=…}}) o només al wikitext.
+function autorDe(
+  meta: Record<string, { value?: string }> | undefined,
+  wikitext: string | undefined
+): string | undefined {
+  return (
+    netejaHtml(meta?.Artist?.value) ??
+    netejaHtml(meta?.Attribution?.value) ??
+    autorDeWikitext(wikitext)
+  )
 }
 
 function sanititza(clau: string): string {
@@ -81,20 +130,30 @@ interface Meta {
   autor?: string
   llicencia?: string
   pagina?: string
+  sha1?: string
+  pujada?: string // data de la versió actual del fitxer
 }
 
 async function consultaCommons(titols: string[]): Promise<Map<string, Meta>> {
   const params = new URLSearchParams({
     action: 'query',
     format: 'json',
-    prop: 'imageinfo',
-    iiprop: 'url|mime|extmetadata',
+    prop: 'imageinfo|revisions',
+    iiprop: 'url|mime|extmetadata|sha1|timestamp',
     // Els SVG es baixen vectorials (ii.url); aquest ample només s'aplica als
     // pocs emblemes raster (PNG/JPG), per tenir-ne una còpia local raonable.
     iiurlwidth: '256',
+    // Wikitext de la pàgina, per si l'autor no surt a extmetadata (autorDe).
+    rvprop: 'content',
+    rvslots: 'main',
     titles: titols.join('|'),
   })
-  const res = await fetch(`${API}?${params}`, { headers: { 'User-Agent': UA } })
+  // Amb el wikitext les respostes pesen més i l'API pot demanar calma (429).
+  let res = await fetch(`${API}?${params}`, { headers: { 'User-Agent': UA } })
+  for (let intent = 0; res.status === 429 && intent < 5; intent++) {
+    await dorm(Number(res.headers.get('retry-after')) * 1000 || 5000 * 2 ** intent)
+    res = await fetch(`${API}?${params}`, { headers: { 'User-Agent': UA } })
+  }
   if (!res.ok) throw new Error(`Commons API ${res.status}`)
   const json = (await res.json()) as {
     query?: {
@@ -108,7 +167,10 @@ async function consultaCommons(titols: string[]): Promise<Map<string, Meta>> {
             mime?: string
             descriptionurl?: string
             extmetadata?: Record<string, { value?: string }>
+            sha1?: string
+            timestamp?: string
           }[]
+          revisions?: { slots?: { main?: { '*'?: string } } }[]
         }
       >
     }
@@ -123,12 +185,35 @@ async function consultaCommons(titols: string[]): Promise<Map<string, Meta>> {
     out.set(canon(p.title), {
       urlDescarrega,
       ext: esSvg ? 'svg' : ext,
-      autor: netejaHtml(ii.extmetadata?.Artist?.value),
+      autor: autorDe(ii.extmetadata, p.revisions?.[0]?.slots?.main?.['*']),
       llicencia: netejaHtml(ii.extmetadata?.LicenseShortName?.value),
       pagina: ii.descriptionurl,
+      sha1: ii.sha1,
+      pujada: ii.timestamp,
     })
   }
   return out
+}
+
+function creditDe(m: Meta): Credit {
+  return {
+    ...(m.autor ? { autor: m.autor } : {}),
+    ...(m.llicencia ? { llicencia: m.llicencia } : {}),
+    ...(m.pagina ? { pagina: m.pagina } : {}),
+  }
+}
+
+// La còpia local és la versió actual del fitxer a Commons? Els SVG es comparen
+// per SHA-1; dels raster se'n va baixar una miniatura, així que es mira la data.
+async function esVersioActual(ruta: string, m: Meta): Promise<boolean> {
+  const fitxer = resolve(ARREL, ruta.replace(/^\//, ''))
+  if (m.ext !== 'svg') {
+    return m.pujada !== undefined && new Date(m.pujada) <= (await stat(fitxer)).mtime
+  }
+  const sha1 = createHash('sha1')
+    .update(await readFile(fitxer))
+    .digest('hex')
+  return sha1 === m.sha1
 }
 
 const dorm = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -169,14 +254,18 @@ async function main() {
   const dades = JSON.parse(await readFile(JSON_PATH, 'utf8')) as Dades
   await mkdir(DIR_EMBLEMES, { recursive: true })
 
-  // 1) Recull entrades pendents (URL de Commons, no encara local).
+  // 1) Recull entrades pendents (URL de Commons, no encara local) o, amb
+  //    --credits, les ja locals (pel títol de la pàgina desada al crèdit).
   let entrades: Entrada[] = []
   for (const nivell of Object.keys(dades) as (keyof Dades)[]) {
     for (const [clau, e] of Object.entries(dades[nivell])) {
       for (const camp of ['escut', 'bandera'] as const) {
         const v = e[camp]
-        if (!v || v.startsWith('/emblemes/')) continue
-        const titol = titolDeUrl(v)
+        if (!v) continue
+        const local = v.startsWith('/emblemes/')
+        const titol = NOMES_CREDITS
+          ? local && titolDePagina(e[`${camp}Credit`]?.pagina)
+          : !local && titolDeUrl(v)
         if (titol) entrades.push({ nivell, clau, camp, titol })
       }
     }
@@ -191,11 +280,43 @@ async function main() {
     const m = await consultaCommons([...new Set(lot.map((e) => e.titol))])
     m.forEach((v, k) => meta.set(k, v))
     process.stdout.write(`\rMetadades: ${Math.min(i + 50, entrades.length)}/${entrades.length}`)
-    await new Promise((r) => setTimeout(r, 250))
+    await new Promise((r) => setTimeout(r, 1000))
   }
   console.log()
 
-  // 3) Descàrrega (amb concurrència limitada) + actualització del JSON.
+  // 3) Amb --credits només es reescriu l'atribució; les imatges no es toquen.
+  if (NOMES_CREDITS) {
+    let canviats = 0
+    let senseResposta = 0
+    const desfasats: string[] = []
+    for (const en of entrades) {
+      const m = meta.get(canon(en.titol))
+      const e = dades[en.nivell as keyof Dades][en.clau]
+      const ruta = e[en.camp]
+      if (!m || !ruta) {
+        senseResposta++ // el crèdit es queda com estava
+        continue
+      }
+      // Si el fitxer ha canviat a Commons, el seu crèdit d'avui potser no és el
+      // de la nostra còpia: es deixa com estava.
+      if (!(await esVersioActual(ruta, m))) {
+        desfasats.push(`${en.titol} (${ruta})`)
+        continue
+      }
+      const credit = creditDe(m)
+      if (JSON.stringify(credit) !== JSON.stringify(e[`${en.camp}Credit`])) canviats++
+      e[`${en.camp}Credit`] = credit
+    }
+    await writeFile(JSON_PATH, JSON.stringify(dades, null, 0) + '\n', 'utf8')
+    console.log(`Crèdits canviats: ${canviats} · sense resposta de Commons: ${senseResposta}`)
+    if (desfasats.length) {
+      console.log(`Còpia local més antiga que Commons (crèdit intacte): ${desfasats.length}`)
+      desfasats.forEach((d) => console.log(`  ${d}`))
+    }
+    process.exit(0)
+  }
+
+  // 4) Descàrrega (amb concurrència limitada) + actualització del JSON.
   let ok = 0
   let fallits = 0
   let fets = 0
@@ -211,11 +332,7 @@ async function main() {
     try {
       await baixa(m.urlDescarrega, resolve(DIR_EMBLEMES, nom))
       e[en.camp] = `/emblemes/${nom}`
-      e[`${en.camp}Credit`] = {
-        ...(m.autor ? { autor: m.autor } : {}),
-        ...(m.llicencia ? { llicencia: m.llicencia } : {}),
-        ...(m.pagina ? { pagina: m.pagina } : {}),
-      }
+      e[`${en.camp}Credit`] = creditDe(m)
       ok++
     } catch (err) {
       fallits++
