@@ -32,6 +32,10 @@ export interface ModeJocMapa {
   // false = el jugador no respon clicant el mapa («Com es diu...?» escriu):
   // les features no reaccionen ni al hover ni al clic.
   interactiu: boolean
+  // Franges del viewport (px) que el HUD de la partida tapa a dalt, a baix i
+  // a l'esquerra: el territori de joc s'enquadra a l'espai que queda lliure,
+  // perquè cap tros quedi sota els marcadors. null o absent = tot el viewport.
+  marges?: { dalt: number; baix: number; esquerra: number } | null
 }
 
 export const useMapaStore = defineStore('mapa', () => {

@@ -74,55 +74,64 @@ let mascaraCatalunya: L.Polygon | null = null
 // ── Tiles: Mapa Base de l'ICGC (geoserveis.icgc.cat, llicència CC-BY, sense
 // clau). Abans era Carto, que des d'oct. 2026 exigeix API key i serveix una
 // marca d'aigua a cada tile.
-// Basemap "atlas" en grisos (estandard-gris) per a la vista general: deixa que
-// les delimitacions de colors destaquin. A partir de ZOOM_DETALL es passa al
-// basemap en color (estandard), quan ja es mira un municipi de prop i la
-// perspectiva territorial ja no és l'important.
-// En mode joc, topogràfic gris MUT (sense topònims): cap nom de municipi o
-// ciutat al fons (anti-trampa d'arrel) i el relleu/trama urbana es veu net.
+// El fons depèn del zoom:
+//  · Vista general (per sota de ZOOM_MAPA_BASE): només el relleu ombrejat de
+//    Catalunya, sense carreteres ni topònims — de lluny només feien soroll
+//    sota les delimitacions. Fora de Catalunya no hi ha res (fons llis).
+//  · Des de ZOOM_MAPA_BASE: basemap "atlas" en grisos (estandard-gris), amb
+//    carreteres i noms, que de prop sí que ajuden a situar-se.
+//  · Des de ZOOM_DETALL: basemap en color (estandard), quan ja es mira un
+//    municipi de prop i la perspectiva territorial ja no és l'important.
+// En mode joc, en lloc dels dos basemaps hi ha el topogràfic gris MUT (sense
+// topònims): cap nom de municipi o ciutat al fons (anti-trampa d'arrel).
 // Ull: la web de l'ICGC documenta la capa com `topografic-mut-gris`, però el
 // servei només respon a `topografic-gris-mut` (el nom del WMS).
 const URL_ICGC = 'https://geoserveis.icgc.cat/servei/catalunya/mapa-base/wmts'
 const URL_TILES_BASE = `${URL_ICGC}/estandard-gris/MON3857NW/{z}/{x}/{y}.png`
 const URL_TILES_DETALL = `${URL_ICGC}/estandard/MON3857NW/{z}/{x}/{y}.png`
 const URL_TILES_JOC = `${URL_ICGC}/topografic-gris-mut/MON3857NW/{z}/{x}/{y}.png`
+// El relleu sol no és al servei de Mapa Base: ve del servidor de tiles antic
+// de l'ICGC (només cobreix Catalunya; la resta de cada tile és transparent).
+const URL_TILES_RELLEU = 'https://tilemaps.icgc.cat/mapfactory/wmts/relleu/CAT3857/{z}/{x}/{y}.png'
+const ZOOM_MAPA_BASE = 11
 const ZOOM_DETALL = 13
+const OPACITAT_RELLEU = 0.4
+let tilesRelleu: L.TileLayer | null = null
 let tilesBase: L.TileLayer | null = null
 let tilesDetall: L.TileLayer | null = null
 let tilesJoc: L.TileLayer | null = null
 
-function craftTiles(url: string): L.TileLayer {
+function craftTiles(url: string, opcions: L.TileLayerOptions = {}): L.TileLayer {
   return L.tileLayer(url, {
     // Fora de Catalunya el Mapa Base de l'ICGC es fa amb dades d'OpenMapTiles/OSM.
     attribution:
       '© <a href="https://www.icgc.cat/ca/Geoinformacio-i-mapes/Servei-de-Mapa-Base">ICGC</a> · © OpenMapTiles © OpenStreetMap contributors',
     maxZoom: 19,
+    ...opcions,
   })
 }
 
-// En mode normal, tria el basemap segons el zoom: estàndard gris (atlas) a la
-// vista general, estàndard en color (més detall) a partir de ZOOM_DETALL.
-function actualitzaTilesNormal(zoom: number) {
-  if (!mapa || props.modeJoc) return
-  tilesBase ??= craftTiles(URL_TILES_BASE)
-  tilesDetall ??= craftTiles(URL_TILES_DETALL)
-  const vol = zoom >= ZOOM_DETALL ? tilesDetall : tilesBase
-  const fora = zoom >= ZOOM_DETALL ? tilesBase : tilesDetall
-  if (mapa.hasLayer(fora)) mapa.removeLayer(fora)
-  if (!mapa.hasLayer(vol)) vol.addTo(mapa)
-}
-
-function activaTilesJoc(actiu: boolean) {
+// Deixa al mapa només la capa de fons que toca segons el zoom i el mode.
+function actualitzaTiles(zoom: number) {
   if (!mapa) return
-  if (actiu) {
-    tilesJoc ??= craftTiles(URL_TILES_JOC)
-    if (tilesBase && mapa.hasLayer(tilesBase)) mapa.removeLayer(tilesBase)
-    if (tilesDetall && mapa.hasLayer(tilesDetall)) mapa.removeLayer(tilesDetall)
-    if (!mapa.hasLayer(tilesJoc)) tilesJoc.addTo(mapa)
+  let vol: L.TileLayer
+  if (zoom < ZOOM_MAPA_BASE) {
+    vol = tilesRelleu ??= craftTiles(URL_TILES_RELLEU, {
+      attribution:
+        '© <a href="https://www.icgc.cat/ca/Geoinformacio-i-mapes/Servei-de-Mapa-Base">ICGC</a>',
+      opacity: OPACITAT_RELLEU,
+    })
+  } else if (props.modeJoc) {
+    vol = tilesJoc ??= craftTiles(URL_TILES_JOC)
+  } else if (zoom >= ZOOM_DETALL) {
+    vol = tilesDetall ??= craftTiles(URL_TILES_DETALL)
   } else {
-    if (tilesJoc && mapa.hasLayer(tilesJoc)) mapa.removeLayer(tilesJoc)
-    actualitzaTilesNormal(mapa.getZoom())
+    vol = tilesBase ??= craftTiles(URL_TILES_BASE)
   }
+  for (const capa of [tilesRelleu, tilesBase, tilesDetall, tilesJoc]) {
+    if (capa && capa !== vol && mapa.hasLayer(capa)) mapa.removeLayer(capa)
+  }
+  if (!mapa.hasLayer(vol)) vol.addTo(mapa)
 }
 
 // Capes actualment visibles per nivell (al màxim, una per nivell).
@@ -938,6 +947,30 @@ function aplicaVistaBase() {
   actualitzaInteractivitatPanes()
 }
 
+// Zoom i centre que enquadren uns límits al viewport. getBoundsZoom retalla el resultat
+// al minZoom vigent, que encara és el de la vista base ANTERIOR: venint d'un
+// contenidor petit (zoom mínim alt), Catalunya sencera o un contenidor més
+// gran quedaven clavats al zoom vell. Per això s'allibera abans de calcular
+// (baixar el minZoom no mou el mapa; aplicaVistaBase posa després el nou).
+//
+// Amb marges (el HUD del joc tapa franges del viewport), el territori
+// s'encabeix a l'espai lliure i el centre es desplaça perquè hi quedi
+// centrat, no pas al mig del viewport.
+const SENSE_MARGES = { dalt: 0, baix: 0, esquerra: 0 }
+let margesJoc = SENSE_MARGES
+
+function enquadraJoc(bounds: L.LatLngBounds) {
+  if (!mapa) return
+  const { dalt, baix, esquerra } = margesJoc
+  mapa.setMinZoom(0)
+  zoomBase = mapa.getBoundsZoom(bounds, false, L.point(esquerra, dalt + baix))
+  const centre = mapa.unproject(
+    mapa.project(bounds.getCenter(), zoomBase).subtract([esquerra / 2, (dalt - baix) / 2]),
+    zoomBase
+  )
+  centreBase = [centre.lat, centre.lng]
+}
+
 function entraModeJoc(mj: ModeJocMapa) {
   if (!mapa) return
   // Sense contenidor (o si no es troba), el territori de joc és Catalunya
@@ -950,10 +983,10 @@ function entraModeJoc(mj: ModeJocMapa) {
     [boundsJoc.getSouth(), boundsJoc.getWest()],
     [boundsJoc.getNorth(), boundsJoc.getEast()],
   ]
-  zoomBase = mapa.getBoundsZoom(boundsJoc)
-  centreBase = [boundsJoc.getCenter().lat, boundsJoc.getCenter().lng]
+  margesJoc = mj.marges ?? SENSE_MARGES
+  enquadraJoc(boundsJoc)
   aplicaVistaBase()
-  activaTilesJoc(true)
+  actualitzaTiles(mapa.getZoom())
   mascaraCatalunya?.setStyle({ fillOpacity: OPACITAT_MASCARA_JOC })
 }
 
@@ -963,7 +996,7 @@ function surtModeJoc() {
   zoomBase = zoomInicial
   centreBase = centreInicial
   aplicaVistaBase()
-  activaTilesJoc(false)
+  if (mapa) actualitzaTiles(mapa.getZoom())
   mascaraCatalunya?.setStyle({ fillOpacity: OPACITAT_MASCARA })
 }
 
@@ -1333,14 +1366,14 @@ onMounted(() => {
     zoomDelta: 1,
   })
 
-  actualitzaTilesNormal(zoomArrencada)
+  actualitzaTiles(zoomArrencada)
 
   creaPanesTerritorials()
 
   mapa.on('zoomend', () => {
     const zoom = mapa!.getZoom()
     mapaStore.actualitzaZoom(zoom)
-    actualitzaTilesNormal(zoom)
+    actualitzaTiles(zoom)
     carregaTotesCapes(zoom)
     actualitzaPins()
     actualitzaMaxBounds()
@@ -1357,8 +1390,7 @@ onMounted(() => {
     // (rotació del mòbil, redimensionar la finestra) es re-enquadra el
     // territori de joc des de zero.
     if (boundsJoc) {
-      zoomBase = mapa!.getBoundsZoom(boundsJoc)
-      centreBase = [boundsJoc.getCenter().lat, boundsJoc.getCenter().lng]
+      enquadraJoc(boundsJoc)
       aplicaVistaBase()
       return
     }
@@ -1411,6 +1443,7 @@ onUnmounted(() => {
   Object.keys(cacheLayers).forEach((k) => delete cacheLayers[k])
   Object.keys(cachePromeses).forEach((k) => delete cachePromeses[k])
   ;(Object.keys(capesActives) as NivellTerritorial[]).forEach((n) => (capesActives[n] = null))
+  tilesRelleu = null
   tilesBase = null
   tilesDetall = null
   tilesJoc = null
@@ -1496,7 +1529,10 @@ watch(
       anterior &&
       anterior.nivell === mj.nivell &&
       anterior.contenidor?.nivell === mj.contenidor?.nivell &&
-      anterior.contenidor?.codi === mj.contenidor?.codi
+      anterior.contenidor?.codi === mj.contenidor?.codi &&
+      (['dalt', 'baix', 'esquerra'] as const).every(
+        (costat) => (anterior.marges?.[costat] ?? 0) === (mj.marges?.[costat] ?? 0)
+      )
     if (mateixaVista) {
       actualitzaEstilsTotes()
       return
