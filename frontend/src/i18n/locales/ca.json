@@ -333,6 +333,12 @@
     "intentsRonda": "Intents restants de la ronda",
     "ratxaAria": "Ratxa d'encerts consecutius",
     "surt": "Surt",
+    "sortida": {
+      "titol": "Vols sortir de la partida?",
+      "text": "Perdràs el progrés d'aquesta partida.",
+      "continua": "Continua jugant",
+      "surt": "Surt de la partida"
+    },
     "tornaConfig": "Canvia la configuració",
     "resultats": {
       "titol": "Partida completada!",

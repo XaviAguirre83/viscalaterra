@@ -333,6 +333,12 @@
     "intentsRonda": "Attempts left this round",
     "ratxaAria": "Consecutive correct answers streak",
     "surt": "Exit",
+    "sortida": {
+      "titol": "Leave this game?",
+      "text": "You'll lose your progress in this game.",
+      "continua": "Keep playing",
+      "surt": "Leave game"
+    },
     "tornaConfig": "Change settings",
     "resultats": {
       "titol": "Game complete!",

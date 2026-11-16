@@ -72,7 +72,7 @@ function obreJoc(joc: (typeof JOCS)[number]) {
 }
 
 .jocs-capcalera {
-  max-width: 860px;
+  max-width: 1000px;
   margin: 0 auto 28px;
   text-align: center;
 }
@@ -95,7 +95,7 @@ function obreJoc(joc: (typeof JOCS)[number]) {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 18px;
-  max-width: 860px;
+  max-width: 1000px;
   margin: 0 auto;
 }
 

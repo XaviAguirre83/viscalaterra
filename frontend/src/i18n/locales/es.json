@@ -333,6 +333,12 @@
     "intentsRonda": "Intentos restantes de la ronda",
     "ratxaAria": "Racha de aciertos consecutivos",
     "surt": "Salir",
+    "sortida": {
+      "titol": "¿Quieres salir de la partida?",
+      "text": "Perderás el progreso de esta partida.",
+      "continua": "Sigue jugando",
+      "surt": "Salir de la partida"
+    },
     "tornaConfig": "Cambia la configuración",
     "resultats": {
       "titol": "¡Partida completada!",

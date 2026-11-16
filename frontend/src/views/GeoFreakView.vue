@@ -49,8 +49,11 @@ const mqLandscape =
     ? window.matchMedia('(orientation: landscape) and (max-height: 600px)')
     : null
 
+// També es pausa mentre es demana confirmació per sortir de la partida.
+const confirmantSortida = ref(false)
+
 function aplicaPausaLandscape() {
-  if (mqLandscape?.matches) geofreak.pausa()
+  if (mqLandscape?.matches || confirmantSortida.value) geofreak.pausa()
   else geofreak.repren()
 }
 
@@ -128,22 +131,8 @@ function quantitatNivell(id: number): number | null {
   }
 }
 
-// Els <select> deleguen l'escriptura al store (patró get/set). El valor ''
-// és el placeholder ("Tria'n una…"), deshabilitat: el set mai el rep.
-const modalitatSeleccionada = computed({
-  get: () => geofreak.configuracio.modalitat ?? '',
-  set: (m: (typeof MODALITATS)[number] | '') => {
-    if (m !== '') geofreak.defineixModalitat(m)
-  },
-})
-
-const nivellSeleccionat = computed({
-  get: () => geofreak.configuracio.nivell ?? '',
-  set: (id: number | '') => {
-    if (id !== '') geofreak.defineixNivell(id)
-  },
-})
-
+// El <select> del contenidor delega l'escriptura al store (patró get/set). El
+// valor '' és el placeholder ("Tria'n una…"), deshabilitat: el set mai el rep.
 const contenidorSeleccionat = computed({
   get: () => geofreak.configuracio.codiContenidor ?? '',
   set: (codi: string) => geofreak.defineixContenidor(codi || null),
@@ -177,6 +166,23 @@ const pasValid = computed(() => {
   return true
 })
 
+// Indicador de passos: també serveix per saltar a un pas ja assolible (al 3
+// només s'hi arriba amb la modalitat triada, igual que amb «Següent»).
+const nomsPassos = computed(() => [
+  t('geofreak.wizard.jugadors'),
+  t('geofreak.modalitat'),
+  t('geofreak.nivell'),
+])
+
+function potAnarAPas(pas: number): boolean {
+  return pas < 3 || geofreak.configuracio.modalitat !== null
+}
+
+const ICONA_MODALITAT: Record<(typeof MODALITATS)[number], string> = {
+  onEs: '📍',
+  comEsDiu: '⌨️',
+}
+
 // 🎲 Tria un territori contenidor a l'atzar (nivells "a triar").
 function triaContenidorAleatori() {
   const opcions = opcionsContenidor.value
@@ -189,6 +195,32 @@ function triaContenidorAleatori() {
 function obreConfiguracio() {
   geofreak.tornaAConfiguracio()
   pasWizard.value = 3
+}
+
+// «Surt» en plena partida: si ja hi ha progrés, primer es demana confirmació
+// (un clic per error llençava la partida); sense res jugat, surt directament.
+function demanaSortida() {
+  const p = geofreak.partida
+  if (!p || p.encertades.length + p.errors === 0) {
+    obreConfiguracio()
+    return
+  }
+  confirmantSortida.value = true
+  geofreak.pausa()
+}
+
+function continuaPartida() {
+  confirmantSortida.value = false
+  aplicaPausaLandscape()
+  if (geofreak.configuracio.modalitat === 'comEsDiu') {
+    void nextTick(() => respostaInput.value?.focus())
+  }
+}
+
+function confirmaSortida() {
+  confirmantSortida.value = false
+  geofreak.repren()
+  obreConfiguracio()
 }
 
 // ── Demarcacions jugables i els seus noms ──────────────────────────────────
@@ -240,6 +272,44 @@ const nomsJoc = computed<Map<string, string>>(() => {
 // Totes les demarcacions que entren en joc: les del contenidor o totes les del nivell.
 const codisJoc = computed<string[]>(() => codisPermesos.value ?? [...nomsJoc.value.keys()])
 
+// Franges del mapa que tapa el HUD durant la partida (px): a dalt, els
+// marcadors (dues files en mòbil); a baix, el cronòmetre; i la caixa de
+// resposta de «Com es diu...?», que en pantalles amples va a l'esquerra i en
+// la resta sota els marcadors. El mapa enquadra el territori a l'espai lliure
+// — si no, el nord (Val d'Aran, Pallars) quedava sota el HUD: no es podia
+// clicar ni es veia il·luminat. Valors lligats a les mides del CSS del HUD
+// (.gf-hud-dalt, .gf-pregunta, .gf-xip--esquerra). Sota el wizard, cap marge.
+const mqMobil = typeof window !== 'undefined' ? window.matchMedia('(max-width: 768px)') : null
+const mqAmple = typeof window !== 'undefined' ? window.matchMedia('(min-width: 1100px)') : null
+const esMobil = ref(mqMobil?.matches ?? false)
+const esAmple = ref(mqAmple?.matches ?? false)
+function actualitzaAmplada() {
+  esMobil.value = mqMobil?.matches ?? false
+  esAmple.value = mqAmple?.matches ?? false
+}
+onMounted(() => {
+  mqMobil?.addEventListener('change', actualitzaAmplada)
+  mqAmple?.addEventListener('change', actualitzaAmplada)
+})
+onUnmounted(() => {
+  mqMobil?.removeEventListener('change', actualitzaAmplada)
+  mqAmple?.removeEventListener('change', actualitzaAmplada)
+})
+
+const margesMapa = computed(() => {
+  if (geofreak.fase === 'configuracio') return null
+  const marcadors = esMobil.value ? 116 : 68
+  const resposta = geofreak.configuracio.modalitat === 'comEsDiu'
+  // Amb la pista demanada, la caixa creix amb les 4 opcions i el mapa es
+  // re-enquadra: cal veure el territori sencer per triar entre elles.
+  const opcions = geofreak.pista ? (esMobil.value ? 106 : 90) : 0
+  return {
+    dalt: marcadors + (resposta && !esAmple.value ? 74 + opcions : 0),
+    baix: 84,
+    esquerra: resposta && esAmple.value ? 396 : 0,
+  }
+})
+
 // ── Mode joc per al mapa (partida i resultats) ─────────────────────────────
 
 // Dins la vista del joc, el mapa està SEMPRE en mode joc — també sota el
@@ -267,6 +337,7 @@ const modeJocMapa = computed<ModeJocMapa | null>(() => {
     // La pista al mapa només aplica a «On és...?» (a l'altra modalitat són botons).
     codisPista: geofreak.configuracio.modalitat === 'onEs' ? geofreak.pista : null,
     interactiu: enPartida && geofreak.configuracio.modalitat === 'onEs',
+    marges: margesMapa.value,
   }
 })
 
@@ -635,6 +706,7 @@ const resumPartida = computed(() => {
 // ── Accessibilitat dels modals (focus-trap + Esc) ──────────────────────────
 const modalConfigRef = ref<HTMLElement | null>(null)
 const modalResultatsRef = ref<HTMLElement | null>(null)
+const modalSortidaRef = ref<HTMLElement | null>(null)
 
 // Al wizard, Esc retrocedeix un pas (no hi ha "tancar": és la porta d'entrada).
 useFocusTrap(
@@ -650,6 +722,8 @@ useFocusTrap(
   computed(() => geofreak.fase === 'resultats'),
   () => obreConfiguracio()
 )
+// A la confirmació de sortida, Esc continua la partida.
+useFocusTrap(modalSortidaRef, confirmantSortida, continuaPartida)
 </script>
 
 <template>
@@ -714,106 +788,157 @@ useFocusTrap(
           </div>
 
           <template v-else>
-            <div class="gf-passos" aria-hidden="true">
-              <span
-                v-for="p in 3"
-                :key="p"
-                class="gf-passos__pas"
-                :class="{ 'gf-passos__pas--actiu': p === pasWizard }"
-              ></span>
-            </div>
+            <ol class="gf-passos">
+              <li v-for="(nom, i) in nomsPassos" :key="i">
+                <button
+                  type="button"
+                  class="gf-passos__pas"
+                  :class="{
+                    'gf-passos__pas--actiu': i + 1 === pasWizard,
+                    'gf-passos__pas--fet': i + 1 < pasWizard,
+                  }"
+                  :disabled="!potAnarAPas(i + 1)"
+                  :aria-current="i + 1 === pasWizard ? 'step' : undefined"
+                  @click="pasWizard = i + 1"
+                >
+                  <span class="gf-passos__num" aria-hidden="true">{{
+                    i + 1 < pasWizard ? '✓' : i + 1
+                  }}</span>
+                  <span class="gf-passos__nom">{{ nom }}</span>
+                </button>
+              </li>
+            </ol>
 
-            <!-- Pas 1: jugadors (amb un de sol no calen noms) -->
-            <template v-if="pasWizard === 1">
-              <div class="gf-camp">
-                <label>{{ $t('geofreak.wizard.jugadors') }}</label>
-                <div class="gf-jugadors">
+            <!-- El cos del pas es desplaça si no hi cap; la navegació de sota
+                 queda sempre a la vista. Re-muntat per pas (micro-entrada). -->
+            <div :key="pasWizard" class="gf-modal__cos">
+              <!-- Pas 1: jugadors (amb un de sol no calen noms) -->
+              <template v-if="pasWizard === 1">
+                <div
+                  class="gf-camp gf-jugadors"
+                  role="radiogroup"
+                  :aria-label="$t('geofreak.wizard.jugadors')"
+                >
                   <button
                     v-for="n in 4"
                     :key="n"
                     type="button"
+                    role="radio"
                     class="gf-jugadors__opcio"
                     :class="{ 'gf-jugadors__opcio--actiu': numJugadors === n }"
+                    :aria-checked="numJugadors === n"
                     @click="numJugadors = n"
                   >
+                    <span class="gf-jugadors__figures" aria-hidden="true">
+                      <span v-for="f in n" :key="f"></span>
+                    </span>
                     {{ n }}
                   </button>
                 </div>
-              </div>
-              <div v-if="numJugadors > 1" class="gf-camp">
-                <div v-for="n in numJugadors" :key="n" class="gf-jugador-fila">
-                  <input
-                    v-model="nomsJugadors[n - 1]"
-                    type="text"
-                    class="gf-jugadors__nom"
-                    autocomplete="off"
-                    :placeholder="$t('geofreak.jugadorN', { n })"
-                  />
-                  <div class="gf-colors">
-                    <button
-                      v-for="c in COLORS_JUGADOR"
-                      :key="c"
-                      type="button"
-                      class="gf-colors__opcio"
-                      :class="{ 'gf-colors__opcio--actiu': colorsJugadors[n - 1] === c }"
-                      :style="{ background: c }"
-                      :aria-label="c"
-                      @click="triaColor(n - 1, c)"
-                    ></button>
+                <div v-if="numJugadors > 1" class="gf-camp">
+                  <div v-for="n in numJugadors" :key="n" class="gf-jugador-fila">
+                    <span
+                      class="gf-jugador-fila__color"
+                      :style="{ background: colorsJugadors[n - 1] }"
+                      aria-hidden="true"
+                    ></span>
+                    <input
+                      v-model="nomsJugadors[n - 1]"
+                      type="text"
+                      class="gf-jugadors__nom"
+                      autocomplete="off"
+                      maxlength="20"
+                      :placeholder="$t('geofreak.jugadorN', { n })"
+                    />
+                    <div class="gf-colors">
+                      <button
+                        v-for="c in COLORS_JUGADOR"
+                        :key="c"
+                        type="button"
+                        class="gf-colors__opcio"
+                        :class="{ 'gf-colors__opcio--actiu': colorsJugadors[n - 1] === c }"
+                        :style="{ background: c }"
+                        :aria-label="c"
+                        @click="triaColor(n - 1, c)"
+                      ></button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </template>
+              </template>
 
-            <!-- Pas 2: modalitat -->
-            <div v-else-if="pasWizard === 2" class="gf-camp">
-              <label for="gf-modalitat">{{ $t('geofreak.modalitat') }}</label>
-              <select id="gf-modalitat" v-model="modalitatSeleccionada">
-                <option value="" disabled>{{ $t('geofreak.triaOpcio') }}</option>
-                <option v-for="m in MODALITATS" :key="m" :value="m">
-                  {{ $t(`geofreak.modalitats.${m}`) }}
-                </option>
-              </select>
-              <p v-if="geofreak.configuracio.modalitat" class="gf-desc">
-                {{ $t(`geofreak.modalitats.${geofreak.configuracio.modalitat}Desc`) }}
-              </p>
-            </div>
-
-            <!-- Pas 3: nivell i territori (amb tria a l'atzar) -->
-            <template v-else>
-              <div class="gf-camp">
-                <label for="gf-nivell">{{ $t('geofreak.nivell') }}</label>
-                <select id="gf-nivell" v-model="nivellSeleccionat">
-                  <option value="" disabled>{{ $t('geofreak.triaOpcio') }}</option>
-                  <option v-for="n in NIVELLS" :key="n.id" :value="n.id">
-                    {{ n.id }} · {{ $t(`geofreak.nivells.n${n.id}`)
-                    }}{{ quantitatNivell(n.id) ? ` (${quantitatNivell(n.id)})` : '' }}
-                  </option>
-                </select>
+              <!-- Pas 2: modalitat (dues targetes, amb la seva explicació) -->
+              <div
+                v-else-if="pasWizard === 2"
+                class="gf-camp gf-modalitats"
+                role="radiogroup"
+                :aria-label="$t('geofreak.modalitat')"
+              >
+                <button
+                  v-for="m in MODALITATS"
+                  :key="m"
+                  type="button"
+                  role="radio"
+                  class="gf-opcio"
+                  :class="{ 'gf-opcio--actiu': geofreak.configuracio.modalitat === m }"
+                  :aria-checked="geofreak.configuracio.modalitat === m"
+                  @click="geofreak.defineixModalitat(m)"
+                >
+                  <span class="gf-opcio__icona" aria-hidden="true">{{ ICONA_MODALITAT[m] }}</span>
+                  <span class="gf-opcio__text">
+                    <span class="gf-opcio__nom">{{ $t(`geofreak.modalitats.${m}`) }}</span>
+                    <span class="gf-opcio__desc">{{ $t(`geofreak.modalitats.${m}Desc`) }}</span>
+                  </span>
+                </button>
               </div>
 
-              <div v-if="tipusContenidor" class="gf-camp">
-                <label for="gf-contenidor">{{
-                  $t(`geofreak.triaContenidor.${tipusContenidor}`)
-                }}</label>
-                <div class="gf-contenidor-fila">
-                  <select id="gf-contenidor" v-model="contenidorSeleccionat">
-                    <option value="" disabled>{{ $t('geofreak.triaOpcio') }}</option>
-                    <option v-for="o in opcionsContenidor" :key="o.codi" :value="o.codi">
-                      {{ o.nom }}
-                    </option>
-                  </select>
+              <!-- Pas 3: nivell i territori (amb tria a l'atzar) -->
+              <template v-else>
+                <div
+                  class="gf-camp gf-nivells"
+                  role="radiogroup"
+                  :aria-label="$t('geofreak.nivell')"
+                >
                   <button
+                    v-for="n in NIVELLS"
+                    :key="n.id"
                     type="button"
-                    class="gf-atzar"
-                    :disabled="!opcionsContenidor.length"
-                    @click="triaContenidorAleatori"
+                    role="radio"
+                    class="gf-nivell"
+                    :class="{ 'gf-nivell--actiu': geofreak.configuracio.nivell === n.id }"
+                    :aria-checked="geofreak.configuracio.nivell === n.id"
+                    @click="geofreak.defineixNivell(n.id)"
                   >
-                    🎲 {{ $t('geofreak.wizard.aleatori') }}
+                    <span class="gf-nivell__num" aria-hidden="true">{{ n.id }}</span>
+                    <span class="gf-nivell__nom">{{ $t(`geofreak.nivells.n${n.id}`) }}</span>
+                    <span v-if="quantitatNivell(n.id)" class="gf-nivell__quantitat">{{
+                      quantitatNivell(n.id)
+                    }}</span>
                   </button>
                 </div>
-              </div>
-            </template>
+
+                <div v-if="tipusContenidor" class="gf-camp">
+                  <label for="gf-contenidor">{{
+                    $t(`geofreak.triaContenidor.${tipusContenidor}`)
+                  }}</label>
+                  <div class="gf-contenidor-fila">
+                    <select id="gf-contenidor" v-model="contenidorSeleccionat">
+                      <option value="" disabled>{{ $t('geofreak.triaOpcio') }}</option>
+                      <option v-for="o in opcionsContenidor" :key="o.codi" :value="o.codi">
+                        {{ o.nom }}
+                      </option>
+                    </select>
+                    <button
+                      type="button"
+                      class="gf-atzar"
+                      :disabled="!opcionsContenidor.length"
+                      @click="triaContenidorAleatori"
+                    >
+                      🎲 {{ $t('geofreak.wizard.aleatori') }}
+                    </button>
+                  </div>
+                </div>
+              </template>
+            </div>
 
             <div class="gf-wizard-nav">
               <button
@@ -883,48 +1008,6 @@ useFocusTrap(
             }"
           ></div>
         </div>
-        <div
-          v-if="geofreak.configuracio.modalitat === 'comEsDiu'"
-          class="gf-pregunta gf-pregunta--resposta"
-        >
-          <input
-            id="gf-resposta"
-            ref="respostaInput"
-            v-model="textResposta"
-            type="text"
-            autocomplete="off"
-            spellcheck="false"
-            :placeholder="$t('geofreak.escriuNom')"
-            :aria-label="$t('geofreak.modalitats.comEsDiu')"
-            :class="{ 'gf-resposta--sacseig': sacsejant }"
-            @keydown.enter.prevent="enviaResposta"
-            @keydown.down.prevent="mouSuggeriment(1)"
-            @keydown.up.prevent="mouSuggeriment(-1)"
-            @keydown.esc.prevent="escNeteja"
-          />
-          <!-- Pista activa: les 4 opcions substitueixen els suggeriments -->
-          <div v-if="geofreak.pista" class="gf-opcions">
-            <button
-              v-for="o in opcionsPista"
-              :key="o.codi"
-              type="button"
-              @mousedown.prevent="respon(o.codi)"
-            >
-              {{ o.nom }}
-            </button>
-          </div>
-          <ul v-else-if="suggeriments.length" class="gf-suggeriments">
-            <li v-for="(s, i) in suggeriments" :key="s.codi">
-              <button
-                type="button"
-                :class="{ 'gf-suggeriment--actiu': i === indexSuggeriment }"
-                @mousedown.prevent="respon(s.codi)"
-              >
-                {{ s.nom }}
-              </button>
-            </li>
-          </ul>
-        </div>
         <div class="gf-xip gf-xip--esquerra">
           <span
             v-if="geofreak.esMultijugador"
@@ -938,57 +1021,135 @@ useFocusTrap(
             >{{ geofreak.partida?.encertades.length ?? 0 }}/{{ geofreak.totalDemarcacions }}</span
           >
         </div>
-        <div class="gf-xip gf-xip--dreta">
-          <!-- Marcador de conquestes per jugador (multijugador) -->
-          <template v-if="geofreak.esMultijugador">
+        <!-- Marcadors i, a sota, la caixa de resposta («Com es diu...?»): en
+             un sol contenidor en columna, així mai se solapen. -->
+        <div class="gf-hud-dalt">
+          <div class="gf-xip gf-xip--dreta">
+            <!-- Marcador de conquestes per jugador (multijugador) -->
+            <template v-if="geofreak.esMultijugador">
+              <span
+                v-for="(j, i) in geofreak.estatJugadors"
+                :key="i"
+                class="gf-xip__jugador"
+                :class="{ 'gf-xip__jugador--actiu': i === geofreak.tornActual }"
+              >
+                <span class="gf-xip__colorjug" :style="{ background: j.color }"></span>
+                <span class="gf-xip__nomjug">{{ j.nom }}</span>
+                {{ j.conquestes.length }}
+              </span>
+            </template>
+            <template v-else>
+              <span
+                v-if="geofreak.ratxa >= 2"
+                :key="geofreak.ratxa"
+                class="gf-xip__ratxa"
+                :title="$t('geofreak.ratxaAria')"
+                >🔥 {{ geofreak.ratxa }}</span
+              >
+              <span class="gf-xip__encerts">✓ {{ geofreak.partida?.encertades.length ?? 0 }}</span>
+            </template>
+            <span :key="errorsMostrats" class="gf-xip__errors">✗ {{ errorsMostrats }}</span>
             <span
-              v-for="(j, i) in geofreak.estatJugadors"
-              :key="i"
-              class="gf-xip__jugador"
-              :class="{ 'gf-xip__jugador--actiu': i === geofreak.tornActual }"
+              class="gf-xip__intents"
+              :title="$t('geofreak.intentsRonda')"
+              :aria-label="$t('geofreak.intentsRonda')"
             >
-              <span class="gf-xip__colorjug" :style="{ background: j.color }"></span
-              >{{ j.nom }}&nbsp;{{ j.conquestes.length }}
+              <span
+                v-for="i in MAX_INTENTS_RONDA"
+                :key="i"
+                class="gf-xip__intent"
+                :class="{ 'gf-xip__intent--gastat': i > intentsRestants }"
+              ></span>
             </span>
-          </template>
-          <template v-else>
-            <span
-              v-if="geofreak.ratxa >= 2"
-              :key="geofreak.ratxa"
-              class="gf-xip__ratxa"
-              :title="$t('geofreak.ratxaAria')"
-              >🔥 {{ geofreak.ratxa }}</span
+            <span class="gf-xip__separador" aria-hidden="true"></span>
+            <span class="gf-xip__accions"
+              ><button
+                type="button"
+                class="gf-xip__pista"
+                :disabled="!pistaDisponible"
+                @click="demanaPista"
+              >
+                💡 {{ $t('geofreak.pista') }}
+              </button>
+              <button
+                type="button"
+                class="gf-xip__surt"
+                :disabled="!passaDisponible"
+                @click="passa"
+              >
+                ↷ {{ $t('geofreak.passa') }}
+              </button>
+              <button type="button" class="gf-xip__surt" @click="demanaSortida">
+                {{ $t('geofreak.surt') }}
+              </button></span
             >
-            <span class="gf-xip__encerts">✓ {{ geofreak.partida?.encertades.length ?? 0 }}</span>
-          </template>
-          <span :key="errorsMostrats" class="gf-xip__errors">✗ {{ errorsMostrats }}</span>
-          <span
-            class="gf-xip__intents"
-            :title="$t('geofreak.intentsRonda')"
-            :aria-label="$t('geofreak.intentsRonda')"
+          </div>
+          <div
+            v-if="geofreak.configuracio.modalitat === 'comEsDiu'"
+            class="gf-pregunta gf-pregunta--resposta"
           >
-            <span
-              v-for="i in MAX_INTENTS_RONDA"
-              :key="i"
-              class="gf-xip__intent"
-              :class="{ 'gf-xip__intent--gastat': i > intentsRestants }"
-            ></span>
-          </span>
-          <span class="gf-xip__separador" aria-hidden="true"></span>
-          <button
-            type="button"
-            class="gf-xip__pista"
-            :disabled="!pistaDisponible"
-            @click="demanaPista"
+            <input
+              id="gf-resposta"
+              ref="respostaInput"
+              v-model="textResposta"
+              type="text"
+              autocomplete="off"
+              spellcheck="false"
+              :placeholder="$t('geofreak.escriuNom')"
+              :aria-label="$t('geofreak.modalitats.comEsDiu')"
+              :class="{ 'gf-resposta--sacseig': sacsejant }"
+              @animationend="sacsejant = false"
+              @keydown.enter.prevent="enviaResposta"
+              @keydown.down.prevent="mouSuggeriment(1)"
+              @keydown.up.prevent="mouSuggeriment(-1)"
+              @keydown.esc.prevent="escNeteja"
+            />
+            <!-- Pista activa: les 4 opcions substitueixen els suggeriments -->
+            <div v-if="geofreak.pista" class="gf-opcions">
+              <button
+                v-for="o in opcionsPista"
+                :key="o.codi"
+                type="button"
+                @mousedown.prevent="respon(o.codi)"
+              >
+                {{ o.nom }}
+              </button>
+            </div>
+            <ul v-else-if="suggeriments.length" class="gf-suggeriments">
+              <li v-for="(s, i) in suggeriments" :key="s.codi">
+                <button
+                  type="button"
+                  :class="{ 'gf-suggeriment--actiu': i === indexSuggeriment }"
+                  @mousedown.prevent="respon(s.codi)"
+                >
+                  {{ s.nom }}
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Confirmació de sortida (la partida queda en pausa mentrestant) -->
+        <div v-if="confirmantSortida" class="gf-modal-fons gf-modal-fons--sobre">
+          <div
+            ref="modalSortidaRef"
+            class="gf-modal gf-sortida"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="gf-sortida-titol"
+            aria-describedby="gf-sortida-text"
           >
-            💡 {{ $t('geofreak.pista') }}
-          </button>
-          <button type="button" class="gf-xip__surt" :disabled="!passaDisponible" @click="passa">
-            ↷ {{ $t('geofreak.passa') }}
-          </button>
-          <button type="button" class="gf-xip__surt" @click="obreConfiguracio">
-            {{ $t('geofreak.surt') }}
-          </button>
+            <h2 id="gf-sortida-titol" class="gf-modal__titol">
+              {{ $t('geofreak.sortida.titol') }}
+            </h2>
+            <p id="gf-sortida-text" class="gf-modal__sub">{{ $t('geofreak.sortida.text') }}</p>
+            <button type="button" class="gf-somhi" @click="continuaPartida">
+              {{ $t('geofreak.sortida.continua') }}
+            </button>
+            <button type="button" class="gf-resultats__config" @click="confirmaSortida">
+              {{ $t('geofreak.sortida.surt') }}
+            </button>
+          </div>
         </div>
       </template>
 
@@ -998,6 +1159,7 @@ useFocusTrap(
           <span v-for="n in 14" :key="n" :style="{ '--gf-i': String(n) }"></span>
         </div>
         <div ref="modalResultatsRef" class="gf-modal gf-resultats" role="dialog" aria-modal="true">
+          <span class="gf-resultats__copa" aria-hidden="true">🏆</span>
           <h2 class="gf-modal__titol">{{ $t('geofreak.resultats.titol') }}</h2>
           <p class="gf-modal__sub">{{ resumPartida }}</p>
 
@@ -1073,6 +1235,15 @@ useFocusTrap(
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+
+  /* Colors propis del joc que no són al sistema de disseny global:
+     el daurat de la pista i el vermell de l'error. */
+  --gf-pista-fons: #fdf3d0;
+  --gf-pista-viu: #f7c948;
+  --gf-pista-vora: #d9b23c;
+  --gf-pista-text: #7a5f12;
+  --gf-error: #b03030;
+  --gf-ratxa: #b8600b;
 }
 
 /* Només per a lectors de pantalla (fora de la vista però accessible) */
@@ -1088,6 +1259,21 @@ useFocusTrap(
   border: 0;
 }
 
+.gf-cos {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+/* Focus de teclat coherent a tots els controls del joc */
+.gf-modal button:focus-visible,
+.gf-xip button:focus-visible,
+.gf-opcions button:focus-visible {
+  outline: 2px solid var(--color-marca);
+  outline-offset: 2px;
+}
+
 /* Estat de càrrega / error de les dades al modal de configuració */
 .gf-estat {
   display: flex;
@@ -1096,14 +1282,14 @@ useFocusTrap(
   gap: 12px;
   padding: 24px 0;
   text-align: center;
-  color: var(--color-text-secundari, #737373);
+  color: var(--color-text-secundari);
 }
 
 .gf-estat__spinner {
   width: 28px;
   height: 28px;
-  border: 3px solid #e2e6ea;
-  border-top-color: #2d6a2d;
+  border: 3px solid var(--color-vora);
+  border-top-color: var(--color-marca);
   border-radius: 50%;
   animation: gf-spin 0.7s linear infinite;
 }
@@ -1120,13 +1306,6 @@ useFocusTrap(
   }
 }
 
-.gf-cos {
-  position: relative;
-  flex: 1;
-  min-height: 0;
-  display: flex;
-}
-
 /* ── Modal de configuració i de resultats ───────────────────────────────── */
 
 .gf-modal-fons {
@@ -1137,38 +1316,84 @@ useFocusTrap(
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: rgba(26, 38, 53, 0.35);
+  background: rgba(19, 29, 41, 0.4);
 }
 
+/* Columna flexible: si el contingut no hi cap, al wizard només es desplaça
+   el cos del pas (.gf-modal__cos) i la navegació queda a la vista; al modal
+   de resultats es desplaça tot. */
 .gf-modal {
-  width: min(460px, 100%);
+  display: flex;
+  flex-direction: column;
+  width: min(500px, 100%);
   max-height: 100%;
   overflow-y: auto;
-  padding: 22px 26px;
-  background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+  padding: 24px 26px 22px;
+  background: var(--color-superficie);
+  border-radius: var(--radi-lg);
+  box-shadow: var(--ombra-4);
+  animation: gf-apareix 0.3s cubic-bezier(0.3, 1.25, 0.45, 1);
+}
+
+.gf-modal > * {
+  flex-shrink: 0;
+}
+
+/* Confirmació de sortida: per sobre del HUD de la partida */
+.gf-modal-fons--sobre {
+  z-index: 1600;
+}
+
+.gf-sortida {
+  width: min(380px, 100%);
+  text-align: center;
+}
+
+@keyframes gf-apareix {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(10px);
+  }
 }
 
 .gf-modal__titol {
-  font-size: 1.35rem;
-  font-weight: 800;
-  color: #1a2635;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  color: var(--color-text-fort);
   text-align: center;
 }
 
 .gf-modal__sub {
   margin-top: 2px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
   text-align: center;
   font-size: var(--text-sm);
-  color: var(--color-text-secundari, #737373);
+  color: var(--color-text-secundari);
+}
+
+/* El marge negatiu compensa el farciment que evita retallar els contorns de
+   focus dins la zona de desplaçament. */
+.gf-modal > .gf-modal__cos {
+  flex: 0 1 auto;
+  min-height: 0;
+  margin: 0 -4px;
+  padding: 4px;
+  overflow-y: auto;
+  animation: gf-pas-entra 0.2s ease-out;
+}
+
+@keyframes gf-pas-entra {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
 }
 
 .gf-camp {
   margin: 0 0 14px;
-  padding: 0;
-  border: none;
 }
 
 .gf-camp label {
@@ -1178,48 +1403,151 @@ useFocusTrap(
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  color: #777;
+  color: var(--color-text-secundari);
 }
 
-.gf-camp select {
+.gf-camp select,
+.gf-jugadors__nom {
   width: 100%;
-  padding: 9px 10px;
-  border: 1px solid #ccd2d8;
-  border-radius: 8px;
-  font-size: var(--text-sm);
-  background: #fff;
-  color: #222;
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1.5px solid var(--color-vora-forta);
+  border-radius: var(--radi-sm);
+  font: inherit;
+  font-size: var(--text-md);
+  background: var(--color-superficie);
+  color: var(--color-text);
+  transition:
+    border-color var(--mou-rapid),
+    box-shadow var(--mou-rapid);
 }
 
-/* Explicació de la modalitat triada, sota el seu desplegable */
-.gf-desc {
-  margin-top: 5px;
-  font-size: var(--text-xs);
-  color: var(--color-text-secundari, #737373);
-  line-height: 1.3;
+.gf-camp select:focus,
+.gf-jugadors__nom:focus {
+  outline: none;
+  border-color: var(--color-marca);
+  box-shadow: 0 0 0 3px var(--color-marca-mig);
 }
 
-/* ── Wizard: indicador de passos, jugadors i navegació ──────────────────── */
+/* ── Wizard: indicador de passos ────────────────────────────────────────── */
 
 .gf-passos {
-  display: flex;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
-  margin-bottom: 14px;
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
 }
 
+/* Cada pas: una barra de progrés a sobre i, a sota, el número i el nom */
 .gf-passos__pas {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #d9dee3;
-  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  padding: 8px 2px 2px;
+  background: none;
+  border: none;
+  border-top: 3px solid var(--color-vora);
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--pedra-500);
+  cursor: pointer;
+  transition:
+    border-color var(--mou-mig),
+    color var(--mou-mig);
+}
+
+.gf-passos__pas:disabled {
+  cursor: default;
+}
+
+.gf-passos__pas--fet {
+  border-top-color: var(--verd-200);
+  color: var(--color-marca);
 }
 
 .gf-passos__pas--actiu {
-  background: #2d6a2d;
+  border-top-color: var(--color-marca);
+  color: var(--color-text-fort);
 }
 
+.gf-passos__num {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--pedra-150);
+  font-size: 0.7rem;
+  line-height: 1;
+  transition:
+    background var(--mou-mig),
+    color var(--mou-mig);
+}
+
+.gf-passos__pas--fet .gf-passos__num {
+  background: var(--color-marca-mig);
+}
+
+.gf-passos__pas--actiu .gf-passos__num {
+  background: var(--color-marca);
+  color: #fff;
+}
+
+.gf-passos__nom {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Wizard: targetes d'opció (jugadors, modalitat i nivell) ────────────── */
+
+.gf-jugadors__opcio,
+.gf-opcio,
+.gf-nivell {
+  background: var(--color-superficie);
+  border: 1.5px solid var(--color-vora);
+  border-radius: var(--radi-md);
+  font: inherit;
+  color: var(--color-text-fort);
+  cursor: pointer;
+  transition:
+    border-color var(--mou-rapid),
+    background var(--mou-rapid),
+    box-shadow var(--mou-rapid),
+    transform var(--mou-rapid);
+}
+
+.gf-jugadors__opcio:hover,
+.gf-opcio:hover,
+.gf-nivell:hover {
+  border-color: var(--verd-200);
+  background: var(--pedra-50);
+}
+
+.gf-jugadors__opcio:active,
+.gf-opcio:active,
+.gf-nivell:active {
+  transform: scale(0.98);
+}
+
+.gf-jugadors__opcio--actiu,
+.gf-jugadors__opcio--actiu:hover,
+.gf-opcio--actiu,
+.gf-opcio--actiu:hover,
+.gf-nivell--actiu,
+.gf-nivell--actiu:hover {
+  border-color: var(--color-marca);
+  background: var(--color-marca-clar);
+  box-shadow: 0 0 0 1px var(--color-marca);
+}
+
+/* Pas 1: nombre de jugadors (amb tantes figuretes com jugadors) */
 .gf-jugadors {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1227,29 +1555,36 @@ useFocusTrap(
 }
 
 .gf-jugadors__opcio {
-  padding: 12px 0;
-  background: #f7f8f9;
-  border: 2px solid #e2e6ea;
-  border-radius: 10px;
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: #1a2635;
-  cursor: pointer;
-  transition:
-    border-color 0.15s,
-    background 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 0 10px;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
-.gf-jugadors__opcio:hover {
-  border-color: #2d6a2d;
+.gf-jugadors__figures {
+  display: flex;
+  gap: 3px;
+  height: 8px;
 }
 
-.gf-jugadors__opcio--actiu {
-  background: #eef4ee;
-  border-color: #2d6a2d;
+.gf-jugadors__figures span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pedra-300);
+  transition: background var(--mou-rapid);
 }
 
-/* Fila d'un jugador al wizard: nom + paleta de color de conquesta */
+.gf-jugadors__opcio--actiu .gf-jugadors__figures span {
+  background: var(--color-marca);
+}
+
+/* Fila d'un jugador: el seu color, el nom i la paleta de conquesta */
 .gf-jugador-fila {
   display: flex;
   align-items: center;
@@ -1257,64 +1592,154 @@ useFocusTrap(
   margin-bottom: 8px;
 }
 
+.gf-jugador-fila__color {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  transition: background var(--mou-mig);
+}
+
 .gf-jugadors__nom {
-  display: block;
   flex: 1;
   min-width: 0;
-  padding: 9px 10px;
-  border: 1px solid #ccd2d8;
-  border-radius: 8px;
-  font-size: var(--text-sm);
-  color: #222;
 }
 
 .gf-colors {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
 .gf-colors__opcio {
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
   padding: 0;
-  border: 2px solid transparent;
+  border: 2px solid var(--color-superficie);
   border-radius: 50%;
   cursor: pointer;
+  opacity: 0.55;
   transition:
-    transform 0.12s,
-    border-color 0.12s;
+    transform var(--mou-rapid),
+    opacity var(--mou-rapid),
+    box-shadow var(--mou-rapid);
+}
+
+.gf-colors__opcio:hover {
+  opacity: 1;
 }
 
 .gf-colors__opcio--actiu {
-  border-color: #1a2635;
-  transform: scale(1.2);
+  opacity: 1;
+  box-shadow: 0 0 0 2px var(--color-text-fort);
+  transform: scale(1.08);
 }
 
-.gf-wizard-nav {
-  display: flex;
+/* Pas 2: modalitat */
+.gf-modalitats {
+  display: grid;
   gap: 10px;
 }
 
-.gf-wizard-nav__enrere {
-  padding: 0 18px;
-  background: none;
-  border: 1px solid #ccd2d8;
-  border-radius: 10px;
-  font-size: var(--text-sm);
+.gf-opcio {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  text-align: left;
+}
+
+.gf-opcio__icona {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radi-md);
+  background: var(--pedra-100);
+  font-size: 1.5rem;
+  transition: background var(--mou-rapid);
+}
+
+.gf-opcio--actiu .gf-opcio__icona {
+  background: var(--color-marca-mig);
+}
+
+.gf-opcio__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.gf-opcio__nom {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
   font-weight: 700;
-  color: #555;
-  cursor: pointer;
-  transition: background 0.12s;
+  line-height: 1.25;
 }
 
-.gf-wizard-nav__enrere:hover {
-  background: #f0f0ee;
+.gf-opcio__desc {
+  font-size: var(--text-sm);
+  line-height: 1.35;
+  color: var(--color-text-secundari);
 }
 
-.gf-wizard-nav__seguent {
-  width: auto;
+/* Pas 3: nivells (dues columnes; l'últim, tot Catalunya, ocupa la fila) */
+.gf-nivells {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.gf-nivell {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 7px 10px;
+  text-align: left;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.gf-nivell:last-child {
+  grid-column: 1 / -1;
+}
+
+.gf-nivell__num {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--pedra-150);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--color-text-secundari);
+  transition:
+    background var(--mou-rapid),
+    color var(--mou-rapid);
+}
+
+.gf-nivell--actiu .gf-nivell__num {
+  background: var(--color-marca);
+  color: #fff;
+}
+
+.gf-nivell__nom {
   flex: 1;
+  min-width: 0;
+}
+
+.gf-nivell__quantitat {
+  flex-shrink: 0;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secundari);
 }
 
 /* Fila del territori contenidor amb la tria a l'atzar */
@@ -1330,19 +1755,20 @@ useFocusTrap(
 
 .gf-atzar {
   flex-shrink: 0;
-  padding: 0 12px;
-  background: #fdf3d0;
-  border: 1px solid #d9b23c;
-  border-radius: 8px;
+  padding: 0 14px;
+  background: var(--gf-pista-fons);
+  border: 1.5px solid var(--gf-pista-vora);
+  border-radius: var(--radi-sm);
+  font: inherit;
   font-size: var(--text-sm);
   font-weight: 700;
-  color: #8a6d1a;
+  color: var(--gf-pista-text);
   cursor: pointer;
-  transition: background 0.12s;
+  transition: background var(--mou-rapid);
 }
 
 .gf-atzar:hover:not(:disabled) {
-  background: #f7c948;
+  background: var(--gf-pista-viu);
 }
 
 .gf-atzar:disabled {
@@ -1350,30 +1776,71 @@ useFocusTrap(
   cursor: not-allowed;
 }
 
-/* Botó principal (Som-hi! / Torna a jugar) */
+/* ── Navegació del wizard i botó principal ──────────────────────────────── */
 
+.gf-wizard-nav {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.gf-wizard-nav__enrere {
+  padding: 0 20px;
+  background: none;
+  border: 1.5px solid var(--color-vora-forta);
+  border-radius: var(--radi-md);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--pedra-700);
+  cursor: pointer;
+  transition: background var(--mou-rapid);
+}
+
+.gf-wizard-nav__enrere:hover {
+  background: var(--pedra-100);
+}
+
+.gf-wizard-nav__seguent {
+  width: auto;
+  flex: 1;
+}
+
+/* Botó principal (Següent / Som-hi! / Torna a jugar) */
 .gf-somhi {
   display: block;
   width: 100%;
-  padding: 12px;
-  background: #2d6a2d;
+  min-height: 46px;
+  padding: 10px 12px;
+  background: var(--color-marca);
   color: #fff;
   border: none;
-  border-radius: 10px;
-  font-size: 1.05rem;
-  font-weight: 800;
+  border-radius: var(--radi-md);
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
   cursor: pointer;
+  box-shadow: 0 2px 10px rgba(45, 106, 45, 0.3);
   transition:
-    background 0.15s,
-    opacity 0.15s;
+    background var(--mou-rapid),
+    box-shadow var(--mou-rapid),
+    transform var(--mou-rapid),
+    opacity var(--mou-rapid);
 }
 
 .gf-somhi:hover:not(:disabled) {
-  background: #235423;
+  background: var(--color-marca-fosc);
+  box-shadow: 0 4px 14px rgba(45, 106, 45, 0.38);
+}
+
+.gf-somhi:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .gf-somhi:disabled {
-  opacity: 0.45;
+  background: var(--pedra-300);
+  box-shadow: none;
   cursor: not-allowed;
 }
 
@@ -1389,49 +1856,59 @@ useFocusTrap(
   flex: 1;
 }
 
-/* En pantalles estretes, context i pregunta passen a dues línies centrades */
+.gf-barra__context {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-secundari);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+/* Micro-animació d'entrada de la pregunta (es re-dispara amb cada
+   re-muntat per canvi de torn o d'objectiu) */
+.gf-barra__pregunta {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: var(--color-text-fort);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+  animation: gf-pregunta-entra 0.18s ease;
+}
+
+.gf-barra__pregunta strong {
+  display: inline-block;
+  font-weight: 700;
+  color: var(--color-marca);
+}
+
+@keyframes gf-pregunta-entra {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+}
+
+/* En pantalles estretes, context i pregunta passen a dues línies centrades
+   i tornen a la mida compacta */
 @media (max-width: 920px) {
   .gf-barra {
     flex-direction: column;
     gap: 0;
   }
-}
 
-.gf-barra__context {
-  font-size: 0.85rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #777;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.3;
-}
-
-.gf-barra__pregunta {
-  font-size: 1.2rem;
-  color: #1a2635;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.3;
-}
-
-/* En dues línies (pantalla estreta) tornen a la mida compacta */
-@media (max-width: 920px) {
   .gf-barra__context {
     font-size: var(--text-xs);
   }
 
   .gf-barra__pregunta {
-    font-size: 0.95rem;
+    font-size: 1rem;
   }
-}
-
-.gf-barra__pregunta strong {
-  display: inline-block;
-  font-weight: 800;
 }
 
 /* ── Compte enrere ──────────────────────────────────────────────────────── */
@@ -1443,23 +1920,33 @@ useFocusTrap(
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0 16px;
   pointer-events: none;
 }
 
+/* El valor va dins un disc blanc (una pastilla si és text): es llegeix bé
+   sobre qualsevol tros de mapa. */
 .gf-compte__valor {
-  font-size: 5rem;
-  font-weight: 800;
-  color: #1a2635;
-  text-shadow:
-    0 0 18px rgba(255, 255, 255, 0.9),
-    0 2px 6px rgba(255, 255, 255, 0.8);
-  animation: gf-compte-pop 0.6s ease-out;
+  display: grid;
+  place-items: center;
+  min-width: 150px;
+  height: 150px;
+  padding: 0 36px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: var(--radi-pastilla);
+  box-shadow: var(--ombra-3);
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 14vw, 5rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-text-fort);
+  animation: gf-compte-pop 0.5s cubic-bezier(0.3, 1.25, 0.45, 1);
 }
 
 @keyframes gf-compte-pop {
   from {
     opacity: 0;
-    transform: scale(1.6);
+    transform: scale(1.5);
   }
   to {
     opacity: 1;
@@ -1467,11 +1954,13 @@ useFocusTrap(
   }
 }
 
-/* Textos llargs al compte enrere ("Torn de Maria", "Som-hi!") */
+/* Textos llargs al compte enrere ("Torn de Maria") */
 .gf-compte__valor--text {
-  font-size: 2.6rem;
+  height: auto;
+  padding: 20px 34px;
+  font-size: clamp(1.6rem, 7vw, 2.4rem);
+  line-height: 1.2;
   text-align: center;
-  padding: 0 20px;
 }
 
 /* ── Anunci del nou objectiu (apareix gran i es fon lentament) ──────────── */
@@ -1488,10 +1977,13 @@ useFocusTrap(
   padding: 0 24px;
   text-align: center;
   pointer-events: none;
-  font-weight: 800;
-  color: #1a2635;
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--color-text-fort);
   text-shadow:
     0 0 18px rgba(255, 255, 255, 0.95),
+    0 0 6px rgba(255, 255, 255, 0.9),
     0 2px 6px rgba(255, 255, 255, 0.85);
   animation: gf-anunci 2.4s ease-out forwards;
 }
@@ -1522,22 +2014,6 @@ useFocusTrap(
   }
 }
 
-@media (max-width: 768px) {
-  .gf-anunci__torn {
-    font-size: 1.4rem;
-  }
-
-  .gf-anunci__lloc {
-    font-size: 2rem;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .gf-anunci {
-    animation-name: gf-anunci-fos;
-  }
-}
-
 /* Variant sense moviment (només fosa) per a reduced-motion */
 @keyframes gf-anunci-fos {
   0%,
@@ -1549,6 +2025,16 @@ useFocusTrap(
   }
 }
 
+@media (max-width: 768px) {
+  .gf-anunci__torn {
+    font-size: 1.4rem;
+  }
+
+  .gf-anunci__lloc {
+    font-size: 2rem;
+  }
+}
+
 /* ── Barra de progrés de la partida ─────────────────────────────────────── */
 
 .gf-progres {
@@ -1556,81 +2042,77 @@ useFocusTrap(
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
+  height: 5px;
   z-index: 1400;
   background: rgba(26, 38, 53, 0.12);
 }
 
 .gf-progres__fet {
   height: 100%;
-  background: #2d6a2d;
-  transition: width 0.25s ease;
+  background: linear-gradient(90deg, var(--verd-600), var(--verd-500));
+  border-radius: 0 var(--radi-pastilla) var(--radi-pastilla) 0;
+  transition: width 0.35s cubic-bezier(0.2, 0, 0, 1);
 }
 
 /* ── HUD de partida ─────────────────────────────────────────────────────── */
 
-.gf-pregunta {
+/* Part de dalt del HUD: els marcadors i, a sota, la caixa de resposta. El
+   contenidor no captura el ratolí (el mapa de sota ha de rebre els clics). */
+.gf-hud-dalt {
   position: absolute;
-  top: 58px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 14px;
+  left: 0;
+  right: 0;
   z-index: 1500;
-  max-width: calc(100% - 24px);
-  padding: 10px 22px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-  font-size: 1.05rem;
-  color: #1a2635;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  pointer-events: none;
 }
 
-.gf-pregunta strong {
-  display: inline-block;
-  font-weight: 800;
+.gf-hud-dalt > * {
+  pointer-events: auto;
 }
 
-/* Micro-animació d'entrada de la pregunta (es re-dispara amb cada
-   re-muntat per canvi de torn o d'objectiu) */
-.gf-barra__pregunta {
-  animation: gf-pregunta-entra 0.18s ease;
+/* Caixa de resposta escrita («Com es diu...?») */
+.gf-pregunta {
+  width: min(360px, 100%);
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid var(--color-vora);
+  border-radius: var(--radi-lg);
+  box-shadow: var(--ombra-3);
+  color: var(--color-text-fort);
 }
 
-@keyframes gf-pregunta-entra {
-  from {
-    opacity: 0;
-    transform: translateY(-5px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .gf-barra__pregunta {
-    animation: none;
-  }
-}
-
-/* Variant amb input de resposta («Com es diu...?») */
-.gf-pregunta--resposta {
-  white-space: normal;
-  overflow: visible;
-  width: min(340px, calc(100% - 24px));
-  padding: 10px 14px 12px;
-}
-
-.gf-pregunta--resposta input {
+/* 1rem (16px) com a mínim: per sota, l'iPhone fa zoom en enfocar l'input */
+.gf-pregunta input {
   width: 100%;
-  padding: 8px 10px;
-  border: 1px solid #ccd2d8;
-  border-radius: 8px;
-  font-size: var(--text-sm);
-  color: #222;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1.5px solid var(--color-vora-forta);
+  border-radius: var(--radi-sm);
+  font: inherit;
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--color-text);
+  transition:
+    border-color var(--mou-rapid),
+    box-shadow var(--mou-rapid);
 }
 
-.gf-resposta--sacseig {
+.gf-pregunta input:focus {
+  outline: none;
+  border-color: var(--color-marca);
+  box-shadow: 0 0 0 3px var(--color-marca-mig);
+}
+
+.gf-pregunta input.gf-resposta--sacseig {
   animation: gf-sacseig 0.3s;
-  border-color: #b03030 !important;
+  border-color: var(--gf-error);
+  box-shadow: 0 0 0 3px rgba(176, 48, 48, 0.15);
 }
 
 .gf-suggeriments {
@@ -1644,44 +2126,74 @@ useFocusTrap(
 .gf-suggeriments button {
   display: block;
   width: 100%;
-  padding: 7px 10px;
+  padding: 8px 12px;
   background: none;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radi-xs);
   text-align: left;
-  font-size: var(--text-sm);
+  font: inherit;
+  font-size: var(--text-base);
   font-weight: 600;
-  color: #1a2635;
+  color: var(--color-text-fort);
   cursor: pointer;
-  transition: background 0.12s;
+  transition: background var(--mou-rapid);
 }
 
 .gf-suggeriments button:hover,
 .gf-suggeriments .gf-suggeriment--actiu {
-  background: #eef4ee;
-  color: #2d6a2d;
+  background: var(--color-marca-clar);
+  color: var(--color-marca);
 }
 
+/* Les 4 opcions de la pista («Com es diu...?») */
+.gf-opcions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.gf-opcions button {
+  padding: 9px 10px;
+  background: var(--gf-pista-fons);
+  border: 1.5px solid var(--gf-pista-vora);
+  border-radius: var(--radi-sm);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--color-text-fort);
+  cursor: pointer;
+  transition: background var(--mou-rapid);
+}
+
+.gf-opcions button:hover {
+  background: var(--gf-pista-viu);
+}
+
+/* Pastilles flotants del HUD */
 .gf-xip {
   position: absolute;
   z-index: 1500;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: #fff;
-  border-radius: 18px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
-  font-size: var(--text-sm);
+  gap: 10px;
+  padding: 7px 8px 7px 14px;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid var(--color-vora);
+  border-radius: var(--radi-pastilla);
+  box-shadow: var(--ombra-2);
+  font-size: var(--text-base);
   font-weight: 700;
-  color: #1a2635;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-fort);
+  white-space: nowrap;
 }
 
-/* Marcadors (✓/✗, pista, passa, surt): centrats a dalt del mapa */
+/* Marcadors (✓/✗, pista, passa, surt), dins .gf-hud-dalt */
 .gf-xip--dreta {
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
+  position: static;
+  max-width: 100%;
 }
 
 /* Cronòmetre + progrés: centrats a baix del mapa */
@@ -1689,20 +2201,22 @@ useFocusTrap(
   bottom: 34px;
   left: 50%;
   transform: translateX(-50%);
+  padding: 8px 16px;
+  font-size: var(--text-md);
 }
 
 .gf-xip__separador {
   width: 1px;
-  height: 16px;
-  background: #ddd;
+  height: 18px;
+  background: var(--color-vora-forta);
 }
 
 .gf-xip__encerts {
-  color: #2d6a2d;
+  color: var(--color-marca);
 }
 
 .gf-xip__ratxa {
-  color: #b8600b;
+  color: var(--gf-ratxa);
   animation: gf-compte-pop 0.25s ease-out;
 }
 
@@ -1710,16 +2224,18 @@ useFocusTrap(
 .gf-xip__jugador {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 12px;
-  color: #777;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--radi-pastilla);
+  color: var(--color-text-secundari);
+  transition:
+    background var(--mou-mig),
+    color var(--mou-mig);
 }
 
 .gf-xip__jugador--actiu {
-  background: #eef4ee;
-  color: #1a2635;
-  font-weight: 800;
+  background: var(--color-marca-mig);
+  color: var(--color-text-fort);
 }
 
 .gf-xip__colorjug,
@@ -1736,7 +2252,7 @@ useFocusTrap(
 }
 
 .gf-xip__errors {
-  color: #b03030;
+  color: var(--gf-error);
   animation: gf-sacseig 0.3s;
 }
 
@@ -1753,143 +2269,99 @@ useFocusTrap(
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .gf-xip__errors {
-    animation: none;
-  }
-}
-
-.gf-xip__surt,
-.gf-xip__pista {
-  padding: 2px 10px;
-  background: none;
-  border: 1px solid #ccd2d8;
-  border-radius: 12px;
-  font-size: var(--text-xs);
-  font-weight: 700;
-  color: #555;
-  cursor: pointer;
-  transition: background 0.12s;
-}
-
-.gf-xip__surt:hover:not(:disabled) {
-  background: #f0f0ee;
-}
-
-.gf-xip__surt:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
 /* Intents restants de la ronda (3 puntets que es van apagant) */
 .gf-xip__intents {
   display: inline-flex;
-  gap: 3px;
+  gap: 4px;
   align-items: center;
 }
 
 .gf-xip__intent {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: #2d6a2d;
-  transition: background 0.2s;
+  background: var(--color-marca);
+  transition:
+    background var(--mou-mig),
+    transform var(--mou-mig);
 }
 
 .gf-xip__intent--gastat {
-  background: #ddd;
+  background: var(--pedra-300);
+  transform: scale(0.75);
+}
+
+/* Botons del HUD: pista (daurat), passa i surt. Van agrupats perquè, si el
+   HUD es parteix en dues files, baixin tots tres junts. */
+.gf-xip__accions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gf-xip__surt,
+.gf-xip__pista {
+  min-height: 30px;
+  padding: 4px 13px;
+  background: var(--pedra-100);
+  border: 1px solid var(--color-vora);
+  border-radius: var(--radi-pastilla);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--pedra-700);
+  cursor: pointer;
+  transition:
+    background var(--mou-rapid),
+    border-color var(--mou-rapid);
+}
+
+.gf-xip__surt:hover:not(:disabled) {
+  background: var(--pedra-200);
+  border-color: var(--color-vora-forta);
 }
 
 .gf-xip__pista {
-  border-color: #d9b23c;
-  color: #8a6d1a;
+  background: var(--gf-pista-fons);
+  border-color: var(--gf-pista-vora);
+  color: var(--gf-pista-text);
 }
 
 .gf-xip__pista:hover:not(:disabled) {
-  background: #fdf3d0;
+  background: var(--gf-pista-viu);
 }
 
+.gf-xip__surt:disabled,
 .gf-xip__pista:disabled {
   opacity: 0.45;
   cursor: not-allowed;
-}
-
-/* Les 4 opcions de la pista («Com es diu...?») */
-.gf-opcions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.gf-opcions button {
-  padding: 8px 10px;
-  background: #fdf3d0;
-  border: 1px solid #d9b23c;
-  border-radius: 8px;
-  font-size: var(--text-sm);
-  font-weight: 700;
-  color: #1a2635;
-  cursor: pointer;
-  transition: background 0.12s;
-}
-
-.gf-opcions button:hover {
-  background: #f7c948;
-}
-
-/* En mòbil: els marcadors es queden en UNA sola fila (scroll horitzontal si
-   no caben) per tenir alçada fixa i no solapar-se amb la caixa de resposta,
-   que es col·loca just a sota. Targets tàctils a 44px. */
-@media (max-width: 768px) {
-  .gf-xip--dreta {
-    flex-wrap: nowrap;
-    justify-content: flex-start;
-    max-width: calc(100% - 16px);
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .gf-xip--dreta::-webkit-scrollbar {
-    display: none;
-  }
-
-  .gf-pregunta {
-    top: 70px;
-    font-size: 0.95rem;
-    padding: 8px 14px;
-    width: min(340px, calc(100% - 16px));
-  }
-
-  /* Mínim tàctil de 44px (botons del HUD i de l'autocomplete/pista) */
-  .gf-xip__pista,
-  .gf-xip__surt {
-    min-height: 44px;
-    padding: 6px 14px;
-  }
-
-  .gf-suggeriments button,
-  .gf-opcions button {
-    min-height: 44px;
-  }
-
-  .gf-colors__opcio {
-    width: 30px;
-    height: 30px;
-  }
 }
 
 /* ── Modal de resultats ─────────────────────────────────────────────────── */
 
 .gf-resultats {
   text-align: center;
-  animation: gf-apareix 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
 }
 
-@keyframes gf-apareix {
+.gf-resultats__copa {
+  align-self: center;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 8px;
+  border-radius: 50%;
+  background: var(--gf-pista-fons);
+  box-shadow: inset 0 0 0 1px rgba(217, 178, 60, 0.45);
+  font-size: 2rem;
+  line-height: 1;
+  animation: gf-copa 0.6s 0.15s cubic-bezier(0.3, 1.25, 0.45, 1) backwards;
+}
+
+@keyframes gf-copa {
   from {
     opacity: 0;
-    transform: scale(0.85) translateY(12px);
+    transform: scale(0.4) rotate(-20deg);
   }
 }
 
@@ -1940,61 +2412,65 @@ useFocusTrap(
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .gf-resultats {
-    animation: none;
-  }
-
-  .gf-confeti {
-    display: none;
-  }
-}
-
 .gf-resultats__punts {
-  margin-top: 10px;
-  font-size: 3rem;
-  font-weight: 800;
+  margin-top: 4px;
+  font-family: var(--font-display);
+  font-size: 3.6rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
   line-height: 1;
-  color: #2d6a2d;
+  color: var(--color-marca);
 }
 
 .gf-resultats__punts-etiqueta {
-  margin-bottom: 14px;
+  margin-bottom: 16px;
   font-size: var(--text-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  color: #777;
+  color: var(--color-text-secundari);
 }
 
+/* Estadístiques de la partida, una rajola per dada */
 .gf-resultats__stats {
-  display: flex;
-  justify-content: center;
-  gap: 26px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: 8px;
   margin-bottom: 18px;
 }
 
+.gf-resultats__stats > div {
+  padding: 10px 6px;
+  background: var(--pedra-100);
+  border-radius: var(--radi-md);
+}
+
 .gf-resultats__stats dt {
-  font-size: var(--text-xs);
+  font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  color: #777;
+  color: var(--color-text-secundari);
 }
 
 .gf-resultats__stats dd {
   margin: 2px 0 0;
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: #1a2635;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  color: var(--color-text-fort);
 }
 
 /* Classificació del multijugador */
 .gf-classificacio {
   width: 100%;
-  margin: 12px 0 18px;
-  border-collapse: collapse;
-  font-size: var(--text-sm);
+  margin: 4px 0 18px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--text-base);
+  font-variant-numeric: tabular-nums;
 }
 
 .gf-classificacio th {
@@ -2003,7 +2479,7 @@ useFocusTrap(
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #777;
+  color: var(--color-text-secundari);
   text-align: center;
 }
 
@@ -2012,14 +2488,14 @@ useFocusTrap(
 }
 
 .gf-classificacio td {
-  padding: 8px;
+  padding: 10px 8px;
   text-align: center;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--color-vora);
   font-weight: 600;
-  color: #1a2635;
+  color: var(--color-text-fort);
 }
 
-.gf-classificacio__nom {
+.gf-classificacio td.gf-classificacio__nom {
   text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2027,33 +2503,156 @@ useFocusTrap(
   max-width: 140px;
 }
 
+.gf-classificacio__nom .gf-xip__colorjug {
+  margin-right: 6px;
+}
+
 .gf-classificacio__guanyador td {
-  background: #eef4ee;
+  background: var(--color-marca-clar);
+  border-top-color: transparent;
   font-weight: 800;
+}
+
+.gf-classificacio__guanyador td:first-child {
+  border-radius: var(--radi-sm) 0 0 var(--radi-sm);
+}
+
+.gf-classificacio__guanyador td:last-child {
+  border-radius: 0 var(--radi-sm) var(--radi-sm) 0;
 }
 
 .gf-resultats__config {
   display: block;
   width: 100%;
+  min-height: 42px;
   margin-top: 8px;
   padding: 9px;
   background: none;
-  border: 1px solid #2d6a2d;
-  border-radius: 10px;
-  color: #2d6a2d;
+  border: 1.5px solid var(--color-vora-forta);
+  border-radius: var(--radi-md);
+  font: inherit;
   font-size: var(--text-sm);
   font-weight: 700;
+  color: var(--color-marca);
   cursor: pointer;
-  transition: background 0.12s;
+  transition:
+    background var(--mou-rapid),
+    border-color var(--mou-rapid);
 }
 
 .gf-resultats__config:hover {
-  background: #eef4ee;
+  background: var(--color-marca-clar);
+  border-color: var(--verd-200);
 }
+
+/* En pantalles amples la caixa de resposta va a l'esquerra, al costat del
+   control de zoom: ni ella ni els suggeriments tapen mai el territori (el
+   mapa s'enquadra a la dreta; vegeu margesMapa). */
+@media (min-width: 1100px) {
+  .gf-hud-dalt .gf-pregunta {
+    position: absolute;
+    top: 0;
+    left: 60px;
+    width: 320px;
+  }
+}
+
+/* ── Mòbil ──────────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
   .gf-modal {
-    padding: 18px 16px;
+    padding: 20px 16px 16px;
+  }
+
+  /* Els nivells, en una sola columna (els noms llargs no hi caben en dues) */
+  .gf-nivells {
+    grid-template-columns: 1fr;
+  }
+
+  /* El nom del jugador a dalt i la paleta, a sota, a tot l'ample */
+  .gf-jugador-fila {
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  .gf-colors {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .gf-colors__opcio {
+    width: 34px;
+    height: 34px;
+  }
+
+  .gf-hud-dalt {
+    top: 10px;
+    padding: 0 8px;
+  }
+
+  /* Els marcadors poden ocupar dues files (els botons baixen a la segona);
+     en multijugador només el jugador del torn mostra el nom. Targets
+     tàctils a 44px. */
+  .gf-xip--dreta {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 8px;
+    padding: 6px 10px;
+    border-radius: var(--radi-lg);
+  }
+
+  .gf-xip__jugador:not(.gf-xip__jugador--actiu) .gf-xip__nomjug {
+    display: none;
+  }
+
+  .gf-xip--dreta .gf-xip__separador {
+    display: none;
+  }
+
+  .gf-xip__pista,
+  .gf-xip__surt {
+    flex-shrink: 0;
+    min-height: 44px;
+    padding: 6px 14px;
+  }
+
+  .gf-suggeriments button,
+  .gf-opcions button {
+    min-height: 44px;
+  }
+}
+
+/* ── Sense moviment ─────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .gf-modal,
+  .gf-modal > .gf-modal__cos,
+  .gf-barra__pregunta,
+  .gf-compte__valor,
+  .gf-xip__ratxa,
+  .gf-xip__errors,
+  .gf-resultats__copa,
+  .gf-pregunta input.gf-resposta--sacseig {
+    animation: none;
+  }
+
+  .gf-anunci {
+    animation-name: gf-anunci-fos;
+  }
+
+  .gf-confeti {
+    display: none;
+  }
+
+  .gf-jugadors__opcio:active,
+  .gf-opcio:active,
+  .gf-nivell:active,
+  .gf-somhi:active:not(:disabled) {
+    transform: none;
+  }
+
+  .gf-progres__fet {
+    transition: none;
   }
 }
 </style>
