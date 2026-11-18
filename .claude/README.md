@@ -8,6 +8,7 @@ Configuració de Claude Code per a aquest projecte.
 | --------------------- | ----- | ---------------------------------------------------------------------------- |
 | `settings.json`       | Sí    | Política compartida: permisos de només lectura, preguntes i prohibicions     |
 | `settings.local.json` | No    | Permisos personals: ordres que Claude pot executar sense demanar confirmació |
+| `hooks/`              | Sí    | Scripts que Claude Code executa sol en moments concrets (vegeu més avall)    |
 | `README.md`           | Sí    | Aquest fitxer                                                                |
 
 `settings.local.json` l'ignora el `.gitignore` global de l'usuari (`~/.config/git/ignore`), així que cada màquina té el seu. S'omple sol quan es tria "Sí, i no tornis a preguntar" en un avís de permís.
@@ -39,6 +40,16 @@ JSON no admet comentaris, per això es documenten les regles aquí.
 | `python3 -m json.tool`          | Formatar JSON per llegir-lo millor                    |
 | `curl … overpass-api.de …`      | Consultes a OpenStreetMap per a les ingestes de dades |
 | `WebFetch(domain:datos.gob.es)` | Llegir el portal de dades obertes de l'Estat          |
+
+## Hooks de `settings.json`
+
+| Hook           | Script                   | Per a què serveix                                                                |
+| -------------- | ------------------------ | -------------------------------------------------------------------------------- |
+| `SessionStart` | `hooks/prepara-nuvol.sh` | Sessions al núvol (claude.ai/code, app mòbil): Node 24 al PATH i `npm ci` si cal |
+
+- En local no fa res (surt si `CLAUDE_CODE_REMOTE` no és `true`): aquí les dependències s'instal·len dins dels contenidors, mai a l'amfitrió.
+- Node 24 no el baixa el hook: l'instal·la a `/opt/node24` l'script de preparació de l'entorn del núvol (configurat a claude.ai, fora del repo), que queda a la memòria cau de l'entorn. El hook només el posa al PATH.
+- `npm ci` només es repeteix si ha canviat el lockfile, algun `package.json` o el mateix script (empremta a `node_modules/.prepara-nuvol.sha256`).
 
 ## Notes
 
