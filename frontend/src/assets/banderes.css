@@ -2,7 +2,7 @@
  *
  * flag-icons importava 400 banderes com a data-URI dins el CSS crític
  * (431 KB / 88 KB gz mesurats al build) per usar-ne només tres. Aquí es
- * repliquen la classe base .fi (proporció 4×3) i les tres banderes que fem
+ * repliquen la classe base .fi (proporció 4×3) i les banderes que fem
  * servir, amb els SVG originals de flag-icons copiats a assets/banderes/.
  * Per a un idioma nou: copiar el SVG de flag-icons i afegir una classe.
  */
@@ -31,4 +31,9 @@
 
 .fi-gb {
   background-image: url('@/assets/banderes/gb.svg');
+}
+
+/* Prova temporal del francès (sense traduccions). */
+.fi-fr {
+  background-image: url('@/assets/banderes/fr.svg');
 }
