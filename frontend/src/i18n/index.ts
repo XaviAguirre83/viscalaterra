@@ -4,7 +4,8 @@ import es from './locales/es.json'
 import en from './locales/en.json'
 
 // Idiomes suportats. Afegir-ne un de nou = afegir el codi aquí + el seu JSON.
-export const IDIOMES = ['ca', 'es', 'en'] as const
+// 'fr' és una prova temporal: no té traduccions i tot surt en català (fallbackLocale).
+export const IDIOMES = ['ca', 'es', 'en', 'fr'] as const
 export type Idioma = (typeof IDIOMES)[number]
 
 // Etiqueta curta per al selector (mentre no hi hagi icones de bandera).
@@ -12,6 +13,7 @@ export const ETIQUETA_IDIOMA: Record<Idioma, string> = {
   ca: 'CA',
   es: 'ES',
   en: 'EN',
+  fr: 'FR',
 }
 
 // Nom de cada idioma en la seva pròpia llengua (endònim), per a la llista desplegable.
@@ -19,15 +21,17 @@ export const NOM_IDIOMA: Record<Idioma, string> = {
   ca: 'Català',
   es: 'Español',
   en: 'English',
+  fr: 'Français',
 }
 
 // Codi de bandera (flag-icons) per a cada idioma. Per al català fem servir la
 // senyera (subdivisió 'es-ct'); l'anglès, la bandera del Regne Unit ('gb').
-// Futurs: gl → 'es-ga', eu → 'es-pv', fr → 'fr', de → 'de', ru → 'ru'.
+// Futurs: gl → 'es-ga', eu → 'es-pv', de → 'de', ru → 'ru'.
 export const BANDERA_IDIOMA: Record<Idioma, string> = {
   ca: 'es-ct',
   es: 'es',
   en: 'gb',
+  fr: 'fr',
 }
 
 const STORAGE_KEY = 'viscalaterra-idioma'
@@ -59,7 +63,8 @@ export const i18n = createI18n({
   globalInjection: true, // permet usar $t directament als templates
   locale: inicial,
   fallbackLocale: 'ca',
-  messages: { ca, es, en },
+  // fr sense missatges (prova temporal): cada clau cau a fallbackLocale (ca).
+  messages: { ca, es, en, fr: {} },
 })
 
 // Sincronitza l'atribut <html lang> amb l'idioma (SEO + accessibilitat).
