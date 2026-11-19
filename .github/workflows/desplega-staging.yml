@@ -1,0 +1,61 @@
+# Botó de desplegament a staging. Des del mòbil o el portàtil: GitHub → Actions →
+# «Desplega a staging» → Run workflow. Entra al servidor com a l'usuari «desplega»,
+# que només pot llançar el script de desplegament (vegeu infra/desplegament/README.md).
+#
+# La clau privada és un secret de l'entorn «staging» de GitHub, que només la dona a
+# execucions des de main: una branca amb aquest fitxer modificat no la pot treure.
+# El registre d'aquest workflow és públic (el repo ho és): el servidor només hi
+# escriu un resum, i aquí no es fa checkout ni s'executa cap codi del repo.
+name: Desplega a staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      ordre:
+        description: 'desplega = posar staging al dia amb main · estat = només mirar'
+        type: choice
+        options: [desplega, estat]
+        default: desplega
+
+# Cap permís per al token de GitHub: aquest workflow no llegeix ni escriu el repo.
+permissions: {}
+
+# Mai dos desplegaments alhora: el segon espera que acabi el primer (el servidor
+# també ho impedeix amb un bloqueig).
+concurrency:
+  group: desplega-staging
+  cancel-in-progress: false
+
+jobs:
+  servidor:
+    name: ${{ inputs.ordre }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: staging
+      url: https://staging.viscalaterra.cat
+    steps:
+      - name: Prepara la clau SSH
+        env:
+          CLAU: ${{ secrets.DESPLEGA_CLAU_SSH }}
+          HOST_CONEGUT: ${{ vars.DESPLEGA_KNOWN_HOSTS }}
+        run: |
+          if [ -z "$CLAU" ] || [ -z "$HOST_CONEGUT" ]; then
+            echo "::error::Falten DESPLEGA_CLAU_SSH (secret) o DESPLEGA_KNOWN_HOSTS (variable) a l'entorn staging."
+            exit 1
+          fi
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$CLAU" > ~/.ssh/desplega
+          chmod 600 ~/.ssh/desplega
+          # Empremta del servidor, comprovada a mà en desar-la: si no coincideix,
+          # ssh no connecta (així ningú no es pot fer passar pel servidor).
+          printf '%s\n' "$HOST_CONEGUT" > ~/.ssh/known_hosts
+
+      - name: Servidor → ${{ inputs.ordre }}
+        env:
+          ORDRE: ${{ inputs.ordre }}
+        run: >-
+          ssh -i ~/.ssh/desplega
+          -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes
+          -o ServerAliveInterval=30
+          desplega@staging.viscalaterra.cat "$ORDRE"

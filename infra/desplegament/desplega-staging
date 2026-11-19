@@ -1,0 +1,121 @@
+#!/bin/sh
+# Desplegament de staging: posa el servidor al dia amb main i reconstrueix els
+# contenidors. El llança el botó de GitHub Actions (vegeu el README.md d'aquesta
+# carpeta), a través de desplega-ssh i sudo.
+#
+#   desplega-staging estat      només mira: codi al servidor i estat dels contenidors
+#   desplega-staging desplega   git pull + migracions + reconstrucció
+#
+# S'instal·la com a CÒPIA de root a /usr/local/sbin i mai s'executa des de la
+# carpeta del repo: aquella carpeta és d'ubuntu i canvia amb cada git pull, i si
+# s'executés d'allà, qualsevol canvi a main podria reescriure el que corre com a root.
+#
+# La sortida acaba al registre de GitHub Actions, que és PÚBLIC (el repo ho és):
+# aquí només s'escriu un resum. El detall complet va a un fitxer del servidor.
+# Per això no s'hi pot fer mai `docker compose config`, que imprimeix el .env.
+set -eu
+
+REPO=/home/ubuntu/viscalaterra
+PROPIETARI=ubuntu
+REGISTRES=/var/log/desplega-staging
+CONSERVA=20 # registres de desplegament que es guarden (els més nous)
+
+compose() {
+  docker compose -f docker-compose.prod.yml "$@"
+}
+
+# git amb l'usuari propietari del repo: com a root, els fitxers que baixés
+# serien de root i després ubuntu no els podria tocar.
+git_repo() {
+  runuser -u "$PROPIETARI" -- env HOME="/home/$PROPIETARI" git -C "$REPO" "$@"
+}
+
+commit_actual() {
+  git_repo log -1 --format='%h %s (%cd)' --date=format:'%Y-%m-%d %H:%M'
+}
+
+estat() {
+  echo "Codi al servidor: $(commit_actual)"
+  echo "Contenidors:"
+  compose ps --all --format '  {{.Service}}: {{.Status}}'
+}
+
+# Atura el desplegament: el motiu i, si n'hi ha, el final del registre (són
+# errors de compilació o de Docker, que ajuden a entendre què ha passat).
+falla() {
+  echo "ERROR: $1."
+  if [ -n "${registre:-}" ] && [ -s "$registre" ]; then
+    echo "Últimes línies del registre ($registre):"
+    tail -n 30 "$registre" | sed 's/^/  /'
+  fi
+  exit 1
+}
+
+# Executa un pas: el nom surt al resum i la sortida de l'ordre, només al registre.
+pas() {
+  descripcio=$1
+  shift
+  echo "· $descripcio"
+  echo "### $descripcio" >>"$registre"
+  "$@" >>"$registre" 2>&1 || falla "ha fallat «$descripcio»"
+}
+
+desplega() {
+  # Mai dos desplegaments alhora (p. ex. dos clics seguits al botó).
+  exec 9>/run/lock/desplega-staging.lock
+  flock -n 9 || falla "ja hi ha un desplegament en marxa; torna-ho a provar d'aquí a una estona"
+
+  mkdir -p "$REGISTRES"
+  chmod 750 "$REGISTRES"
+  registre="$REGISTRES/$(date -u +%Y%m%dT%H%M%SZ).log"
+  : >"$registre"
+
+  branca=$(git_repo rev-parse --abbrev-ref HEAD)
+  [ "$branca" = main ] || falla "el repo del servidor és a la branca «$branca», no a main"
+  git_repo diff --quiet HEAD || falla "el repo del servidor té canvis locals sense commit"
+
+  abans=$(commit_actual)
+  pas "Baixant main" git_repo pull --ff-only origin main
+  echo "  abans: $abans"
+  echo "  ara:   $(commit_actual)"
+
+  # Les migracions s'apliquen amb la BD en marxa i abans de reconstruir: el codi
+  # nou del backend pot necessitar ja l'estructura nova. migra.sh només aplica les
+  # pendents (porta el compte a control.migracions), així que repetir-lo no fa res.
+  pas "Engegant la BD" compose up -d --wait db
+  echo "· Aplicant migracions"
+  echo "### Migracions" >>"$registre"
+  if sortida=$(compose exec -T db sh /migracions/migra.sh 2>&1); then
+    printf '%s\n' "$sortida" >>"$registre"
+    printf '%s\n' "$sortida" | sed 's/^/  /'
+  else
+    printf '%s\n' "$sortida" >>"$registre"
+    falla "han fallat les migracions"
+  fi
+
+  pas "Reconstruint i engegant (pot trigar uns minuts)" \
+    compose up -d --build --wait --wait-timeout 300
+
+  # Neteja: imatges que han quedat sense nom en reconstruir i memòria cau de
+  # compilació que fa més d'una setmana que no es fa servir. Sense això, el disc
+  # s'aniria omplint desplegament rere desplegament.
+  pas "Netejant imatges velles" docker image prune -f
+  pas "Netejant la memòria cau de compilació" docker builder prune -f --filter until=168h
+
+  # shellcheck disable=SC2012 # noms fixos (data i hora), sense espais
+  ls -1t "$REGISTRES"/*.log | tail -n +$((CONSERVA + 1)) | xargs -r rm -f --
+
+  estat
+  echo "Fet. Registre complet al servidor: $registre"
+}
+
+cd "$REPO"
+
+case "${1:-}" in
+estat) estat ;;
+desplega) desplega ;;
+*)
+  echo "Ús: $0 estat | desplega" >&2
+  exit 2
+  ;;
+esac
