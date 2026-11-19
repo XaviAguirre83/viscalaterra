@@ -89,6 +89,7 @@ La instancia PostGIS corre en Docker (`viscalaterra_db`, puerto 5432). Los scrip
 ├── frontend/          # Vue 3 SPA
 ├── backend/           # Express REST API
 ├── infra/db/init/     # SQL que corre al inicializar el contenedor
+├── infra/desplegament/ # botón de despliegue a staging (scripts del servidor)
 ├── backend/data/      # datos GeoJSON (no en git)
 └── docker-compose.yml
 ```
@@ -263,6 +264,12 @@ fix/*         ← correcciones de bugs (sale de develop o main)
 ```
 
 El CI corre en push a `main` y `develop`, y en PRs hacia ambas. Para contribuir: rama desde `develop` → PR hacia `develop` → merge cuando CI pase.
+
+`main` está protegida (ruleset de GitHub): no se puede empujar directamente, solo fusionar por PR con los tres checks del CI en verde.
+
+### Despliegue a staging
+
+Staging (`staging.viscalaterra.cat`) sigue `main`, pero no se actualiza solo: se despliega con el botón **Actions → «Desplega a staging» → Run workflow** (`.github/workflows/desplega-staging.yml`). GitHub entra al servidor con una llave que solo puede lanzar el script de despliegue (`git pull` + migraciones + reconstruir; o `estat`, que solo mira). La llave vive en el entorno `staging` de GitHub, limitado a `main`. Los scripts del servidor están en `infra/desplegament/` pero corren como copia de root en `/usr/local/sbin`: un cambio en esa carpeta no llega al servidor hasta reinstalarlo a mano (detalle en su `README.md`).
 
 ### Temàtica de colors
 

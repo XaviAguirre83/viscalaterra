@@ -1,0 +1,16 @@
+#!/bin/sh
+# Ordre forçada de l'usuari «desplega» (ForceCommand de sshd i command= de la clau):
+# demani el que demani el client SSH, s'executa això, que només accepta «desplega»
+# o «estat» i ho passa, via sudo, a desplega-staging. Com a desplega no es pot fer
+# res més: ni obrir un terminal ni executar cap altra ordre.
+#
+# S'instal·la com a còpia de root a /usr/local/sbin (vegeu README.md).
+case "${SSH_ORIGINAL_COMMAND:-}" in
+desplega | estat)
+  exec sudo -n /usr/local/sbin/desplega-staging "$SSH_ORIGINAL_COMMAND"
+  ;;
+*)
+  echo "Ordre no permesa. Les úniques ordres són: desplega, estat." >&2
+  exit 2
+  ;;
+esac

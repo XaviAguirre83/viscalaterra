@@ -1,0 +1,4 @@
+# /etc/sudoers.d/desplega-staging
+# L'usuari desplega només pot executar com a root el script de desplegament, i
+# només amb aquests dos arguments exactes. Vegeu infra/desplegament/README.md.
+desplega ALL=(root) NOPASSWD: /usr/local/sbin/desplega-staging desplega, /usr/local/sbin/desplega-staging estat
