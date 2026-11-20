@@ -30,7 +30,10 @@ const ARREL = resolve(__dirname, '../../../frontend/public')
 const JSON_PATH = resolve(ARREL, 'data/territoris-enriquiment.json')
 const DIR_EMBLEMES = resolve(ARREL, 'emblemes')
 const API = 'https://commons.wikimedia.org/w/api.php'
-const UA = "viscalaterra-dev/1.0 (descàrrega d'emblemes; xavi.aguirre@proton.me)"
+// Wikimedia demana que els programes s'identifiquin amb un contacte: hi va
+// l'adreça del repositori, mai un correu personal (aquest codi és públic).
+const UA =
+  "viscalaterra-dev/1.0 (descàrrega d'emblemes; https://github.com/XaviAguirre83/viscalaterra)"
 const LIMIT = Number(process.env.EMBLEMES_LIMIT ?? 0)
 const NOMES_CREDITS = process.argv.includes('--credits')
 

@@ -35,7 +35,10 @@ async function consulta(query: string): Promise<Record<string, string>[]> {
   const res = await fetch(url, {
     headers: {
       Accept: 'application/sparql-results+json',
-      'User-Agent': 'viscalaterra-dev/1.0 (enriquiment de territoris)',
+      // Wikimedia demana un contacte: l'adreça del repositori, mai un correu
+      // personal (aquest codi és públic).
+      'User-Agent':
+        'viscalaterra-dev/1.0 (enriquiment de territoris; https://github.com/XaviAguirre83/viscalaterra)',
     },
   })
   if (!res.ok) throw new Error(`Wikidata ${res.status}: ${await res.text()}`)
