@@ -6,7 +6,7 @@ import { useFocusTrap } from '@/composables/useFocusTrap'
 
 const emit = defineEmits<{ tanca: [] }>()
 const auth = useAuthStore()
-const { t, te } = useI18n()
+const { t, te, locale } = useI18n()
 
 // Tradueix el codi d'error del backend; si no hi ha clau, missatge genèric.
 function missatgeError(codi: string): string {
@@ -102,12 +102,17 @@ onMounted(async () => {
     const g = (window as FinestraGoogle).google
     if (!g || !googleBtnRef.value) return
     g.accounts.id.initialize({ client_id: CLIENT_ID, callback: onCredentialGoogle })
+    // El text del botó el pinta Google dins el seu iframe: sense `locale` surt en
+    // l'idioma del navegador o del compte de Google, no en el de la web. No cal
+    // tornar-lo a pintar si canvia l'idioma: amb el modal obert, el selector
+    // d'idioma queda tapat.
     g.accounts.id.renderButton(googleBtnRef.value, {
       theme: 'outline',
       size: 'large',
       width: 320,
       text: 'continue_with',
       shape: 'pill',
+      locale: locale.value,
     })
   } catch {
     /* si Google falla, la resta del modal segueix funcionant */

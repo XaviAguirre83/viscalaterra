@@ -368,7 +368,15 @@
     "titol": "Avisos legales",
     "intro": "Esta sección recoge la información legal de viscalaterra.cat: quién está detrás, cómo tratamos tus datos y las condiciones de uso de la plataforma.",
     "enPreparacio": "Estos textos se están preparando y se publicarán antes de abrir la plataforma a usuarios.",
-    "properament": "Próximamente.",
+    "navAria": "Textos legales",
+    "nomesCatala": "De momento, este texto solo está disponible en catalán.",
+    "esborrany": "Borrador: los puntos marcados en amarillo aún deben resolverse antes de publicarlo.",
+    "descripcions": {
+      "avisLegal": "Quién está detrás de viscalaterra.cat y de quién son los contenidos que se muestran.",
+      "privacitat": "Qué datos personales tratamos, para qué, cuánto tiempo los guardamos y qué derechos tienes.",
+      "cookies": "Qué cookies y qué almacenamiento del navegador usa el sitio.",
+      "condicions": "Las normas para usar el sitio y la cuenta de usuario."
+    },
     "avisLegal": "Aviso legal",
     "privacitat": "Política de privacidad",
     "cookies": "Política de cookies",

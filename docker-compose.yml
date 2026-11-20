@@ -93,6 +93,9 @@ services:
     logging: *logs
     environment:
       - VITE_API_URL=${VITE_API_URL}
+      # Titular dels textos legals (frontend/src/legal/README.md).
+      - VITE_TITULAR_NOM=${TITULAR_NOM:-}
+      - VITE_TITULAR_EMAIL=${TITULAR_EMAIL:-}
     command: sh -c "npm install && npm run dev"
     ports:
       - '5173:5173'
