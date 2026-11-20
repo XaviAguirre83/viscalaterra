@@ -19,6 +19,7 @@
     "email": "Email",
     "contrasenya": "Password",
     "o": "or",
+    "continuaAmbGoogle": "Continue with Google",
     "googlePendent": "Google sign-in: Client ID not configured yet",
     "errors": {
       "generic": "Something went wrong. Please try again.",
@@ -34,6 +35,7 @@
       "google_falta_credential": "No Google credential received",
       "google_token_no_valid": "The Google token is not valid",
       "google_no_verificat": "The Google account is not verified",
+      "google_no_disponible": "Could not connect to Google. Please try again.",
       "no_autenticat": "You need to sign in",
       "token_no_valid": "Your session has expired; sign in again",
       "usuari_no_trobat": "User not found"

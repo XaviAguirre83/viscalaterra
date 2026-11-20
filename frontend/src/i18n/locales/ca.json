@@ -19,6 +19,7 @@
     "email": "Correu electrònic",
     "contrasenya": "Contrasenya",
     "o": "o",
+    "continuaAmbGoogle": "Continua amb Google",
     "googlePendent": "Login amb Google: pendent de configurar el Client ID",
     "errors": {
       "generic": "Hi ha hagut un error. Torna-ho a provar.",
@@ -34,6 +35,7 @@
       "google_falta_credential": "No s'ha rebut el credencial de Google",
       "google_token_no_valid": "El token de Google no és vàlid",
       "google_no_verificat": "El compte de Google no està verificat",
+      "google_no_disponible": "No s'ha pogut connectar amb Google. Torna-ho a provar.",
       "no_autenticat": "Cal iniciar sessió",
       "token_no_valid": "La sessió ha caducat; torna a entrar",
       "usuari_no_trobat": "Usuari no trobat"

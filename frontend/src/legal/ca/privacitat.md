@@ -39,7 +39,7 @@ No elaborem perfils ni prenem decisions automatitzades amb efectes jurídics o s
 
 - **Allotjament:** OVH SAS, a França (Unió Europea), com a encarregat del tractament. [[PENDENT: afegir Hetzner quan es contracti el servidor de producció.]]
 - **Correu:** els missatges que ens envies es desen a Proton AG, a Suïssa, com a encarregat del tractament. Suïssa té una decisió d'adequació de la Comissió Europea.
-- **Google:** si obres la finestra d'accés, el navegador carrega el botó «Continua amb Google» des dels servidors de Google, que reben la teva adreça IP i dades tècniques del navegador i poden fer servir les seves pròpies galetes (consulta la [Política de galetes](/legal/cookies)). Si entres amb Google, Google ens envia les dades de l'apartat 2. Google Ireland Limited tracta aquestes dades com a responsable, segons la seva [política de privadesa](https://policies.google.com/privacy).
+- **Google:** si prems «Continua amb Google» a la finestra d'accés, el navegador carrega el servei d'identitat de Google des dels seus servidors, que reben la teva adreça IP i dades tècniques del navegador i poden fer servir les seves pròpies galetes (consulta la [Política de galetes](/legal/cookies)). Si hi entres, Google ens envia les dades de l'apartat 2. Google Ireland Limited tracta aquestes dades com a responsable, segons la seva [política de privadesa](https://policies.google.com/privacy).
 - **Mapa:** les imatges del mapa es descarreguen dels servidors de l'Institut Cartogràfic i Geològic de Catalunya (ICGC), que reben la teva adreça IP.
 
 Fora d'aquests casos, només comunicarem les teves dades si ho exigeix una llei.

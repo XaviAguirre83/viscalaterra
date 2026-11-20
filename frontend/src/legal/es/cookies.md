@@ -11,7 +11,7 @@ Las cookies son pequeños archivos que una web guarda en el navegador; el almace
 
 ## 2. Cookies de terceros
 
-Si abres la ventana de acceso, el navegador carga el servicio de identidad de Google para mostrar el botón «Continuar con Google». Este servicio guarda en nuestro dominio la cookie **`g_state`**, que, según Google, recuerda si has cerrado la sesión para que no se vuelva a abrir automáticamente. [[PENDENT: duración, comprobarla en el navegador.]] Google también puede usar sus propias cookies, según su [política de cookies](https://policies.google.com/technologies/cookies). Si no abres la ventana de acceso, no se carga nada de Google. [[PENDENT: confirmar que estas cookies no requieren consentimiento (opción a de la decisión L10).]]
+Si pulsas «Continuar con Google» en la ventana de acceso, el navegador carga el servicio de identidad de Google. Este servicio puede guardar en nuestro dominio la cookie **`g_state`**, que, según Google, recuerda si has cerrado la sesión para que no se vuelva a abrir automáticamente. [[PENDENT: comprobar en el navegador si se crea y cuánto dura.]] Google también puede usar sus propias cookies, según su [política de cookies](https://policies.google.com/technologies/cookies). Como estas cookies solo entran en juego cuando eliges entrar con Google, forman parte del servicio que pides y no requieren tu consentimiento. Si no pulsas el botón, no se carga nada de Google.
 
 ## 3. Lo que no usamos
 
