@@ -12487,6 +12487,20 @@
         "llicencia": "CC BY-SA 3.0",
         "pagina": "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_Cerdanya_Comarca.svg"
       }
+    },
+    "val d'aran": {
+      "escut": "/emblemes/com-val-d-aran-escut.svg",
+      "bandera": "/emblemes/com-val-d-aran-bandera.svg",
+      "escutCredit": {
+        "autor": "Heralder",
+        "llicencia": "Public domain",
+        "pagina": "https://commons.wikimedia.org/wiki/File:Coat_of_Arms_of_the_Val_d%27Aran.svg"
+      },
+      "banderaCredit": {
+        "autor": "User:HansenBCN, chris 論",
+        "llicencia": "Public domain",
+        "pagina": "https://commons.wikimedia.org/wiki/File:Flag-Val_d%27Aran.svg"
+      }
     }
   },
   "provincies": {
