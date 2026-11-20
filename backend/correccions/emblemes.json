@@ -1,0 +1,14 @@
+{
+  "comarques": {
+    "val d'aran": {
+      "escut": {
+        "commons": "File:Coat of Arms of the Val d'Aran.svg",
+        "motiu": "A Wikidata la Val d'Aran no és una comarca (entitat territorial singular) i la consulta de comarques no la retorna. El fitxer és el que la seva fitxa de Wikidata dona com a escut."
+      },
+      "bandera": {
+        "commons": "File:Flag-Val d'Aran.svg",
+        "motiu": "Com l'escut: és la bandera que dona la fitxa de Wikidata de la Val d'Aran."
+      }
+    }
+  }
+}

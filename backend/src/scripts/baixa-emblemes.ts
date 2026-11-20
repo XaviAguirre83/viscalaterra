@@ -16,16 +16,21 @@
 // que ja són locals (a la pàgina de Commons desada al seu crèdit). Si a Commons
 // hi ha una versió més nova que la còpia local, aquell crèdit no es toca.
 // Variable opcional EMBLEMES_LIMIT=N per limitar (proves).
+//
+// Abans de baixar res aplica les nostres correccions (backend/correccions/
+// emblemes.json; vegeu correccions-emblemes.ts): n'hi ha prou amb executar-lo
+// per fer efectiu un canvi d'aquell fitxer. Amb --credits no s'apliquen.
 
 import { createHash } from 'node:crypto'
 import { writeFile, mkdir, readFile, stat } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
+import { aplicaCorreccions, llegeixCorreccions } from './correccions-emblemes'
 
 const ARREL = resolve(__dirname, '../../../frontend/public')
 const JSON_PATH = resolve(ARREL, 'data/territoris-enriquiment.json')
 const DIR_EMBLEMES = resolve(ARREL, 'emblemes')
 const API = 'https://commons.wikimedia.org/w/api.php'
-const UA = "viscalaterra-dev/1.0 (descàrrega d'emblemes; x.tecnic@gmail.com)"
+const UA = "viscalaterra-dev/1.0 (descàrrega d'emblemes; xavi.aguirre@proton.me)"
 const LIMIT = Number(process.env.EMBLEMES_LIMIT ?? 0)
 const NOMES_CREDITS = process.argv.includes('--credits')
 
@@ -253,6 +258,12 @@ async function ambConcurrencia<T>(
 async function main() {
   const dades = JSON.parse(await readFile(JSON_PATH, 'utf8')) as Dades
   await mkdir(DIR_EMBLEMES, { recursive: true })
+
+  if (!NOMES_CREDITS) {
+    const canvis = aplicaCorreccions(dades, await llegeixCorreccions())
+    console.log(`Correccions aplicades: ${canvis.length}`)
+    canvis.forEach((c) => console.log(`  ${c}`))
+  }
 
   // 1) Recull entrades pendents (URL de Commons, no encara local) o, amb
   //    --credits, les ja locals (pel títol de la pàgina desada al crèdit).

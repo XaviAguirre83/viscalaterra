@@ -11,6 +11,7 @@
 
 import { writeFile, mkdir } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
+import { aplicaCorreccions, llegeixCorreccions } from './correccions-emblemes'
 
 const SPARQL = 'https://query.wikidata.org/sparql'
 const SORTIDA = resolve(__dirname, '../../../frontend/public/data/territoris-enriquiment.json')
@@ -118,10 +119,16 @@ async function main() {
   if (comarques['baixa cerdanya'] && !comarques['cerdanya']) {
     comarques['cerdanya'] = comarques['baixa cerdanya']
   }
-  // Pendent (curació manual): la Val d'Aran no és instància de comarca a
-  // Wikidata (entitat territorial singular), així que no s'enriqueix aquí.
+  // La Val d'Aran no és instància de comarca a Wikidata (entitat territorial
+  // singular), així que no surt d'aquesta consulta: els seus emblemes entren
+  // per la capa de correccions.
 
   const dades = { municipis, comarques, provincies }
+
+  // Les nostres excepcions, al damunt del que ha donat Wikidata.
+  const canvis = aplicaCorreccions(dades, await llegeixCorreccions())
+  console.log(`Correccions aplicades: ${canvis.length}`)
+  canvis.forEach((c) => console.log(`  ${c}`))
 
   await mkdir(dirname(SORTIDA), { recursive: true })
   await writeFile(SORTIDA, JSON.stringify(dades, null, 0) + '\n', 'utf8')
