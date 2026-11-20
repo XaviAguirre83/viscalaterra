@@ -19,6 +19,7 @@
     "email": "Correo electrónico",
     "contrasenya": "Contraseña",
     "o": "o",
+    "continuaAmbGoogle": "Continuar con Google",
     "googlePendent": "Login con Google: pendiente de configurar el Client ID",
     "errors": {
       "generic": "Ha habido un error. Inténtalo de nuevo.",
@@ -34,6 +35,7 @@
       "google_falta_credential": "No se ha recibido la credencial de Google",
       "google_token_no_valid": "El token de Google no es válido",
       "google_no_verificat": "La cuenta de Google no está verificada",
+      "google_no_disponible": "No se ha podido conectar con Google. Inténtalo de nuevo.",
       "no_autenticat": "Debes iniciar sesión",
       "token_no_valid": "La sesión ha caducado; vuelve a entrar",
       "usuari_no_trobat": "Usuario no encontrado"

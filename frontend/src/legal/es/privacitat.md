@@ -39,7 +39,7 @@ No elaboramos perfiles ni tomamos decisiones automatizadas con efectos jurídico
 
 - **Alojamiento:** OVH SAS, en Francia (Unión Europea), como encargado del tratamiento. [[PENDENT: añadir Hetzner cuando se contrate el servidor de producción.]]
 - **Correo:** los mensajes que nos envías se guardan en Proton AG, en Suiza, como encargado del tratamiento. Suiza cuenta con una decisión de adecuación de la Comisión Europea.
-- **Google:** si abres la ventana de acceso, el navegador carga el botón «Continuar con Google» desde los servidores de Google, que reciben tu dirección IP y datos técnicos del navegador y pueden usar sus propias cookies (consulta la [Política de cookies](/legal/cookies)). Si entras con Google, Google nos envía los datos del apartado 2. Google Ireland Limited trata estos datos como responsable, según su [política de privacidad](https://policies.google.com/privacy).
+- **Google:** si pulsas «Continuar con Google» en la ventana de acceso, el navegador carga el servicio de identidad de Google desde sus servidores, que reciben tu dirección IP y datos técnicos del navegador y pueden usar sus propias cookies (consulta la [Política de cookies](/legal/cookies)). Si entras, Google nos envía los datos del apartado 2. Google Ireland Limited trata estos datos como responsable, según su [política de privacidad](https://policies.google.com/privacy).
 - **Mapa:** las imágenes del mapa se descargan de los servidores del Institut Cartogràfic i Geològic de Catalunya (ICGC), que reciben tu dirección IP.
 
 Fuera de estos casos, solo comunicaremos tus datos si lo exige una ley.

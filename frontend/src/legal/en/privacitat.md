@@ -39,7 +39,7 @@ We do not profile you or make automated decisions with legal or similarly signif
 
 - **Hosting:** OVH SAS, in France (European Union), as processor. [[PENDENT: add Hetzner once the production server is contracted.]]
 - **Email:** the messages you send us are stored by Proton AG, in Switzerland, as processor. Switzerland has an adequacy decision from the European Commission.
-- **Google:** if you open the sign-in window, your browser loads the “Continue with Google” button from Google's servers, which receive your IP address and technical data about your browser and may use their own cookies (see the [Cookie policy](/legal/cookies)). If you sign in with Google, Google sends us the data in section 2. Google Ireland Limited processes this data as controller, under its [privacy policy](https://policies.google.com/privacy).
+- **Google:** if you press “Continue with Google” in the sign-in window, your browser loads Google's identity service from Google's servers, which receive your IP address and technical data about your browser and may use their own cookies (see the [Cookie policy](/legal/cookies)). If you sign in, Google sends us the data in section 2. Google Ireland Limited processes this data as controller, under its [privacy policy](https://policies.google.com/privacy).
 - **Map:** map images are downloaded from the servers of the Institut Cartogràfic i Geològic de Catalunya (ICGC), which receive your IP address.
 
 Apart from these cases, we will only disclose your data where required by law.

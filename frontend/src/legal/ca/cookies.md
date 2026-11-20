@@ -11,7 +11,7 @@ Les galetes (cookies) són petits fitxers que una web desa al navegador; l'emmag
 
 ## 2. Galetes de tercers
 
-Si obres la finestra d'accés, el navegador carrega el servei d'identitat de Google per mostrar el botó «Continua amb Google». Aquest servei desa al nostre domini la galeta **`g_state`**, que, segons Google, recorda si has tancat la sessió perquè no se't torni a obrir automàticament. [[PENDENT: durada, comprovar-la al navegador.]] Google també pot fer servir les seves pròpies galetes, segons la seva [política de galetes](https://policies.google.com/technologies/cookies). Si no obres la finestra d'accés, no es carrega res de Google. [[PENDENT: confirmar que aquestes galetes no requereixen consentiment (opció a de la decisió L10).]]
+Si prems «Continua amb Google» a la finestra d'accés, el navegador carrega el servei d'identitat de Google. Aquest servei pot desar al nostre domini la galeta **`g_state`**, que, segons Google, recorda si has tancat la sessió perquè no se't torni a obrir automàticament. [[PENDENT: comprovar al navegador si es crea i quant dura.]] Google també pot fer servir les seves pròpies galetes, segons la seva [política de galetes](https://policies.google.com/technologies/cookies). Com que aquestes galetes només entren en joc quan tries entrar amb Google, formen part del servei que demanes i no requereixen el teu consentiment. Si no prems el botó, no es carrega res de Google.
 
 ## 3. El que no fem servir
 

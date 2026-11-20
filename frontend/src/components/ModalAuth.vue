@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useFocusTrap } from '@/composables/useFocusTrap'
@@ -48,8 +48,15 @@ async function enviar() {
 // ── Login amb Google (Google Identity Services) ───────────────────────────
 // El Client ID es configura a frontend/.env.local (VITE_GOOGLE_CLIENT_ID). Sense
 // ell, el botó no es mostra (la resta del modal funciona igual).
+//
+// El codi de Google no es carrega en obrir el modal, sinó quan l'usuari prem el
+// nostre botó «Continua amb Google»: així Google no sap res de qui entra amb
+// contrasenya, i les seves galetes formen part del servei que l'usuari ha
+// demanat, sense consentiment previ (Política de galetes, frontend/src/legal/).
+// Aleshores el nostre botó deixa lloc al de Google, que obre el seu flux.
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined
 const googleBtnRef = ref<HTMLElement | null>(null)
+const estatGoogle = ref<'inactiu' | 'carregant' | 'llest'>('inactiu')
 
 interface GoogleId {
   accounts: {
@@ -95,12 +102,14 @@ async function onCredentialGoogle(resp: { credential: string }) {
   }
 }
 
-onMounted(async () => {
-  if (!CLIENT_ID) return
+async function activaGoogle() {
+  if (!CLIENT_ID || estatGoogle.value !== 'inactiu') return
+  error.value = ''
+  estatGoogle.value = 'carregant'
   try {
     await carregaScriptGoogle()
     const g = (window as FinestraGoogle).google
-    if (!g || !googleBtnRef.value) return
+    if (!g || !googleBtnRef.value) throw new Error('Google no disponible')
     g.accounts.id.initialize({ client_id: CLIENT_ID, callback: onCredentialGoogle })
     // El text del botó el pinta Google dins el seu iframe: sense `locale` surt en
     // l'idioma del navegador o del compte de Google, no en el de la web. No cal
@@ -114,10 +123,17 @@ onMounted(async () => {
       shape: 'pill',
       locale: locale.value,
     })
+    estatGoogle.value = 'llest'
+    // El nostre botó desapareix: el focus passa al contenidor del de Google, i
+    // així el tabulador següent hi entra (i el focus-trap no el perd).
+    await nextTick()
+    googleBtnRef.value.focus()
   } catch {
-    /* si Google falla, la resta del modal segueix funcionant */
+    // La resta del modal segueix funcionant, i es pot tornar a provar.
+    estatGoogle.value = 'inactiu'
+    error.value = t('auth.errors.google_no_disponible')
   }
-})
+}
 </script>
 
 <template>
@@ -176,7 +192,39 @@ onMounted(async () => {
       <div class="modal-auth__separador">
         <span>{{ $t('auth.o') }}</span>
       </div>
-      <div v-if="CLIENT_ID" ref="googleBtnRef" class="modal-auth__google"></div>
+      <div v-if="CLIENT_ID" class="modal-auth__google">
+        <!-- Botó nostre (pautes de marca de Google): fins que no es prem, no es
+             carrega res de Google. -->
+        <button
+          v-if="estatGoogle !== 'llest'"
+          type="button"
+          class="modal-auth__google-boto"
+          :disabled="estatGoogle === 'carregant'"
+          :aria-busy="estatGoogle === 'carregant'"
+          @click="activaGoogle"
+        >
+          <svg class="modal-auth__google-logo" viewBox="0 0 48 48" aria-hidden="true">
+            <path
+              fill="#EA4335"
+              d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+            />
+            <path
+              fill="#4285F4"
+              d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+            />
+            <path
+              fill="#34A853"
+              d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+            />
+          </svg>
+          {{ $t('auth.continuaAmbGoogle') }}
+        </button>
+        <div ref="googleBtnRef" class="modal-auth__google-iframe" tabindex="-1"></div>
+      </div>
       <p v-else class="modal-auth__nota">{{ $t('auth.googlePendent') }}</p>
     </div>
   </div>
@@ -400,8 +448,66 @@ onMounted(async () => {
 
 .modal-auth__google {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
   min-height: 40px;
+}
+
+/* Imita el botó que pinta Google (outline, gran, pastilla, 320 px), seguint les
+   seves pautes de marca: així el canvi d'un a l'altre no fa saltar res. */
+.modal-auth__google-boto {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 320px;
+  max-width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #747775;
+  border-radius: 20px;
+  background: #fff;
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.25px;
+  color: #1f1f1f;
+  cursor: pointer;
+  transition: box-shadow var(--mou-rapid, 0.15s);
+}
+
+.modal-auth__google-boto:hover:not(:disabled) {
+  box-shadow:
+    0 1px 2px rgba(60, 64, 67, 0.3),
+    0 1px 3px 1px rgba(60, 64, 67, 0.15);
+}
+
+.modal-auth__google-boto:focus-visible {
+  outline: 2px solid var(--color-marca, #2d6a2d);
+  outline-offset: 2px;
+}
+
+.modal-auth__google-boto:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.modal-auth__google-logo {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* Rep el focus quan apareix el botó de Google (el focus visible el pinta el
+   botó dins el seu iframe). */
+.modal-auth__google-iframe:focus {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-auth__google-boto {
+    transition: none;
+  }
 }
 
 .modal-auth__nota {

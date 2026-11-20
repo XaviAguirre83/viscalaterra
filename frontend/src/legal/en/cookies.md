@@ -11,7 +11,7 @@ Cookies are small files that a website stores in your browser; local storage (lo
 
 ## 2. Third-party cookies
 
-If you open the sign-in window, your browser loads Google's identity service to show the “Continue with Google” button. This service stores the **`g_state`** cookie on our domain, which, according to Google, remembers whether you have signed out so that you are not signed in again automatically. [[PENDENT: duration, check it in the browser.]] Google may also use its own cookies, under its [cookie policy](https://policies.google.com/technologies/cookies). If you do not open the sign-in window, nothing from Google is loaded. [[PENDENT: confirm that these cookies do not require consent (option a of decision L10).]]
+If you press “Continue with Google” in the sign-in window, your browser loads Google's identity service. This service may store the **`g_state`** cookie on our domain, which, according to Google, remembers whether you have signed out so that you are not signed in again automatically. [[PENDENT: check in the browser whether it is created and how long it lasts.]] Google may also use its own cookies, under its [cookie policy](https://policies.google.com/technologies/cookies). As these cookies only come into play when you choose to sign in with Google, they are part of the service you request and do not require your consent. If you do not press the button, nothing from Google is loaded.
 
 ## 3. What we do not use
 
