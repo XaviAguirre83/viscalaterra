@@ -130,6 +130,9 @@ services:
       args:
         # Botó de Google: el mateix Client ID (públic) que verifica el backend.
         VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+        # Titular dels textos legals (frontend/src/legal/README.md).
+        VITE_TITULAR_NOM: ${TITULAR_NOM:-}
+        VITE_TITULAR_EMAIL: ${TITULAR_EMAIL:-}
     restart: unless-stopped
     logging: *logs
     environment:

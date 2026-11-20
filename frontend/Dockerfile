@@ -14,6 +14,9 @@ COPY . .
 # GOOGLE_CLIENT_ID del .env del servidor via docker-compose.prod.yml (build.args);
 # Vite el llegeix de l'entorn en compilar. Buit → el botó no apareix.
 ARG VITE_GOOGLE_CLIENT_ID=
+# Titular dels textos legals: del TITULAR_* del .env del servidor, pel mateix camí.
+ARG VITE_TITULAR_NOM=
+ARG VITE_TITULAR_EMAIL=
 RUN npm run build
 
 # --- Etapa de runtime (Caddy) ---

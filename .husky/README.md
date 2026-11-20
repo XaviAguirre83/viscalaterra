@@ -4,16 +4,16 @@ Git hooks del projecte: scripts que git executa automàticament en moments concr
 
 ## Contingut
 
-| Fitxer       | A git | Què és                                                            |
-| ------------ | ----- | ----------------------------------------------------------------- |
-| `pre-commit` | Sí    | Abans de cada commit: `lint-staged` (Prettier als fitxers staged) |
-| `commit-msg` | Sí    | En escriure el missatge: `commitlint` (Conventional Commits)      |
-| `_/`         | No    | Codi intern de Husky, generat. No es toca                         |
-| `README.md`  | Sí    | Aquest fitxer                                                     |
+| Fitxer       | A git | Què és                                                                                      |
+| ------------ | ----- | ------------------------------------------------------------------------------------------- |
+| `pre-commit` | Sí    | Abans de cada commit: `lint-staged` (data dels textos legals i Prettier als fitxers staged) |
+| `commit-msg` | Sí    | En escriure el missatge: `commitlint` (Conventional Commits)                                |
+| `_/`         | No    | Codi intern de Husky, generat. No es toca                                                   |
+| `README.md`  | Sí    | Aquest fitxer                                                                               |
 
 ## Els hooks propis
 
-- **`pre-commit`** executa `npx lint-staged`. La configuració és a `package.json` (`lint-staged`): passa `prettier --write` als fitxers `.js`, `.ts`, `.vue`, `.json` i `.md` que van al commit.
+- **`pre-commit`** executa `npx lint-staged --concurrent false`. La configuració és a `package.json` (`lint-staged`): primer posa la data del dia als textos legals que van al commit (`scripts/data-textos-legals.mjs`, vegeu `frontend/src/legal/README.md`) i després passa `prettier --write` als fitxers `.js`, `.ts`, `.vue`, `.json` i `.md`. En sèrie, perquè les dues tasques no escriguin alhora el mateix fitxer.
 - **`commit-msg`** executa `commitlint`. La configuració és a `commitlint.config.js` (`@commitlint/config-conventional`): si el missatge no comença per `feat:`, `fix:`, `chore:`… el commit es rebutja.
 
 ## La carpeta `_/` (generada)

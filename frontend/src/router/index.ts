@@ -37,7 +37,13 @@ const router = createRouter({
     },
     { path: '/sobre', name: 'sobre', component: placeholder, props: { ambMapa: false } },
     { path: '/contacte', name: 'contacte', component: placeholder, props: { ambMapa: false } },
-    { path: '/legal', name: 'legal', component: () => import('@/views/LegalView.vue') },
+    // Sense paràmetre, l'índex dels textos legals; amb paràmetre, el text.
+    {
+      path: '/legal/:text(avis-legal|privacitat|cookies|condicions)?',
+      name: 'legal',
+      component: () => import('@/views/LegalView.vue'),
+    },
+    { path: '/legal/:resta(.*)', redirect: '/legal' },
     {
       path: '/suggeriments',
       name: 'suggeriments',
