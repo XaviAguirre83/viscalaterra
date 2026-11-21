@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import './jocs.css'
+
 // Context i pregunta de la partida a la barra de navegació (slot del
 // PanellFiltres): la barra queda buida durant el joc i s'hi posa això, que
 // deixa més espai de joc al mapa. La pregunta (slot) la formula cada joc; el
-// nom del lloc, en <strong>, va ressaltat.
+// nom del lloc, en <strong>, va ressaltat (regla a jocs.css: el <strong> pot
+// arribar de dins d'un altre component, com <I18nT>, on els estils scoped
+// d'aquí no hi arriben).
 defineProps<{
   context: string
   // Re-munta la pregunta (micro-animació d'entrada) a cada torn i objectiu:
@@ -69,12 +73,6 @@ defineProps<{
   animation: pregunta-entra 0.18s ease;
 }
 
-.joc-barra__pregunta :slotted(strong) {
-  display: inline-block;
-  font-weight: 700;
-  color: var(--color-marca);
-}
-
 .joc-barra__colorjug {
   margin-right: 5px;
 }
@@ -98,8 +96,13 @@ defineProps<{
     font-size: var(--text-xs);
   }
 
+  /* La pregunta pot ocupar dues línies abans que tallar-se: el nom que es
+     pregunta (p. ex. «Santa Coloma de Farners») no es pot perdre en una
+     el·lipsi. La barra de navegació creix en alçada si cal. */
   .joc-barra__pregunta {
     font-size: 1rem;
+    white-space: normal;
+    text-align: center;
   }
 }
 

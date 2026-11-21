@@ -601,7 +601,7 @@ const resumPartida = computed(() => {
         :temps="cronoText"
         :encerts="geofreak.partida?.encertades.length ?? 0"
         :errors="geofreak.partida?.errors ?? 0"
-        :pistes="geofreak.resultats[0]?.encertsAmbPista ?? 0"
+        :pistes="(geofreak.resultats[0]?.encertsAmbPista ?? 0) || null"
         @rejuga="rejuga"
         @configura="obreConfiguracio"
       />

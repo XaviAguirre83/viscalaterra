@@ -266,6 +266,10 @@
       "nom": "GeoFreak",
       "desc": "¿Conoces el mapa de Catalunya? Encuentra provincias, veguerías, comarcas y municipios."
     },
+    "capitalComarca": {
+      "nom": "Capital<>Comarca",
+      "desc": "Relaciona cada comarca con su capital, en un sentido o en el otro."
+    },
     "escutmaster": {
       "nom": "EscutMaster",
       "desc": "¿Reconoces los escudos heráldicos de las demarcaciones catalanas?"
@@ -273,10 +277,6 @@
     "banderamaster": {
       "nom": "BanderaMaster",
       "desc": "Identifica las banderas de comarcas y municipios."
-    },
-    "capitals": {
-      "nom": "Capitales de comarca",
-      "desc": "¿Sabes cuál es la capital de cada comarca?"
     }
   },
   "partida": {
@@ -356,6 +356,20 @@
     },
     "triaOpcio": "Elige una…",
     "preguntaOnEs": "¿Dónde está..."
+  },
+  "capitalComarca": {
+    "context": "Jugando a capitales de comarca",
+    "modalitats": {
+      "quinaCapital": "¿Cuál es la capital de...?",
+      "quinaCapitalDesc": "Te damos la comarca, escribe su capital",
+      "quinaComarca": "¿De qué comarca es capital...?",
+      "quinaComarcaDesc": "Te damos la capital, escribe su comarca"
+    },
+    "preguntaCapital": "¿Cuál es la capital {nomDe}?",
+    "preguntaComarca": "¿De qué comarca es capital {capital}?",
+    "escriuCapital": "Escribe la capital…",
+    "escriuComarca": "Escribe la comarca…",
+    "nComarques": "{n} comarcas"
   },
   "mapa": {
     "carregant": "Cargando el mapa…",

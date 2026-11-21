@@ -17,8 +17,8 @@ const props = defineProps<{
   temps: string
   encerts: number
   errors: number
-  // La rajola de pistes només surt si n'hi ha hagut.
-  pistes: number
+  // Rajola de pistes (null = no surt; cada joc decideix què hi compta).
+  pistes: number | null
   // Multijugador: afegeix la columna de pistes demanades a la classificació.
   columnaPistes?: boolean
 }>()
@@ -88,7 +88,7 @@ useFocusTrap(modalRef, ref(true), () => emit('configura'))
             <dt>{{ $t('partida.resultats.errors') }}</dt>
             <dd>{{ errors }}</dd>
           </div>
-          <div v-if="pistes > 0">
+          <div v-if="pistes !== null">
             <dt>{{ $t('partida.resultats.pistes') }}</dt>
             <dd>{{ pistes }}</dd>
           </div>

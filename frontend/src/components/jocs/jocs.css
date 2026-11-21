@@ -249,6 +249,13 @@
   border-color: var(--verd-200);
 }
 
+/* Nom del lloc ressaltat a la pregunta de la barra de navegació (BarraJoc) */
+.joc-barra__pregunta strong {
+  display: inline-block;
+  font-weight: 700;
+  color: var(--color-marca);
+}
+
 /* Punt de color d'un jugador (HUD, barra de navegació, classificació) */
 .joc-colorjug {
   display: inline-block;

@@ -70,7 +70,7 @@ Desplegable des del botó ☰, en tres grups separats per una línia:
 - **Agenda** (`/agenda`) — esdeveniments (temporal). Filtres On?/Què?/Quan?.
 - **Taulell d'anuncis** (`/anuncis`) — tauler veïnal _(en construcció)_.
 - **Fet a la terra** (`/fet-a-la-terra`) — cercador de productes manufacturats a Catalunya; a futur, espai de venda per a petits productors locals _(en construcció)_.
-- **Jocs** (`/jocs`) — jocs sobre el coneixement del territori (GeoFreak…).
+- **Jocs** (`/jocs`) — jocs sobre el coneixement del territori (GeoFreak, Capital<>Comarca…).
 
 **Botiga**
 
@@ -524,7 +524,7 @@ per torns al mateix dispositiu, sense xarxa:
 
 - El rànking **distingeix entre modalitats**: rànking nom→mapa i rànking mapa→nom per separat.
 
-### EscutMaster i BanderaMaster (segon i tercer joc previstos)
+### EscutMaster i BanderaMaster (jocs previstos)
 
 **BanderaMaster funciona exactament amb la mateixa mecànica que EscutMaster** — l'única diferència és que les imatges són banderes en lloc d'escuts. Tot el que es descriu a continuació s'aplica a ambdós jocs.
 
@@ -561,28 +561,29 @@ Jocs d'identificació d'escuts heràldics i banderes de les demarcacions catalan
 
 **Requisit previ d'assets**: cal disposar de les imatges (SVG preferiblement) de tots els escuts i banderes de províncies, comarques i municipis. És feina de recollida de dades independent del desenvolupament del joc.
 
-### Capitals de Comarca (quart joc previst)
+### Capital<>Comarca (segon joc)
 
-Joc d'associació entre comarques i les seves capitals. Sempre les 43 comarques — **no hi ha nivells de dificultat**, ja que no hi ha marge on variar-la significativament. La dificultat ve donada únicament per la modalitat. Rànking separat per modalitat; la fórmula de puntuació no necessita multiplicador de nivell, només temps i ràtio encerts/errors.
+Joc d'associació entre comarques i les seves capitals. Ruta: `/jocs/capital-comarca`; al menú de jocs, just després de GeoFreak.
 
-**Modalitat 1 — Comarca → Capital**:
+> **Nom i mecànica** (2026-11-21): abans "Capitals de comarca". Rebatejat **Capital<>Comarca** perquè es juga en tots dos sentits. Es respon sempre escrivint: la idea inicial de clicar al mapa (fer hover pels municipis de la comarca fins a trobar-ne la capital, amb zoom automàtic a la comarca) queda descartada.
 
-1. El mapa mostra únicament la capa de comarques.
-2. El joc enuncia: "Capital del Maresme".
-3. El joc il·lumina automàticament la comarca del Maresme (com un hover programàtic, sense intervenció de l'usuari) i fa zoom in centrant-la en pantalla.
-4. Apareix ara la capa de municipis, però únicament els de la comarca seleccionada són interactius.
-5. L'usuari fa hover sobre els municipis per veure els noms i clica el que creu que és la capital.
-6. Encert o error, següent pregunta.
+Sempre les 43 comarques — **no hi ha nivells de dificultat**, ja que no hi ha marge on variar-la significativament. La dificultat ve donada únicament per la modalitat. Rànking separat per modalitat; la puntuació és la fórmula comuna dels jocs sense multiplicador de nivell (temps i ràtio d'encerts).
 
-**Modalitat 2 — Capital → Comarca**:
+**Dues modalitats**, batejades amb la pregunta que formulen:
 
-1. El mapa mostra únicament la capa de comarques.
-2. El joc enuncia: "Mataró és la capital de...".
-3. L'usuari fa hover sobre les comarques per veure els noms i clica la que creu correcta.
+- **«Quina és la capital de...?»** (comarca → capital): "Quina és la capital del Maresme?" → s'escriu "Mataró". La comarca preguntada s'il·lumina al mapa.
+- **«De quina comarca és capital...?»** (capital → comarca): "De quina comarca és capital Mataró?" → s'escriu "Maresme". Aquí la comarca no s'il·lumina (seria la resposta): es veu al mapa en encertar-la.
 
-**Mecànica nova respecte als altres jocs**: a la modalitat 1, el joc pren el control del mapa (zoom automàtic + highlight programàtic d'una comarca). És una funcionalitat nova a implementar: el component de joc ha de poder ordenar al mapa que faci zoom i il·lumini un polígon concret sense intervenció de l'usuari.
+**Mecànica** (la de GeoFreak, amb les peces comunes dels jocs):
 
-**Aprenentatge passiu**: igual que als jocs d'escuts i banderes, l'ús del mapa força l'usuari a explorar el territori. A la modalitat 1, fer hover pels municipis d'una comarca per trobar-ne la capital ensenya de retruc on és cada municipi. A la modalitat 2, explorar les comarques per trobar-ne una reforça la seva localització geogràfica. És un patró deliberat i transversal a tots els jocs de la secció Jocs: **el mapa com a eina d'aprenentatge geogràfic implícit**.
+- Resposta escrita amb autocomplete sobre les capitals o les comarques encara no encertades. Al mapa no es clica.
+- 1–4 jugadors al mateix dispositiu, en mode conquesta: torns alterns ronda a ronda, rellotge per jugador i comarques pintades amb el color de qui les encerta.
+- 3 intents per ronda, botó «Passa» i cronòmetre.
+- **Pista**: 4 opcions. A la primera modalitat, només noms de capitals de comarca; a la segona, només comarques. Els distractors surten primer de la mateixa província, perquè la pista no regali la resposta. Errar amb la pista salta la ronda, i l'encert amb pista val mig encert.
+- HUD: temps, progrés (n/43), encerts ✓, errors ✗ i pistes demanades 💡. Les pistes també surten als resultats.
+- **Capitalitat compartida**: el Vallès Occidental té dues capitals, Sabadell i Terrassa, però les dades de l'ICGC només porten Sabadell. Totes dues són respostes bones, i a la segona modalitat es pregunta per una de les dues a l'atzar.
+
+**Aprenentatge passiu**: el mapa de fons fa d'eina d'aprenentatge geogràfic implícit, el patró transversal de la secció Jocs. A la primera modalitat, veure la comarca il·luminada mentre se'n busca la capital la situa; a la segona, cada encert la pinta al mapa, i al final queda el mapa de comarques conquerides.
 
 ### Modalitats socials dels jocs (visió futura)
 

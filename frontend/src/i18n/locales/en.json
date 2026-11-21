@@ -266,6 +266,10 @@
       "nom": "GeoFreak",
       "desc": "How well do you know the map of Catalonia? Find provinces, vegueries, comarques and municipalities."
     },
+    "capitalComarca": {
+      "nom": "Capital<>Comarca",
+      "desc": "Match each comarca with its capital, one way or the other."
+    },
     "escutmaster": {
       "nom": "EscutMaster",
       "desc": "Can you recognise the coats of arms of the Catalan territories?"
@@ -273,10 +277,6 @@
     "banderamaster": {
       "nom": "BanderaMaster",
       "desc": "Identify the flags of comarques and municipalities."
-    },
-    "capitals": {
-      "nom": "Comarca capitals",
-      "desc": "Do you know the capital of each comarca?"
     }
   },
   "partida": {
@@ -356,6 +356,20 @@
     },
     "triaOpcio": "Pick one…",
     "preguntaOnEs": "Where is..."
+  },
+  "capitalComarca": {
+    "context": "Playing comarca capitals",
+    "modalitats": {
+      "quinaCapital": "What's the capital of...?",
+      "quinaCapitalDesc": "We give you the comarca, type its capital",
+      "quinaComarca": "Which comarca's capital is...?",
+      "quinaComarcaDesc": "We give you the capital, type its comarca"
+    },
+    "preguntaCapital": "What's the capital of {nomSol}?",
+    "preguntaComarca": "Which comarca's capital is {capital}?",
+    "escriuCapital": "Type the capital…",
+    "escriuComarca": "Type the comarca…",
+    "nComarques": "{n} comarques"
   },
   "mapa": {
     "carregant": "Loading the map…",

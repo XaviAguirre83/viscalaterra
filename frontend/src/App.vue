@@ -9,9 +9,10 @@ import { useAuthStore } from '@/stores/auth'
 const auth = useAuthStore()
 onMounted(() => auth.carregaJo())
 
-// El peu s'amaga al joc (experiència immersiva a pantalla completa).
+// El peu s'amaga dins dels jocs (/jocs/geofreak, /jocs/capital-comarca…):
+// experiència immersiva a pantalla completa. Al menú de jocs (/jocs) sí que hi és.
 const route = useRoute()
-const mostraPeu = computed(() => !route.path.startsWith('/jocs/geofreak'))
+const mostraPeu = computed(() => !/^\/jocs\/./.test(route.path))
 </script>
 
 <template>

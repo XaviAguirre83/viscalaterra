@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { normalitza } from '@/data/text'
 import type { Candidat } from '@/data/partida'
 import './jocs.css'
@@ -52,9 +52,17 @@ function escNeteja() {
   index.value = -1
 }
 
+// El sacseig (i la vora vermella) s'apaga en acabar l'animació; amb
+// prefers-reduced-motion no n'hi ha i animationend no arriba mai, així que un
+// temporitzador l'apaga igualment (si no, la vora vermella es quedava fixa).
+let apagaSacseig: ReturnType<typeof setTimeout> | null = null
 function sacseja() {
   sacsejant.value = false
-  requestAnimationFrame(() => (sacsejant.value = true))
+  if (apagaSacseig) clearTimeout(apagaSacseig)
+  requestAnimationFrame(() => {
+    sacsejant.value = true
+    apagaSacseig = setTimeout(() => (sacsejant.value = false), 600)
+  })
 }
 
 // Respon un candidat: el joc decideix (i pot sacsejar) i la caixa queda
@@ -85,6 +93,10 @@ function envia() {
   }
   sacseja()
 }
+
+onUnmounted(() => {
+  if (apagaSacseig) clearTimeout(apagaSacseig)
+})
 
 defineExpose({
   focus: () => input.value?.focus(),

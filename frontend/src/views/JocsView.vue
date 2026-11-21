@@ -2,16 +2,16 @@
 import { useRouter } from 'vue-router'
 import PanellFiltres from '@/components/filtres/PanellFiltres.vue'
 
-// Menú de la secció Jocs: una targeta per joc. Només GeoFreak és jugable;
-// la resta (EscutMaster, BanderaMaster, Capitals) es mostren com a "properament"
-// perquè es vegi cap on creix la secció.
+// Menú de la secció Jocs: una targeta per joc, per ordre d'arribada. GeoFreak
+// i Capital<>Comarca són jugables; la resta (EscutMaster, BanderaMaster) es
+// mostren com a "properament" perquè es vegi cap on creix la secció.
 const router = useRouter()
 
 const JOCS = [
   { id: 'geofreak', icona: '🗺️', ruta: '/jocs/geofreak', disponible: true },
+  { id: 'capitalComarca', icona: '🏛️', ruta: '/jocs/capital-comarca', disponible: true },
   { id: 'escutmaster', icona: '🛡️', ruta: null, disponible: false },
   { id: 'banderamaster', icona: '🚩', ruta: null, disponible: false },
-  { id: 'capitals', icona: '🏛️', ruta: null, disponible: false },
 ] as const
 
 function obreJoc(joc: (typeof JOCS)[number]) {
