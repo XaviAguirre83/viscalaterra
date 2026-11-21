@@ -266,6 +266,10 @@
       "nom": "GeoFreak",
       "desc": "Coneixes el mapa de Catalunya? Troba províncies, vegueries, comarques i municipis."
     },
+    "capitalComarca": {
+      "nom": "Capital<>Comarca",
+      "desc": "Relaciona cada comarca amb la seva capital, en un sentit o en l'altre."
+    },
     "escutmaster": {
       "nom": "EscutMaster",
       "desc": "Reconeixes els escuts heràldics de les demarcacions catalanes?"
@@ -273,23 +277,52 @@
     "banderamaster": {
       "nom": "BanderaMaster",
       "desc": "Identifica les banderes de comarques i municipis."
-    },
-    "capitals": {
-      "nom": "Capitals de comarca",
-      "desc": "Saps quina és la capital de cada comarca?"
     }
   },
-  "geofreak": {
+  "partida": {
     "titolModal": "Configura la partida",
     "wizard": {
       "jugadors": "Jugadors",
       "enrere": "Enrere",
-      "seguent": "Següent",
-      "aleatori": "A l'atzar"
+      "seguent": "Següent"
     },
     "jugadorN": "Jugador {n}",
     "torn": "Torn de {nom}",
     "modalitat": "Modalitat",
+    "somhi": "Som-hi!",
+    "escriuNom": "Escriu el nom…",
+    "a11y": {
+      "encert": "Correcte!",
+      "error": "Incorrecte, torna-ho a provar.",
+      "salt": "Incorrecte. Aquesta ronda se salta."
+    },
+    "pista": "Pista",
+    "passa": "Passa",
+    "intentsRonda": "Intents restants de la ronda",
+    "ratxaAria": "Ratxa d'encerts consecutius",
+    "pistesAria": "Pistes demanades",
+    "surt": "Surt",
+    "sortida": {
+      "titol": "Vols sortir de la partida?",
+      "text": "Perdràs el progrés d'aquesta partida.",
+      "continua": "Continua jugant",
+      "surt": "Surt de la partida"
+    },
+    "tornaConfig": "Canvia la configuració",
+    "resultats": {
+      "titol": "Partida completada!",
+      "punts": "punts",
+      "temps": "Temps",
+      "encerts": "Encerts",
+      "errors": "Errors",
+      "pistes": "Pistes",
+      "tornaJugar": "Torna a jugar"
+    }
+  },
+  "geofreak": {
+    "wizard": {
+      "aleatori": "A l'atzar"
+    },
     "modalitats": {
       "onEs": "On és...?",
       "onEsDesc": "Et donem el nom, clica'l al mapa",
@@ -322,35 +355,21 @@
       "comarca": "Quina comarca?"
     },
     "triaOpcio": "Tria'n una…",
-    "somhi": "Som-hi!",
-    "preguntaOnEs": "On és...",
-    "escriuNom": "Escriu el nom…",
-    "a11y": {
-      "encert": "Correcte!",
-      "error": "Incorrecte, torna-ho a provar.",
-      "salt": "Incorrecte. Aquesta ronda se salta."
+    "preguntaOnEs": "On és..."
+  },
+  "capitalComarca": {
+    "context": "Jugant a capitals de comarca",
+    "modalitats": {
+      "quinaCapital": "Quina és la capital de...?",
+      "quinaCapitalDesc": "Et donem la comarca, escriu-ne la capital",
+      "quinaComarca": "De quina comarca és capital...?",
+      "quinaComarcaDesc": "Et donem la capital, escriu-ne la comarca"
     },
-    "pista": "Pista",
-    "passa": "Passa",
-    "intentsRonda": "Intents restants de la ronda",
-    "ratxaAria": "Ratxa d'encerts consecutius",
-    "surt": "Surt",
-    "sortida": {
-      "titol": "Vols sortir de la partida?",
-      "text": "Perdràs el progrés d'aquesta partida.",
-      "continua": "Continua jugant",
-      "surt": "Surt de la partida"
-    },
-    "tornaConfig": "Canvia la configuració",
-    "resultats": {
-      "titol": "Partida completada!",
-      "punts": "punts",
-      "temps": "Temps",
-      "encerts": "Encerts",
-      "errors": "Errors",
-      "pistes": "Pistes",
-      "tornaJugar": "Torna a jugar"
-    }
+    "preguntaCapital": "Quina és la capital {nomDe}?",
+    "preguntaComarca": "De quina comarca és capital {capital}?",
+    "escriuCapital": "Escriu la capital…",
+    "escriuComarca": "Escriu la comarca…",
+    "nComarques": "{n} comarques"
   },
   "mapa": {
     "carregant": "Carregant el mapa…",

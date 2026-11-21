@@ -9,6 +9,7 @@ Plataforma de descoberta de Catalunya. El mapa actua com a filtre geogràfic: l'
 - **Jocs** — Jocs geogràfics sobre Catalunya. El primer, **GeoFreak**: identificació
   territorial (províncies, vegueries, comarques i municipis) amb 9 nivells de
   dificultat, dues modalitats, pista, i mode individual o **multijugador local**.
+  El segon, **Capital<>Comarca**: la capital de cada comarca, i al revés.
 - **Compte d'usuari** — Registre i login (locals o amb Google)
 - **Contingut col·laboratiu** — Els usuaris contribuiran i verificaran el contingut _(previst)_
 

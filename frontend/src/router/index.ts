@@ -27,6 +27,11 @@ const router = createRouter({
       name: 'geofreak',
       component: () => import('@/views/GeoFreakView.vue'),
     },
+    {
+      path: '/jocs/capital-comarca',
+      name: 'capital-comarca',
+      component: () => import('@/views/CapitalComarcaView.vue'),
+    },
 
     // Seccions que no requereixen el mapa (en construcció)
     {

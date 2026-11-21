@@ -67,7 +67,7 @@ describe('geofreak — rondes de partida', () => {
 
     g.comencaPartida(['a', 'b'])
     expect(g.fase).toBe('partida')
-    expect(g.totalDemarcacions).toBe(2)
+    expect(g.totalObjectius).toBe(2)
     expect(g.partida?.objectiu).not.toBeNull()
   })
 
@@ -79,13 +79,13 @@ describe('geofreak — rondes de partida', () => {
     // Un error: clic a una demarcació que no és l'objectiu.
     const objectiu = g.partida!.objectiu!
     const altra = codis.find((c) => c !== objectiu)!
-    expect(g.clicDemarcacio(altra)).toBe('error')
+    expect(g.respon(altra)).toBe('error')
     expect(g.partida!.errors).toBe(1)
     expect(g.fase).toBe('partida')
 
     // Encertar-les totes acaba la partida.
     while (g.fase === 'partida') {
-      expect(g.clicDemarcacio(g.partida!.objectiu!)).toBe('encert')
+      expect(g.respon(g.partida!.objectiu!)).toBe('encert')
     }
     expect(g.fase).toBe('resultats')
     expect(g.partida!.encertades).toHaveLength(3)
@@ -96,14 +96,14 @@ describe('geofreak — rondes de partida', () => {
 
   it('fora de la fase de partida els clics s’ignoren', () => {
     const g = configuraNivell0()
-    expect(g.clicDemarcacio('a')).toBe('ignorat')
+    expect(g.respon('a')).toBe('ignorat')
   })
 
   it('preparaPartida no arrenca el cronòmetre fins a arrencaPartida', () => {
     const g = configuraNivell0()
     g.preparaPartida(['a', 'b'])
     expect(g.fase).toBe('preparacio')
-    expect(g.clicDemarcacio('a')).toBe('ignorat')
+    expect(g.respon('a')).toBe('ignorat')
     g.arrencaPartida()
     expect(g.fase).toBe('partida')
     expect(g.tempsIniciMs).toBeGreaterThan(0)
@@ -112,11 +112,11 @@ describe('geofreak — rondes de partida', () => {
   it('la ratxa puja amb encerts consecutius i cau amb error o salt', () => {
     const g = configuraNivell0()
     g.comencaPartida(['a', 'b', 'c', 'd'])
-    g.clicDemarcacio(g.partida!.objectiu!)
-    g.clicDemarcacio(g.partida!.objectiu!)
+    g.respon(g.partida!.objectiu!)
+    g.respon(g.partida!.objectiu!)
     expect(g.ratxa).toBe(2)
     // Error sobre una pendent viva (no l'objectiu, no encertada).
-    g.clicDemarcacio(g.partida!.pendents[0]!)
+    g.respon(g.partida!.pendents[0]!)
     expect(g.ratxa).toBe(0)
   })
 
@@ -129,9 +129,11 @@ describe('geofreak — rondes de partida', () => {
     // No es pot demanar una segona pista a la mateixa ronda.
     g.activaPista(['x'])
     expect(g.pista).toEqual(['a', 'b', 'c'])
+    // La pista demanada es compta al jugador (una sola vegada).
+    expect(g.estatJugadors[0]!.pistes).toBe(1)
 
     const objectiu = g.partida!.objectiu!
-    g.clicDemarcacio(objectiu)
+    g.respon(objectiu)
     expect(g.pista).toBeNull()
     expect(g.estatJugadors[0]!.encertsAmbPista).toBe(1)
   })
@@ -143,7 +145,7 @@ describe('geofreak — rondes de partida', () => {
     const altra = ['a', 'b', 'c'].find((c) => c !== objectiu)!
     g.activaPista(['a', 'b', 'c'])
 
-    expect(g.clicDemarcacio(altra)).toBe('salt')
+    expect(g.respon(altra)).toBe('salt')
     expect(g.pista).toBeNull()
     expect(g.partida!.errors).toBe(1)
     expect(g.partida!.objectiu).not.toBe(objectiu)
@@ -169,9 +171,9 @@ describe('geofreak — rondes de partida', () => {
     const objectiu = g.partida!.objectiu!
     const altra = ['a', 'b', 'c'].find((c) => c !== objectiu)!
 
-    expect(g.clicDemarcacio(altra)).toBe('error')
-    expect(g.clicDemarcacio(altra)).toBe('error')
-    expect(g.clicDemarcacio(altra)).toBe('salt')
+    expect(g.respon(altra)).toBe('error')
+    expect(g.respon(altra)).toBe('error')
+    expect(g.respon(altra)).toBe('salt')
     expect(g.partida!.objectiu).not.toBe(objectiu)
     expect(g.partida!.errors).toBe(3)
   })
@@ -229,21 +231,21 @@ describe('geofreak — rondes de partida', () => {
 
     // Anna encerta → conquesta amb el seu color i el torn passa a en Biel.
     const primerObjectiu = g.partida!.objectiu!
-    expect(g.clicDemarcacio(primerObjectiu)).toBe('encert')
+    expect(g.respon(primerObjectiu)).toBe('encert')
     expect(g.tornActual).toBe(1)
     expect(g.estatJugadors[0]!.conquestes).toEqual([primerObjectiu])
     expect(g.colorsConquestes[primerObjectiu]).toBe('#111111')
 
     // Biel falla un cop: l'error és seu i el torn NO passa (1r intent).
-    g.clicDemarcacio(g.partida!.pendents[0]!)
+    g.respon(g.partida!.pendents[0]!)
     expect(g.tornActual).toBe(1)
     expect(g.estatJugadors[1]!.errors).toBe(1)
     expect(g.estatJugadors[0]!.errors).toBe(0)
 
     // Biel encerta → torn de l'Anna; Anna encerta l'última → resultats.
-    expect(g.clicDemarcacio(g.partida!.objectiu!)).toBe('encert')
+    expect(g.respon(g.partida!.objectiu!)).toBe('encert')
     expect(g.tornActual).toBe(0)
-    expect(g.clicDemarcacio(g.partida!.objectiu!)).toBe('encert')
+    expect(g.respon(g.partida!.objectiu!)).toBe('encert')
 
     expect(g.fase).toBe('resultats')
     expect(g.resultats).toHaveLength(2)

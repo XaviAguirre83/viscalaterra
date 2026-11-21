@@ -26,6 +26,8 @@ El que ja està consolidat i funcionant:
   menú d'usuari). Queda el hardening pre-beta (vegeu 4.3).
 - **GeoFreak** complet i polit: 2 modalitats, 9 nivells, pista, multijugador local
   per conquesta, wizard de configuració.
+- **Capital<>Comarca** (segon joc): comarca ↔ capital en dues modalitats, amb el mateix
+  motor de partida, HUD i multijugador que GeoFreak (peces comunes dels jocs).
 
 ### El gran buit identificat
 

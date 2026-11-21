@@ -32,12 +32,12 @@ Amb Docker, prefixa'ls amb `docker compose exec frontend …`.
 
 ## Estructura de `src/`
 
-| Carpeta        | Contingut                                                       |
-| -------------- | --------------------------------------------------------------- |
-| `views/`       | una vista per ruta (Explorador = Llocs/Agenda, Jocs, GeoFreak…) |
-| `components/`  | components reutilitzables (mapa, filtres, capçalera, modals…)   |
-| `stores/`      | Pinia (territoris, mapa, filtres, auth, geofreak…)              |
-| `data/`        | mòduls purs sense Vue, testejables (temporal, geofreak, text…)  |
-| `composables/` | composables Vue (p. ex. `useFocusTrap`)                         |
-| `theme/`       | paleta de colors per província/vegueria/comarca                 |
-| `i18n/`        | Vue I18n amb diccionaris `ca` / `es` / `en` a `locales/`        |
+| Carpeta        | Contingut                                                                      |
+| -------------- | ------------------------------------------------------------------------------ |
+| `views/`       | una vista per ruta (Explorador = Llocs/Agenda, Jocs, GeoFreak…)                |
+| `components/`  | components reutilitzables (mapa, filtres, capçalera, modals, peces dels jocs…) |
+| `stores/`      | Pinia (territoris, mapa, filtres, auth, geofreak, capitalComarca…)             |
+| `data/`        | mòduls purs sense Vue, testejables (temporal, partida, geofreak, text…)        |
+| `composables/` | composables Vue (p. ex. `useFocusTrap`, el motor dels jocs `useMotorJoc`)      |
+| `theme/`       | paleta de colors per província/vegueria/comarca                                |
+| `i18n/`        | Vue I18n amb diccionaris `ca` / `es` / `en` a `locales/`                       |
