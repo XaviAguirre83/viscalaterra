@@ -279,17 +279,50 @@
       "desc": "Saps quina és la capital de cada comarca?"
     }
   },
-  "geofreak": {
+  "partida": {
     "titolModal": "Configura la partida",
     "wizard": {
       "jugadors": "Jugadors",
       "enrere": "Enrere",
-      "seguent": "Següent",
-      "aleatori": "A l'atzar"
+      "seguent": "Següent"
     },
     "jugadorN": "Jugador {n}",
     "torn": "Torn de {nom}",
     "modalitat": "Modalitat",
+    "somhi": "Som-hi!",
+    "escriuNom": "Escriu el nom…",
+    "a11y": {
+      "encert": "Correcte!",
+      "error": "Incorrecte, torna-ho a provar.",
+      "salt": "Incorrecte. Aquesta ronda se salta."
+    },
+    "pista": "Pista",
+    "passa": "Passa",
+    "intentsRonda": "Intents restants de la ronda",
+    "ratxaAria": "Ratxa d'encerts consecutius",
+    "pistesAria": "Pistes demanades",
+    "surt": "Surt",
+    "sortida": {
+      "titol": "Vols sortir de la partida?",
+      "text": "Perdràs el progrés d'aquesta partida.",
+      "continua": "Continua jugant",
+      "surt": "Surt de la partida"
+    },
+    "tornaConfig": "Canvia la configuració",
+    "resultats": {
+      "titol": "Partida completada!",
+      "punts": "punts",
+      "temps": "Temps",
+      "encerts": "Encerts",
+      "errors": "Errors",
+      "pistes": "Pistes",
+      "tornaJugar": "Torna a jugar"
+    }
+  },
+  "geofreak": {
+    "wizard": {
+      "aleatori": "A l'atzar"
+    },
     "modalitats": {
       "onEs": "On és...?",
       "onEsDesc": "Et donem el nom, clica'l al mapa",
@@ -322,35 +355,7 @@
       "comarca": "Quina comarca?"
     },
     "triaOpcio": "Tria'n una…",
-    "somhi": "Som-hi!",
-    "preguntaOnEs": "On és...",
-    "escriuNom": "Escriu el nom…",
-    "a11y": {
-      "encert": "Correcte!",
-      "error": "Incorrecte, torna-ho a provar.",
-      "salt": "Incorrecte. Aquesta ronda se salta."
-    },
-    "pista": "Pista",
-    "passa": "Passa",
-    "intentsRonda": "Intents restants de la ronda",
-    "ratxaAria": "Ratxa d'encerts consecutius",
-    "surt": "Surt",
-    "sortida": {
-      "titol": "Vols sortir de la partida?",
-      "text": "Perdràs el progrés d'aquesta partida.",
-      "continua": "Continua jugant",
-      "surt": "Surt de la partida"
-    },
-    "tornaConfig": "Canvia la configuració",
-    "resultats": {
-      "titol": "Partida completada!",
-      "punts": "punts",
-      "temps": "Temps",
-      "encerts": "Encerts",
-      "errors": "Errors",
-      "pistes": "Pistes",
-      "tornaJugar": "Torna a jugar"
-    }
+    "preguntaOnEs": "On és..."
   },
   "mapa": {
     "carregant": "Carregant el mapa…",

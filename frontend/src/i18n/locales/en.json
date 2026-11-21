@@ -279,17 +279,50 @@
       "desc": "Do you know the capital of each comarca?"
     }
   },
-  "geofreak": {
+  "partida": {
     "titolModal": "Set up your game",
     "wizard": {
       "jugadors": "Players",
       "enrere": "Back",
-      "seguent": "Next",
-      "aleatori": "Random"
+      "seguent": "Next"
     },
     "jugadorN": "Player {n}",
     "torn": "{nom}'s turn",
     "modalitat": "Game mode",
+    "somhi": "Let's go!",
+    "escriuNom": "Type the name…",
+    "a11y": {
+      "encert": "Correct!",
+      "error": "Incorrect, try again.",
+      "salt": "Incorrect. This round is skipped."
+    },
+    "pista": "Hint",
+    "passa": "Skip",
+    "intentsRonda": "Attempts left this round",
+    "ratxaAria": "Consecutive correct answers streak",
+    "pistesAria": "Hints used",
+    "surt": "Exit",
+    "sortida": {
+      "titol": "Leave this game?",
+      "text": "You'll lose your progress in this game.",
+      "continua": "Keep playing",
+      "surt": "Leave game"
+    },
+    "tornaConfig": "Change settings",
+    "resultats": {
+      "titol": "Game complete!",
+      "punts": "points",
+      "temps": "Time",
+      "encerts": "Correct",
+      "errors": "Errors",
+      "pistes": "Hints",
+      "tornaJugar": "Play again"
+    }
+  },
+  "geofreak": {
+    "wizard": {
+      "aleatori": "Random"
+    },
     "modalitats": {
       "onEs": "Where is...?",
       "onEsDesc": "We give you the name, click it on the map",
@@ -322,35 +355,7 @@
       "comarca": "Which comarca?"
     },
     "triaOpcio": "Pick one…",
-    "somhi": "Let's go!",
-    "preguntaOnEs": "Where is...",
-    "escriuNom": "Type the name…",
-    "a11y": {
-      "encert": "Correct!",
-      "error": "Incorrect, try again.",
-      "salt": "Incorrect. This round is skipped."
-    },
-    "pista": "Hint",
-    "passa": "Skip",
-    "intentsRonda": "Attempts left this round",
-    "ratxaAria": "Consecutive correct answers streak",
-    "surt": "Exit",
-    "sortida": {
-      "titol": "Leave this game?",
-      "text": "You'll lose your progress in this game.",
-      "continua": "Keep playing",
-      "surt": "Leave game"
-    },
-    "tornaConfig": "Change settings",
-    "resultats": {
-      "titol": "Game complete!",
-      "punts": "points",
-      "temps": "Time",
-      "encerts": "Correct",
-      "errors": "Errors",
-      "pistes": "Hints",
-      "tornaJugar": "Play again"
-    }
+    "preguntaOnEs": "Where is..."
   },
   "mapa": {
     "carregant": "Loading the map…",
