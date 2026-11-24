@@ -13,10 +13,15 @@
 // objectiu triat a l'atzar entre els pendents. Respondre l'objectiu és encert
 // (queda encertat i no torna a sortir); respondre qualsevol altre codi jugable
 // és error. Els errors mai acaben la partida (el ràtio ja penalitza a la
-// puntuació), però al tercer error sobre el mateix objectiu la ronda SE SALTA:
+// puntuació), però en esgotar els intents de la ronda (MAX_INTENTS_RONDA amb
+// un sol jugador; el motor en dona 1 en multijugador) la ronda SE SALTA:
 // l'objectiu torna a la cua i sortirà més endavant — així una ronda encallada
 // no degenera en provar-ho tot. També es pot passar voluntàriament
 // (passaRonda), sense penalització afegida.
+//
+// Les rondes van per PASSADES: un objectiu ja preguntat (`vistos`) no torna a
+// sortir fins que no han sortit tots els altres pendents. Sense això, un
+// objectiu fallat podia tornar a la ronda següent per pura sort.
 
 export const MAX_INTENTS_RONDA = 3
 
@@ -30,35 +35,48 @@ export interface EstatPartida {
   errors: number
   // Errors comesos a la ronda actual (es reinicia a cada canvi d'objectiu).
   intentsRonda: number
+  // Objectius ja preguntats en la passada actual (inclou l'actual). Quan tots
+  // els pendents hi són, comença una passada nova.
+  vistos: string[]
 }
 
 // `aleatori` injectable per fer els tests deterministes (per defecte Math.random).
 export function creaPartida(codis: string[], aleatori: () => number = Math.random): EstatPartida {
-  const pendents = [...codis]
-  const objectiu = treuAleatori(pendents, aleatori)
-  return { pendents, objectiu, encertades: [], errors: 0, intentsRonda: 0 }
+  const { objectiu, pendents, vistos } = triaSeguent([...codis], [], null, aleatori)
+  return { pendents, objectiu, encertades: [], errors: 0, intentsRonda: 0, vistos }
 }
 
-function treuAleatori(llista: string[], aleatori: () => number): string | null {
-  if (llista.length === 0) return null
-  const i = Math.floor(aleatori() * llista.length)
-  return llista.splice(i, 1)[0] ?? null
+// Tria el proper objectiu entre els pendents que encara no han sortit en
+// aquesta passada; si ja han sortit tots, en comença una de nova (evitant
+// repetir `evita`, l'objectiu que s'acaba de saltar, si hi ha alternativa).
+function triaSeguent(
+  pendents: string[],
+  vistos: string[],
+  evita: string | null,
+  aleatori: () => number
+): { objectiu: string | null; pendents: string[]; vistos: string[] } {
+  if (pendents.length === 0) return { objectiu: null, pendents, vistos: [] }
+  let passada = vistos
+  let candidats = pendents.filter((c) => !passada.includes(c))
+  if (candidats.length === 0) {
+    passada = []
+    candidats = pendents.length > 1 ? pendents.filter((c) => c !== evita) : pendents
+  }
+  const objectiu = candidats[Math.floor(aleatori() * candidats.length)]!
+  return {
+    objectiu,
+    pendents: pendents.filter((c) => c !== objectiu),
+    vistos: [...passada, objectiu],
+  }
 }
 
-// L'objectiu actual torna a la cua i en surt un altre (mai el mateix si hi
-// ha alternativa). Reinicia el comptador d'intents de la ronda.
+// L'objectiu actual torna a la cua (ja marcat com a vist: no tornarà fins a
+// la passada següent) i en surt un altre. Reinicia els intents de la ronda.
 function saltaObjectiu(estat: EstatPartida, aleatori: () => number): EstatPartida {
   if (estat.objectiu === null) return estat
   const anterior = estat.objectiu
-  const pendents = [...estat.pendents, anterior]
-  const candidates = pendents.length > 1 ? pendents.filter((c) => c !== anterior) : pendents
-  const seguent = candidates[Math.floor(aleatori() * candidates.length)] ?? null
-  return {
-    ...estat,
-    pendents: pendents.filter((c) => c !== seguent),
-    objectiu: seguent,
-    intentsRonda: 0,
-  }
+  const seguent = triaSeguent([...estat.pendents, anterior], estat.vistos, anterior, aleatori)
+  return { ...estat, ...seguent, intentsRonda: 0 }
 }
 
 // Passa la ronda voluntàriament: l'objectiu torna a la cua per a més endavant
@@ -79,15 +97,18 @@ export interface Candidat {
   nom: string
 }
 
-// 'salt' = tercer error de la ronda: compta l'error I salta l'objectiu.
+// 'salt' = s'han esgotat els intents de la ronda: compta l'error I salta l'objectiu.
 export type ResultatRonda = 'encert' | 'error' | 'salt' | 'ignorat'
 
 // Processa una resposta (un clic al mapa o un nom escrit). Retorna un estat
 // NOU (mai muta l'anterior — el store reassigna l'objecte sencer, com sempre).
+// `maxIntents`: errors que admet la ronda abans de saltar-la (1 = el primer
+// error ja salta, com en multijugador).
 export function responRonda(
   estat: EstatPartida,
   codi: string,
-  aleatori: () => number = Math.random
+  aleatori: () => number = Math.random,
+  maxIntents: number = MAX_INTENTS_RONDA
 ): { estat: EstatPartida; resultat: ResultatRonda } {
   if (estat.objectiu === null) return { estat, resultat: 'ignorat' }
   // Tornar a respondre un objectiu ja encertat no compta (ni encert ni error).
@@ -95,18 +116,16 @@ export function responRonda(
 
   if (codi !== estat.objectiu) {
     const ambError = { ...estat, errors: estat.errors + 1, intentsRonda: estat.intentsRonda + 1 }
-    if (ambError.intentsRonda < MAX_INTENTS_RONDA) {
+    if (ambError.intentsRonda < maxIntents) {
       return { estat: ambError, resultat: 'error' }
     }
     return { estat: saltaObjectiu(ambError, aleatori), resultat: 'salt' }
   }
 
-  const pendents = [...estat.pendents]
-  const seguent = treuAleatori(pendents, aleatori)
+  const seguent = triaSeguent(estat.pendents, estat.vistos, null, aleatori)
   return {
     estat: {
-      pendents,
-      objectiu: seguent,
+      ...seguent,
       encertades: [...estat.encertades, codi],
       errors: estat.errors,
       intentsRonda: 0,

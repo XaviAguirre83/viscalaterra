@@ -236,15 +236,18 @@ describe('geofreak — rondes de partida', () => {
     expect(g.estatJugadors[0]!.conquestes).toEqual([primerObjectiu])
     expect(g.colorsConquestes[primerObjectiu]).toBe('#111111')
 
-    // Biel falla un cop: l'error és seu i el torn NO passa (1r intent).
-    g.respon(g.partida!.pendents[0]!)
-    expect(g.tornActual).toBe(1)
+    // Biel falla: en multijugador hi ha UNA sola oportunitat — l'error és
+    // seu, l'objectiu torna a la cua i el torn passa a l'Anna.
+    const objectiuBiel = g.partida!.objectiu!
+    expect(g.respon(g.partida!.pendents[0]!)).toBe('salt')
+    expect(g.tornActual).toBe(0)
+    expect(g.partida!.objectiu).not.toBe(objectiuBiel)
     expect(g.estatJugadors[1]!.errors).toBe(1)
     expect(g.estatJugadors[0]!.errors).toBe(0)
 
-    // Biel encerta → torn de l'Anna; Anna encerta l'última → resultats.
+    // Anna encerta → torn d'en Biel; Biel encerta l'última → resultats.
     expect(g.respon(g.partida!.objectiu!)).toBe('encert')
-    expect(g.tornActual).toBe(0)
+    expect(g.tornActual).toBe(1)
     expect(g.respon(g.partida!.objectiu!)).toBe('encert')
 
     expect(g.fase).toBe('resultats')

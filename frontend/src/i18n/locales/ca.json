@@ -316,7 +316,13 @@
       "encerts": "Encerts",
       "errors": "Errors",
       "pistes": "Pistes",
-      "tornaJugar": "Torna a jugar"
+      "tornaJugar": "Torna a jugar",
+      "revisa": "Revisa el mapa"
+    },
+    "revisio": {
+      "titol": "Revisió del mapa",
+      "noms": "Noms",
+      "tornaResultats": "Torna als resultats"
     }
   },
   "geofreak": {

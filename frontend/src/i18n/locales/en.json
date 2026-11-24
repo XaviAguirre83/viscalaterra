@@ -316,7 +316,13 @@
       "encerts": "Correct",
       "errors": "Errors",
       "pistes": "Hints",
-      "tornaJugar": "Play again"
+      "tornaJugar": "Play again",
+      "revisa": "Review the map"
+    },
+    "revisio": {
+      "titol": "Map review",
+      "noms": "Names",
+      "tornaResultats": "Back to results"
     }
   },
   "geofreak": {

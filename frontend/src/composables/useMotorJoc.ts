@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import {
   creaPartida,
+  MAX_INTENTS_RONDA,
   partidaCompletada,
   passaRonda as passaRondaPartida,
   responRonda,
@@ -24,9 +25,10 @@ export type { JugadorConfig }
 //   resultats    → tots els objectius encertats; modal de resultats.
 //
 // Multijugador local (1-4 al mateix dispositiu, mode CONQUESTA): els jugadors
-// s'alternen RONDA a ronda sobre la mateixa bossa d'objectius. El torn es
-// tanca amb encert, amb salt (3r error, o error amb pista) o amb Passa; els
-// errors 1-2 mantenen el torn (i el seu rellotge corrent). Cada conquesta es
+// s'alternen RONDA a ronda sobre la mateixa bossa d'objectius. Cada jugador
+// té UNA sola oportunitat per torn: el torn es tanca amb encert, amb el
+// primer error (l'objectiu torna a la cua) o amb Passa. Amb un sol jugador
+// n'hi ha MAX_INTENTS_RONDA (els errors 1-2 mantenen la ronda). Cada conquesta es
 // pinta al mapa amb el color del jugador, i cada jugador té el seu
 // cronòmetre, pausat mentre juguen els altres.
 //
@@ -98,6 +100,9 @@ export function useMotorJoc(opcions: OpcionsMotorJoc) {
 
   const esMultijugador = computed(() => jugadors.value.length > 1)
   const jugadorActual = computed(() => estatJugadors.value[tornActual.value] ?? null)
+
+  // Errors que admet una ronda abans de saltar-la.
+  const maxIntents = computed(() => (esMultijugador.value ? 1 : MAX_INTENTS_RONDA))
 
   // codi conquerit → color del jugador (per pintar el mapa en multijugador;
   // amb un sol jugador es pinta amb el color de tema de cada territori).
@@ -233,7 +238,7 @@ export function useMotorJoc(opcions: OpcionsMotorJoc) {
   function respon(codi: string): ResultatRonda {
     if (fase.value !== 'partida' || !partida.value) return 'ignorat'
     const teniaPista = pista.value !== null
-    const { estat, resultat } = responRonda(partida.value, codi)
+    const { estat, resultat } = responRonda(partida.value, codi, Math.random, maxIntents.value)
     partida.value = estat
 
     if (resultat === 'encert') {
@@ -264,7 +269,8 @@ export function useMotorJoc(opcions: OpcionsMotorJoc) {
     }
 
     if (resultat === 'salt') {
-      // 3r error de la ronda: compta l'error i el torn es tanca.
+      // Intents esgotats (3r error amb un sol jugador, el 1r en multijugador):
+      // compta l'error i el torn es tanca.
       actualitzaJugadorActual((j) => ({ ...j, errors: j.errors + 1 }))
       pista.value = null
       ratxa.value = 0
@@ -331,6 +337,7 @@ export function useMotorJoc(opcions: OpcionsMotorJoc) {
     tornActual,
     marcaTornMs,
     esMultijugador,
+    maxIntents,
     jugadorActual,
     colorsConquestes,
     tempsIniciMs,

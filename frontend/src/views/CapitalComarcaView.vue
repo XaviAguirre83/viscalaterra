@@ -13,6 +13,7 @@ import HudPartida from '@/components/jocs/HudPartida.vue'
 import CaixaResposta from '@/components/jocs/CaixaResposta.vue'
 import ModalSortida from '@/components/jocs/ModalSortida.vue'
 import ModalResultats from '@/components/jocs/ModalResultats.vue'
+import BarraRevisio from '@/components/jocs/BarraRevisio.vue'
 import { useTerritorisStore } from '@/stores/territoris'
 import { useCapitalComarcaStore } from '@/stores/capitalComarca'
 import {
@@ -37,7 +38,7 @@ import '@/components/jocs/jocs.css'
 // multijugador) i, a la primera modalitat, s'hi il·lumina la comarca
 // preguntada — a la segona no, perquè seria la resposta.
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const territoris = useTerritorisStore()
 const joc = useCapitalComarcaStore()
 
@@ -67,6 +68,12 @@ const {
   demanaSortida,
   continuaPartida,
   confirmaSortida,
+  revisant,
+  haRevisat,
+  nomsRevisio,
+  revisaMapa,
+  tornaAResultats,
+  margesRevisio,
 } = useVistaJoc(joc, {
   ambResposta: () => true,
   focusResposta: () => caixaRef.value?.focus(),
@@ -110,6 +117,13 @@ const provinciesPerComarca = computed(() => {
 const capitals = computed(() =>
   capitalsPerComarca(territoris.arbre?.flatMap((p) => p.comarques) ?? [])
 )
+
+// Segona línia del nom de cada comarca encertada al mapa: la capital (les dues
+// del Vallès Occidental, «Sabadell i Terrassa»), per repassar-les.
+const capitalsEtiqueta = computed<Record<string, string>>(() => {
+  const llista = new Intl.ListFormat(locale.value, { type: 'conjunction' })
+  return Object.fromEntries([...capitals.value].map(([codi, caps]) => [codi, llista.format(caps)]))
+})
 
 // Totes les comarques amb capital entren en joc.
 const codisJoc = computed(() => [...nomsComarca.value.keys()].filter((c) => capitals.value.has(c)))
@@ -259,6 +273,8 @@ const resumPartida = computed(() => {
 // CaixaResposta (mateixos valors que GeoFreak a «Com es diu...?»).
 const margesMapa = computed(() => {
   if (joc.fase === 'configuracio') return null
+  // Revisant el mapa en acabar, només hi ha la barra de la revisió a baix.
+  if (revisant.value) return margesRevisio.value
   const marcadors = esMobil.value ? 116 : 68
   // Amb la pista demanada, la caixa creix amb les 4 opcions.
   const opcions = joc.pista ? (esMobil.value ? 106 : 90) : 0
@@ -280,6 +296,9 @@ const modeJocMapa = computed<ModeJocMapa>(() => ({
   codiObjectiu: joc.fase !== 'configuracio' && esQuinaCapital.value ? objectiu.value : null,
   codisPista: null,
   interactiu: false,
+  // Revisió del mapa en acabar: els noms de totes les encertades.
+  nomsFixos: revisant.value && nomsRevisio.value,
+  detallsEtiqueta: capitalsEtiqueta.value,
   marges: margesMapa.value,
 }))
 </script>
@@ -399,6 +418,14 @@ const modeJocMapa = computed<ModeJocMapa>(() => ({
         />
       </template>
 
+      <!-- ── Revisió del mapa (des dels resultats) ───────────────────────── -->
+      <BarraRevisio
+        v-else-if="revisant"
+        v-model:noms="nomsRevisio"
+        :jugadors="joc.esMultijugador ? joc.resultats : null"
+        @torna="tornaAResultats"
+      />
+
       <!-- ── Resultats ──────────────────────────────────────────────────── -->
       <ModalResultats
         v-else
@@ -409,7 +436,9 @@ const modeJocMapa = computed<ModeJocMapa>(() => ({
         :errors="joc.partida?.errors ?? 0"
         :pistes="joc.resultats[0]?.pistes ?? 0"
         columna-pistes
+        :celebra="!haRevisat"
         @rejuga="rejuga"
+        @revisa="revisaMapa"
         @configura="obreConfiguracio"
       />
     </div>

@@ -32,6 +32,12 @@ export interface ModeJocMapa {
   // false = el jugador no respon clicant el mapa («Com es diu...?» escriu):
   // les features no reaccionen ni al hover ni al clic.
   interactiu: boolean
+  // Revisió del mapa en acabar: els noms de totes les encertades, fixos sobre
+  // el mapa (sense solapar-se). Absent o false = només en hover o en tocar-les.
+  nomsFixos?: boolean
+  // Segona línia de l'etiqueta d'una encertada, per codi (p. ex. la capital a
+  // Capital<>Comarca). Absent o null = només el nom.
+  detallsEtiqueta?: Record<string, string> | null
   // Franges del viewport (px) que el HUD de la partida tapa a dalt, a baix i
   // a l'esquerra: el territori de joc s'enquadra a l'espai que queda lliure,
   // perquè cap tros quedi sota els marcadors. null o absent = tot el viewport.
