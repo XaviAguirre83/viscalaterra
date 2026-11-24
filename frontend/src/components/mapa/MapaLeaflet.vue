@@ -17,6 +17,7 @@ import { useMapaOpcionsStore } from '@/stores/mapaOpcions'
 import { useEnriquimentStore, type Credit } from '@/stores/enriquiment'
 import { useLlocsStore, type Lloc } from '@/stores/llocs'
 import { emojiSubtema } from '@/data/subtemes'
+import { puntEtiquetaPeces, type Punt as PuntPla } from '@/data/puntEtiqueta'
 import {
   temaPerProvincia,
   temaPerVegueria,
@@ -70,6 +71,298 @@ function esEncertada(info: InfoFeature): boolean {
 
 let mapa: L.Map | null = null
 let mascaraCatalunya: L.Polygon | null = null
+
+// ── Noms sobre el mapa en mode joc ─────────────────────────────────────────
+// En mode joc mai es mostra cap nom que pugui delatar la resposta, però el
+// d'una demarcació JA encertada sí:
+//  · en passar-hi el ratolí (desktop) o tocar-la (mòbil): una etiqueta
+//    ressaltada, una de sola i reutilitzada, que s'amaga en sortir-ne o en
+//    tocar qualsevol altre lloc;
+//  · a la revisió del mapa en acabar la partida (`nomsFixos`): els noms de
+//    totes alhora, sense solapar-se (vegeu actualitzaEtiquetesFixes).
+// El nom va al pol d'inaccessibilitat del territori (@/data/puntEtiqueta), no
+// al centroide de Leaflet (getCenter), que en formes irregulars queda
+// desplaçat i en territoris de més d'una peça només mira la primera.
+
+interface PosicioEtiqueta {
+  punt: L.LatLng
+  // Àrea de la peça on va el nom (prioritat entre etiquetes que se solapen).
+  area: number
+}
+
+// Per polígon, és a dir, per resolució: el contorn gruixut de la vista
+// general (1:1.000.000) s'aparta prou del real perquè, de prop, el nom d'un
+// municipi petit quedés descentrat. Es calcula quan cal (pocs ms) i es desa.
+const posicionsEtiqueta = new WeakMap<L.Polygon, PosicioEtiqueta>()
+
+// Unitats Mercator (les de posicioEtiqueta) per píxel de pantalla, al zoom actual.
+function unitatsPerPixel(): number {
+  return 40075016.686 / (256 * 2 ** (mapa?.getZoom() ?? 0))
+}
+
+function posicioEtiqueta(poligon: L.Polygon): PosicioEtiqueta {
+  const desada = posicionsEtiqueta.get(poligon)
+  if (desada) return desada
+  // Polygon: [exterior, forats…]; MultiPolygon: [[exterior, forats…], …].
+  const ll = poligon.getLatLngs() as L.LatLng[][] | L.LatLng[][][]
+  const peces = (Array.isArray(ll[0]?.[0]) ? ll : [ll]) as L.LatLng[][][]
+  // En coordenades planes (Mercator, metres): en graus les distàncies a la
+  // vora sortirien deformades.
+  const merc = L.Projection.SphericalMercator
+  const { punt, area } = puntEtiquetaPeces(
+    peces.map((p) =>
+      p.map((anell) =>
+        anell.map((latlng): PuntPla => {
+          const q = merc.project(latlng)
+          return [q.x, q.y]
+        })
+      )
+    ),
+    // Prou amb mig píxel: en aquest zoom, més precisió no es veuria.
+    unitatsPerPixel() / 2
+  )
+  const posicio = { punt: merc.unproject(L.point(punt[0], punt[1])), area }
+  posicionsEtiqueta.set(poligon, posicio)
+  return posicio
+}
+
+// Contingut d'una etiqueta: el nom i, si n'hi ha, una segona línia (p. ex. la
+// capital, a Capital<>Comarca). Com a nodes de text, no HTML: ve de dades
+// externes.
+function contingutEtiqueta(nom: string, detall?: string): HTMLElement {
+  const el = document.createElement('span')
+  el.textContent = nom
+  if (detall) {
+    const linia = document.createElement('span')
+    linia.className = 'joc-etiqueta__detall'
+    linia.textContent = detall
+    el.append(linia)
+  }
+  return el
+}
+
+let etiquetaJoc: L.Tooltip | null = null
+
+function mostraEtiquetaJoc(layer: L.Path, info: InfoFeature) {
+  if (!mapa || !info.nom) return
+  etiquetaJoc ??= L.tooltip({ direction: 'center', className: 'joc-etiqueta', opacity: 1 })
+  etiquetaJoc
+    .setLatLng(posicioEtiqueta(layer as L.Polygon).punt)
+    .setContent(contingutEtiqueta(info.nom, props.modeJoc?.detallsEtiqueta?.[info.codi]))
+  if (!mapa.hasLayer(etiquetaJoc)) etiquetaJoc.openOn(mapa)
+}
+
+function amagaEtiquetaJoc() {
+  if (mapa && etiquetaJoc && mapa.hasLayer(etiquetaJoc)) mapa.closeTooltip(etiquetaJoc)
+}
+
+// Noms fixos (revisió): cada cop que el mapa es mou es decideix quins es
+// pinten: de més gran a més petit (com als mapes), cadascun només si el
+// territori no és massa petit en pantalla, si el nom hi cap sencer dins el mapa
+// (tallat per la vora no es llegiria) i si no trepitja cap dels ja posats. El
+// nom va SEMPRE centrat al seu territori: mai es mou per fer-lo cabre, només
+// es deixa de pintar; en apropar-s'hi n'hi caben més.
+//
+// Amb centenars de municipis, l'ordre de les feines compta: primer es
+// descarten els candidats impossibles amb dades barates (la caixa del
+// territori), només dels que queden es calcula el punt (posicioEtiqueta), i al
+// DOM només hi van els guanyadors. I la feina es fa a trams de PRESSUPOST_MS
+// per fotograma: quan cal calcular molts punts de cop (en entrar a la
+// revisió, o en un zoom que canvia la resolució de la capa), el mapa no es
+// bloqueja; els noms dels territoris grans surten primer i la resta s'hi van
+// afegint. En desplaçar-se, els punts ja calculats es reaprofiten. No són tooltips sinó marcadors amb la mida
+// ja mesurada: Leaflet col·loca un tooltip llegint-ne la mida del DOM, un
+// recàlcul de layout per nom (centenars en un zoom), i un marcador amb mida
+// coneguda només s'escriu.
+interface EtiquetaFixa {
+  nom: string
+  detall: string | undefined
+  // Mida del nom en px (es mesura un sol cop: mesuraEtiquetes).
+  amplada: number
+  alcada: number
+  // Es crea el primer cop que es pinta.
+  marcador: L.Marker | null
+}
+type Rectangle = [number, number, number, number] // x0, y0, x1, y1 (px)
+const etiquetesFixes = new Map<string, EtiquetaFixa>()
+// Tram de feina pendent (requestAnimationFrame) i el seu pressupost.
+let feinaEtiquetes = 0
+const PRESSUPOST_MS = 8
+// Espai mínim (px) al voltant de cada nom perquè no s'enganxin.
+const MARGE_ETIQUETES = 4
+// Un territori que en pantalla fa menys d'això (px, el costat més llarg) no
+// porta nom fins que s'hi apropa: el nom el taparia sencer i xocaria amb els
+// veïns.
+const MIDA_MIN_ETIQUETA = 20
+
+// Les actualitzacions es fan al fotograma següent: no s'afegeixen a la feina
+// de Leaflet en curs (p. ex. pintar la capa nova d'un zoom) i, si n'arriben
+// diverses seguides, només se'n fa una.
+function programaEtiquetesFixes() {
+  cancelAnimationFrame(feinaEtiquetes)
+  feinaEtiquetes = requestAnimationFrame(actualitzaEtiquetesFixes)
+}
+
+function treuEtiquetesFixes() {
+  cancelAnimationFrame(feinaEtiquetes)
+  etiquetesFixes.forEach((e) => e.marcador?.remove())
+  etiquetesFixes.clear()
+}
+
+// Mida (px) dels noms nous, d'una tirada: tots dins un contenidor ocult amb la
+// mateixa classe i una sola lectura de layout.
+function mesuraEtiquetes(noves: EtiquetaFixa[]) {
+  if (!mapa || noves.length === 0) return
+  const capsa = document.createElement('div')
+  capsa.style.cssText = 'position:absolute;left:0;top:0;visibility:hidden;pointer-events:none'
+  const elements = noves.map((e) => {
+    const el = document.createElement('div')
+    el.className = 'joc-etiqueta--fixa'
+    el.style.position = 'absolute'
+    el.append(contingutEtiqueta(e.nom, e.detall))
+    capsa.append(el)
+    return el
+  })
+  mapa.getContainer().append(capsa)
+  noves.forEach((e, i) => {
+    e.amplada = elements[i]!.offsetWidth
+    e.alcada = elements[i]!.offsetHeight
+  })
+  capsa.remove()
+}
+
+function actualitzaEtiquetesFixes() {
+  // Una actualització nova substitueix la que encara feia trams (els punts que
+  // ja havia calculat queden desats).
+  cancelAnimationFrame(feinaEtiquetes)
+  const mj = props.modeJoc
+  if (!mapa || !mj?.nomsFixos) {
+    treuEtiquetesFixes()
+    return
+  }
+  const nivell = nivellEfectiu.value
+  const capa = capesActives[nivell]
+  if (!capa) return
+  // Si la capa de la resolució d'aquest zoom encara baixa, s'espera (carregaCapa
+  // torna a cridar en acabar): fer-ho ara amb l'antiga seria feina llençada.
+  const clauVigent = `${nivell}-${resolucioPerCapa(nivell, mapa.getZoom())}`
+  if (capa !== cacheLayers[clauVigent] && cachePromeses[clauVigent]) return
+
+  const mida = mapa.getSize()
+  const vista = mapa.getBounds()
+  const candidats: Array<{ clau: string; poligon: L.Polygon; caixa: Rectangle }> = []
+  const vigents = new Set<string>()
+  const noves: EtiquetaFixa[] = []
+  capa.eachLayer((layer) => {
+    const poligon = layer as L.Polygon & { feature?: GeoJSON.Feature }
+    const info = codiDeFeature(poligon.feature, nivell)
+    if (!info?.nom || !esEncertada(info)) return
+    const clau = `${nivell}:${info.codi}`
+    vigents.add(clau)
+    const limits = poligon.getBounds()
+    if (!vista.intersects(limits)) return
+    const a = mapa!.latLngToContainerPoint(limits.getNorthWest())
+    const b = mapa!.latLngToContainerPoint(limits.getSouthEast())
+    if (Math.max(b.x - a.x, b.y - a.y) < MIDA_MIN_ETIQUETA) return
+    candidats.push({ clau, poligon, caixa: [a.x, a.y, b.x, b.y] })
+    if (!etiquetesFixes.has(clau)) {
+      const nova = {
+        nom: info.nom,
+        detall: mj.detallsEtiqueta?.[info.codi],
+        amplada: 0,
+        alcada: 0,
+        marcador: null,
+      }
+      etiquetesFixes.set(clau, nova)
+      noves.push(nova)
+    }
+  })
+  // Fora les que ja no toquen (p. ex. un altre nivell).
+  etiquetesFixes.forEach((e, clau) => {
+    if (vigents.has(clau)) return
+    e.marcador?.remove()
+    etiquetesFixes.delete(clau)
+  })
+  mesuraEtiquetes(noves)
+
+  // Fora de seguida els que ja no són candidats (fora de la vista o massa
+  // petits); la resta es revisa en ordre, i el que no hi capigui surt quan li
+  // toca.
+  const claus = new Set(candidats.map((c) => c.clau))
+  etiquetesFixes.forEach((e, clau) => {
+    if (!claus.has(clau) && e.marcador && mapa!.hasLayer(e.marcador)) e.marcador.remove()
+  })
+
+  // De més gran a més petit (en pantalla).
+  const area = ([x0, y0, x1, y1]: Rectangle) => (x1 - x0) * (y1 - y0)
+  candidats.sort((p, q) => area(q.caixa) - area(p.caixa))
+  const posats: Rectangle[] = []
+  let i = 0
+  const tram = () => {
+    if (!mapa) return
+    const limit = performance.now() + PRESSUPOST_MS
+    for (; i < candidats.length; i++) {
+      if (performance.now() > limit) {
+        feinaEtiquetes = requestAnimationFrame(tram)
+        return
+      }
+      const c = candidats[i]!
+      const e = etiquetesFixes.get(c.clau)!
+      const punt = llocEtiqueta(c, e, mida, posats)
+      if (!punt) {
+        if (e.marcador && mapa.hasLayer(e.marcador)) e.marcador.remove()
+        continue
+      }
+      // Centrat exacte: l'àncora és el mig de la mida mesurada.
+      e.marcador ??= L.marker(punt, {
+        icon: L.divIcon({
+          html: contingutEtiqueta(e.nom, e.detall),
+          className: 'joc-etiqueta--fixa',
+          iconSize: [e.amplada, e.alcada],
+          iconAnchor: [e.amplada / 2, e.alcada / 2],
+        }),
+        interactive: false,
+        keyboard: false,
+      })
+      // Només si canvia (en una altra resolució el punt es recalcula).
+      if (!e.marcador.getLatLng().equals(punt)) e.marcador.setLatLng(punt)
+      if (!mapa.hasLayer(e.marcador)) e.marcador.addTo(mapa)
+    }
+  }
+  tram()
+}
+
+// On va el nom d'un candidat, o null si no s'hi ha de pintar. Si hi va, en
+// reserva el lloc a `posats`.
+function llocEtiqueta(
+  c: { poligon: L.Polygon; caixa: Rectangle },
+  e: EtiquetaFixa,
+  mida: L.Point,
+  posats: Rectangle[]
+): L.LatLng | null {
+  const mx = e.amplada / 2 + MARGE_ETIQUETES
+  const my = e.alcada / 2 + MARGE_ETIQUETES
+  // Descart barat, abans de calcular el punt: el centre del nom cau dins la
+  // caixa del territori. Zona d'aquesta caixa on el nom cabria dins el mapa:
+  const [x0, y0, x1, y1]: Rectangle = [
+    Math.max(c.caixa[0], mx),
+    Math.max(c.caixa[1], my),
+    Math.min(c.caixa[2], mida.x - mx),
+    Math.min(c.caixa[3], mida.y - my),
+  ]
+  if (x0 > x1 || y0 > y1) return null
+  // …i si un nom ja posat el tapa sigui on sigui d'aquesta zona, tampoc.
+  if (posats.some((q) => x1 - mx < q[2] && x0 + mx > q[0] && y1 - my < q[3] && y0 + my > q[1]))
+    return null
+
+  const punt = posicioEtiqueta(c.poligon).punt
+  const p = mapa!.latLngToContainerPoint(punt)
+  const r: Rectangle = [p.x - mx, p.y - my, p.x + mx, p.y + my]
+  if (r[0] < 0 || r[1] < 0 || r[2] > mida.x || r[3] > mida.y) return null
+  if (posats.some((q) => r[0] < q[2] && r[2] > q[0] && r[1] < q[3] && r[3] > q[1])) return null
+  posats.push(r)
+  return punt
+}
 
 // ── Tiles: Mapa Base de l'ICGC (geoserveis.icgc.cat, llicència CC-BY, sense
 // clau). Abans era Carto, que des d'oct. 2026 exigeix API key i serveix una
@@ -336,7 +629,7 @@ const imatgesDestacat = computed<{ escut?: ImatgeDestacada; bandera?: ImatgeDest
 )
 
 // Lightbox: imatge (escut/bandera) ampliada al centre en clicar-la. Tanca amb
-// clic fora, ✕ o Esc.
+// clic fora del recuadre o Esc.
 const ampliada = ref<ImatgeDestacada | null>(null)
 function textCredit(c?: Credit): string {
   if (!c) return ''
@@ -991,6 +1284,8 @@ function entraModeJoc(mj: ModeJocMapa) {
 }
 
 function surtModeJoc() {
+  amagaEtiquetaJoc()
+  treuEtiquetesFixes()
   boundsJoc = null
   limitsBase = LIMITS_CATALUNYA
   zoomBase = zoomInicial
@@ -1112,7 +1407,11 @@ async function carregaCapa(nivell: NivellTerritorial, zoom: number) {
               // feedback visual, i únicament a les features jugables no encertades
               // i quan es respon clicant («On és...?»).
               if (props.modeJoc) {
-                if (!props.modeJoc.interactiu || !esJugable(info) || esEncertada(info)) return
+                if (esEncertada(info)) {
+                  mostraEtiquetaJoc(pathLayer, info)
+                  return
+                }
+                if (!props.modeJoc.interactiu || !esJugable(info)) return
                 // Amb pista activa, només els 4 candidats reaccionen.
                 if (props.modeJoc.codisPista && !props.modeJoc.codisPista.includes(info.codi))
                   return
@@ -1133,15 +1432,25 @@ async function carregaCapa(nivell: NivellTerritorial, zoom: number) {
             },
             mouseout() {
               if (nivell !== nivellEfectiu.value) return
+              amagaEtiquetaJoc()
               pathLayer.setStyle(estilPerFeature(feature, nivell))
               hoverInfo.value = null
             },
-            click() {
+            click(e: L.LeafletMouseEvent) {
               if (nivell !== nivellEfectiu.value) return
               if (props.modeJoc) {
-                if (!props.modeJoc.interactiu) return
                 const info = codiDeFeature(feature, nivell)
-                if (!info || !esJugable(info) || esEncertada(info)) return
+                // Tocar una encertada (mòbil) en mostra el nom; tocar-ne
+                // qualsevol altra amaga l'etiqueta.
+                if (info && esEncertada(info)) {
+                  // Que el clic no arribi al mapa, que l'amagaria tot seguit.
+                  L.DomEvent.stopPropagation(e)
+                  mostraEtiquetaJoc(pathLayer, info)
+                  return
+                }
+                amagaEtiquetaJoc()
+                if (!props.modeJoc.interactiu) return
+                if (!info || !esJugable(info)) return
                 if (props.modeJoc.codisPista && !props.modeJoc.codisPista.includes(info.codi))
                   return
                 emit('clicJoc', info.codi, info.nom ?? '')
@@ -1191,6 +1500,9 @@ async function carregaCapa(nivell: NivellTerritorial, zoom: number) {
     const geoLayer = layer as L.Path & { feature?: GeoJSON.Feature }
     if (geoLayer.feature) geoLayer.setStyle(estilPerFeature(geoLayer.feature, nivell))
   })
+
+  // La capa del joc pot arribar després que s'activin els noms fixos.
+  if (nivell === nivellEfectiu.value) programaEtiquetesFixes()
 }
 
 // Càrregues de capes en vol: amb dues de solapades (zoomends ràpids), la
@@ -1370,6 +1682,11 @@ onMounted(() => {
 
   creaPanesTerritorials()
 
+  // Tocar fora de qualsevol territori (o començar un zoom) amaga l'etiqueta.
+  mapa.on('click zoomstart', amagaEtiquetaJoc)
+  // Noms fixos de la revisió: els que entren a la vista i els que hi caben.
+  mapa.on('moveend', programaEtiquetesFixes)
+
   mapa.on('zoomend', () => {
     const zoom = mapa!.getZoom()
     mapaStore.actualitzaZoom(zoom)
@@ -1426,6 +1743,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  cancelAnimationFrame(feinaEtiquetes)
   animacionsFlaix.forEach((id) => cancelAnimationFrame(id))
   animacionsFlaix.clear()
   // Si es desmunta en plena partida (navegació directa a una altra secció),
@@ -1533,11 +1851,15 @@ watch(
       (['dalt', 'baix', 'esquerra'] as const).every(
         (costat) => (anterior.marges?.[costat] ?? 0) === (mj.marges?.[costat] ?? 0)
       )
+    // Els noms fixos es refan sencers (p. ex. s'han activat o desactivat).
+    treuEtiquetesFixes()
     if (mateixaVista) {
       actualitzaEstilsTotes()
+      programaEtiquetesFixes()
       return
     }
     entraModeJoc(mj)
+    programaEtiquetesFixes()
   }
 )
 </script>
@@ -1732,14 +2054,6 @@ watch(
     <Transition name="lightbox">
       <div v-if="ampliada" class="lightbox" @click.self="ampliada = null">
         <div class="lightbox__caixa">
-          <button
-            type="button"
-            class="lightbox__tancar"
-            :aria-label="$t('comu.tanca')"
-            @click="ampliada = null"
-          >
-            ✕
-          </button>
           <img
             :src="ampliada.src"
             class="lightbox__img"
@@ -2096,29 +2410,10 @@ watch(
   align-items: center;
   gap: 14px;
   max-width: min(440px, 90vw);
-  padding: 26px 28px 16px;
+  padding: 20px 28px 16px;
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
-}
-
-.lightbox__tancar {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 8px;
-  background: none;
-  font-size: 1.05rem;
-  color: #888;
-  cursor: pointer;
-}
-
-.lightbox__tancar:hover {
-  background: #f0f0ec;
-  color: #333;
 }
 
 /* Mida fixa per tipus → tots els escuts iguals, totes les banderes iguals.
@@ -2351,5 +2646,57 @@ watch(
   background: #fff7e0;
   border-color: var(--color-marca-fosc, #1e4e1e);
   box-shadow: 0 3px 12px rgba(26, 38, 53, 0.5);
+}
+
+/* Nom d'una demarcació encertada en mode joc (hover / toc). Sense fletxa:
+   va centrada sobre el territori. Per sobre dels noms fixos de la revisió. */
+.leaflet-tooltip.joc-etiqueta {
+  z-index: 2;
+  padding: 3px 9px;
+  border: none;
+  border-radius: var(--radi-pastilla, 999px);
+  background: rgba(19, 29, 41, 0.88);
+  color: #fff;
+  font-family: var(--font-ui, inherit);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  box-shadow: var(--ombra-2, 0 1px 5px rgba(0, 0, 0, 0.4));
+  pointer-events: none;
+}
+
+.leaflet-tooltip.joc-etiqueta::before {
+  display: none;
+}
+
+/* Segona línia (p. ex. la capital a Capital<>Comarca) */
+.joc-etiqueta__detall {
+  display: block;
+  font-size: 0.88em;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+/* Noms fixos de la revisió del mapa (marcadors, al marker pane: per sota de
+   l'etiqueta del hover): text amb halo, com als mapes, sense pastilla (n'hi
+   pot haver molts i taparien el color de les conquestes). La mida que
+   Leaflet hi posa és la mesurada amb aquesta mateixa classe. */
+.joc-etiqueta--fixa {
+  box-sizing: border-box;
+  padding: 0 2px;
+  color: var(--nit-900, #131d29);
+  font-family: var(--font-ui, inherit);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  text-shadow:
+    0 0 2px #fff,
+    0 0 2px #fff,
+    0 0 3px #fff,
+    0 0 5px #fff;
 }
 </style>

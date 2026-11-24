@@ -8,7 +8,8 @@ import './jocs.css'
 // Modal de final de partida, amb confeti. Un sol jugador: punts (amb
 // recompte animat), temps, encerts, errors i pistes. Multijugador:
 // classificació per conquestes (desempat per punts) amb el guanyador
-// destacat. Esc torna al wizard.
+// destacat. Des d'aquí es pot revisar el mapa complet (BarraRevisio). Esc
+// torna al wizard.
 const props = defineProps<{
   // Resum de la configuració jugada (subtítol).
   resum: string
@@ -21,9 +22,12 @@ const props = defineProps<{
   pistes: number | null
   // Multijugador: afegeix la columna de pistes demanades a la classificació.
   columnaPistes?: boolean
+  // false en tornar de la revisió del mapa: sense confeti ni recompte (la
+  // celebració ja s'ha vist).
+  celebra?: boolean
 }>()
 
-const emit = defineEmits<{ rejuga: []; configura: [] }>()
+const emit = defineEmits<{ rejuga: []; revisa: []; configura: [] }>()
 
 const solitari = computed(() => props.resultats.length <= 1)
 
@@ -38,7 +42,11 @@ let actiu = true
 
 onMounted(() => {
   const final = props.resultats[0]?.punts ?? 0
-  if (final === 0 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  if (
+    final === 0 ||
+    props.celebra === false ||
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  ) {
     puntsMostrats.value = final
     return
   }
@@ -62,11 +70,16 @@ useFocusTrap(modalRef, ref(true), () => emit('configura'))
 
 <template>
   <div class="joc-modal-fons">
-    <div class="joc-confeti" aria-hidden="true">
+    <div v-if="celebra !== false" class="joc-confeti" aria-hidden="true">
       <span v-for="n in 14" :key="n" :style="{ '--joc-i': String(n) }"></span>
     </div>
     <div ref="modalRef" class="joc-modal joc-resultats" role="dialog" aria-modal="true">
-      <span class="joc-resultats__copa" aria-hidden="true">🏆</span>
+      <span
+        class="joc-resultats__copa"
+        :class="{ 'joc-resultats__copa--quieta': celebra === false }"
+        aria-hidden="true"
+        >🏆</span
+      >
       <h2 class="joc-modal__titol">{{ $t('partida.resultats.titol') }}</h2>
       <p class="joc-modal__sub">{{ resum }}</p>
 
@@ -129,6 +142,9 @@ useFocusTrap(modalRef, ref(true), () => emit('configura'))
       <button type="button" class="joc-boto" @click="emit('rejuga')">
         {{ $t('partida.resultats.tornaJugar') }}
       </button>
+      <button type="button" class="joc-boto-secundari" @click="emit('revisa')">
+        🗺️ {{ $t('partida.resultats.revisa') }}
+      </button>
       <button type="button" class="joc-boto-secundari" @click="emit('configura')">
         {{ $t('partida.tornaConfig') }}
       </button>
@@ -154,6 +170,10 @@ useFocusTrap(modalRef, ref(true), () => emit('configura'))
   font-size: 2rem;
   line-height: 1;
   animation: copa 0.6s 0.15s cubic-bezier(0.3, 1.25, 0.45, 1) backwards;
+}
+
+.joc-resultats__copa--quieta {
+  animation: none;
 }
 
 @keyframes copa {

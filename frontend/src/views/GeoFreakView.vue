@@ -13,6 +13,7 @@ import HudPartida from '@/components/jocs/HudPartida.vue'
 import CaixaResposta from '@/components/jocs/CaixaResposta.vue'
 import ModalSortida from '@/components/jocs/ModalSortida.vue'
 import ModalResultats from '@/components/jocs/ModalResultats.vue'
+import BarraRevisio from '@/components/jocs/BarraRevisio.vue'
 import { useTerritorisStore } from '@/stores/territoris'
 import { useGeofreakStore } from '@/stores/geofreak'
 import {
@@ -68,6 +69,12 @@ const {
   demanaSortida,
   continuaPartida,
   confirmaSortida,
+  revisant,
+  haRevisat,
+  nomsRevisio,
+  revisaMapa,
+  tornaAResultats,
+  margesRevisio,
 } = useVistaJoc(geofreak, {
   ambResposta: () => geofreak.configuracio.modalitat === 'comEsDiu',
   focusResposta: () => caixaRef.value?.focus(),
@@ -260,6 +267,8 @@ const codisJoc = computed<string[]>(() => codisPermesos.value ?? [...nomsJoc.val
 // (HudPartida i CaixaResposta). Sota el wizard, cap marge.
 const margesMapa = computed(() => {
   if (geofreak.fase === 'configuracio') return null
+  // Revisant el mapa en acabar, només hi ha la barra de la revisió a baix.
+  if (revisant.value) return margesRevisio.value
   const marcadors = esMobil.value ? 116 : 68
   const resposta = geofreak.configuracio.modalitat === 'comEsDiu'
   // Amb la pista demanada, la caixa creix amb les 4 opcions i el mapa es
@@ -299,6 +308,8 @@ const modeJocMapa = computed<ModeJocMapa | null>(() => {
     // La pista al mapa només aplica a «On és...?» (a l'altra modalitat són botons).
     codisPista: geofreak.configuracio.modalitat === 'onEs' ? geofreak.pista : null,
     interactiu: enPartida && geofreak.configuracio.modalitat === 'onEs',
+    // Revisió del mapa en acabar: els noms de totes les encertades.
+    nomsFixos: revisant.value && nomsRevisio.value,
     marges: margesMapa.value,
   }
 })
@@ -593,6 +604,14 @@ const resumPartida = computed(() => {
         />
       </template>
 
+      <!-- ── Revisió del mapa (des dels resultats) ───────────────────────── -->
+      <BarraRevisio
+        v-else-if="revisant"
+        v-model:noms="nomsRevisio"
+        :jugadors="geofreak.esMultijugador ? geofreak.resultats : null"
+        @torna="tornaAResultats"
+      />
+
       <!-- ── Resultats ──────────────────────────────────────────────────── -->
       <ModalResultats
         v-else
@@ -602,7 +621,9 @@ const resumPartida = computed(() => {
         :encerts="geofreak.partida?.encertades.length ?? 0"
         :errors="geofreak.partida?.errors ?? 0"
         :pistes="(geofreak.resultats[0]?.encertsAmbPista ?? 0) || null"
+        :celebra="!haRevisat"
         @rejuga="rejuga"
+        @revisa="revisaMapa"
         @configura="obreConfiguracio"
       />
     </div>

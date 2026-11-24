@@ -1,6 +1,6 @@
 # Cookie policy
 
-Last updated: 20 November 2026
+Last updated: 25 November 2026
 
 Cookies are small files that a website stores in your browser; local storage (localStorage) is a similar mechanism. These are the ones viscalaterra.cat uses.
 
@@ -11,7 +11,7 @@ Cookies are small files that a website stores in your browser; local storage (lo
 
 ## 2. Third-party cookies
 
-If you press “Continue with Google” in the sign-in window, your browser loads Google's identity service. This service may store the **`g_state`** cookie on our domain, which, according to Google, remembers whether you have signed out so that you are not signed in again automatically. [[PENDENT: check in the browser whether it is created and how long it lasts.]] Google may also use its own cookies, under its [cookie policy](https://policies.google.com/technologies/cookies). As these cookies only come into play when you choose to sign in with Google, they are part of the service you request and do not require your consent. If you do not press the button, nothing from Google is loaded.
+If you press “Continue with Google” in the sign-in window, your browser loads Google's identity service. This service stores the **`g_state`** cookie on our domain, which, according to Google, remembers, for example, whether you have signed out so that you are not signed in again automatically. It lasts 180 days from the last time you use the Google button, and it is not deleted when you sign out. Google also uses its own cookies, under its [cookie policy](https://policies.google.com/technologies/cookies). As these cookies only come into play when you choose to sign in with Google, they are part of the service you request and do not require your consent. If you do not press the button, nothing from Google is loaded.
 
 ## 3. What we do not use
 
@@ -19,4 +19,4 @@ viscalaterra.cat does not use analytics, advertising or social media cookies. Th
 
 ## 4. How to delete or block them
 
-You can do it from your browser settings. If you block cookies, you will not be able to stay signed in. [[PENDENT: check what happens with the Google button.]] If you block local storage, the site will not remember your language.
+You can do it from your browser settings. If you block cookies, you can still sign in, including with Google, but you will not stay signed in: when you reload the page, you will be signed out. If you block local storage, the site will not remember your language.

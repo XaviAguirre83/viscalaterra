@@ -107,8 +107,9 @@ export function useVistaJoc(joc: MotorJocStore, opcions: OpcionsVistaJoc) {
   const pistesMostrades = computed(() => joc.jugadorActual?.pistes ?? 0)
 
   // Intents restants de la ronda, com a puntets al HUD (●●● → ●●○ → …).
+  // null en multijugador: hi ha una sola oportunitat i no cal comptar-la.
   const intentsRestants = computed(() =>
-    Math.max(0, MAX_INTENTS_RONDA - (joc.partida?.intentsRonda ?? 0))
+    joc.esMultijugador ? null : Math.max(0, MAX_INTENTS_RONDA - (joc.partida?.intentsRonda ?? 0))
   )
 
   // Es pot passar quan hi ha algun altre objectiu a la cua.
@@ -171,6 +172,45 @@ export function useVistaJoc(joc: MotorJocStore, opcions: OpcionsVistaJoc) {
     opcions.obreConfiguracio()
   }
 
+  // ── Revisió del mapa (en acabar) ─────────────────────────────────────────
+  // Des dels resultats es pot amagar el modal i mirar el mapa complet, amb
+  // els noms de tots els territoris (per memoritzar-los o situar-se), fins que
+  // es torna als resultats. `nomsRevisio` es conserva d'una revisió a l'altra.
+  const revisant = ref(false)
+  // Ja s'ha revisat en aquests resultats: en tornar-hi, el modal no repeteix
+  // la celebració (confeti i recompte de punts).
+  const haRevisat = ref(false)
+  const nomsRevisio = ref(true)
+
+  function revisaMapa() {
+    if (joc.fase !== 'resultats') return
+    revisant.value = true
+    haRevisat.value = true
+  }
+
+  function tornaAResultats() {
+    revisant.value = false
+  }
+
+  // Franges del mapa que tapa la barra de la revisió (px), lligades al CSS de
+  // BarraRevisio: a baix, la barra (amb la llegenda dels jugadors a sobre en
+  // multijugador, que en mòbil pot ocupar dues files).
+  const margesRevisio = computed(() => ({
+    dalt: 16,
+    baix: 84 + (joc.esMultijugador ? (esMobil.value ? 72 : 40) : 0),
+    esquerra: 0,
+  }))
+
+  // Fora dels resultats (torna a jugar, configuració…) no hi ha revisió.
+  watch(
+    () => joc.fase,
+    (fase) => {
+      if (fase === 'resultats') return
+      revisant.value = false
+      haRevisat.value = false
+    }
+  )
+
   // En arrencar la partida (després del compte enrere): si el mòbil s'ha
   // girat durant el compte (quan pausa() encara era un no-op perquè la fase no
   // era 'partida'), pausa des del primer instant — si no, el rellotge corria
@@ -210,5 +250,11 @@ export function useVistaJoc(joc: MotorJocStore, opcions: OpcionsVistaJoc) {
     demanaSortida,
     continuaPartida,
     confirmaSortida,
+    revisant,
+    haRevisat,
+    nomsRevisio,
+    revisaMapa,
+    tornaAResultats,
+    margesRevisio,
   }
 }

@@ -110,6 +110,55 @@ describe('partida — rondes', () => {
     expect(despres.objectiu).toBe('b')
     expect(despres.pendents).toEqual([])
   })
+
+  it('amb maxIntents = 1 (multijugador), el primer error ja salta la ronda', () => {
+    const p = creaPartida(['a', 'b', 'c'], primer) // objectiu 'a'
+    const { estat, resultat } = responRonda(p, 'b', primer, 1)
+    expect(resultat).toBe('salt')
+    expect(estat.errors).toBe(1)
+    expect(estat.objectiu).not.toBe('a')
+    expect(estat.pendents).toContain('a')
+  })
+
+  it('un objectiu saltat no torna fins que no han sortit tots els altres pendents', () => {
+    const codis = ['a', 'b', 'c', 'd', 'e']
+    let estat = creaPartida(codis, primer) // 'a'
+    // Es passen totes les rondes de la primera passada: cada objectiu surt un
+    // sol cop abans que en repeteixi cap.
+    const sortits = [estat.objectiu!]
+    for (let i = 1; i < codis.length; i++) {
+      estat = passaRonda(estat, primer)
+      sortits.push(estat.objectiu!)
+    }
+    expect([...sortits].sort()).toEqual(codis)
+    // Passada nova: tornen a sortir, però mai el que s'acaba de saltar.
+    const ultim = estat.objectiu
+    estat = passaRonda(estat, primer)
+    expect(estat.objectiu).not.toBe(ultim)
+    expect(estat.vistos).toEqual([estat.objectiu])
+  })
+
+  it('les passades també valen amb errors i amb RNG qualsevol', () => {
+    const codis = Array.from({ length: 12 }, (_, i) => `m${i}`)
+    let estat = creaPartida(codis)
+    const sortits = [estat.objectiu!]
+    for (let i = 1; i < codis.length; i++) {
+      estat = responRonda(estat, 'no-es-cap', Math.random, 1).estat
+      sortits.push(estat.objectiu!)
+    }
+    expect(new Set(sortits).size).toBe(codis.length)
+  })
+
+  it('els encerts no trenquen la passada: els saltats esperen igualment', () => {
+    let estat = creaPartida(['a', 'b', 'c', 'd'], primer) // 'a'
+    estat = passaRonda(estat, primer) // 'a' saltat → 'b'
+    estat = responRonda(estat, 'b', primer).estat // encert → 'c'
+    expect(estat.objectiu).toBe('c')
+    estat = responRonda(estat, 'c', primer).estat // encert → 'd' (no 'a')
+    expect(estat.objectiu).toBe('d')
+    estat = passaRonda(estat, primer) // passada nova → 'a'
+    expect(estat.objectiu).toBe('a')
+  })
 })
 
 describe('partida — puntuacio', () => {

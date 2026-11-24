@@ -21,7 +21,8 @@ const props = defineProps<{
   errors: number
   // null = el joc no mostra el comptador de pistes.
   pistes: number | null
-  intentsRestants: number
+  // null = no es mostren (multijugador: una sola oportunitat per torn).
+  intentsRestants: number | null
   pistaDisponible: boolean
   passaDisponible: boolean
 }>()
@@ -77,6 +78,7 @@ const colorTorn = computed(() => props.jugadors?.[props.tornActual]?.color ?? ''
         >💡 {{ pistes }}</span
       >
       <span
+        v-if="intentsRestants !== null"
         class="joc-xip__intents"
         :title="$t('partida.intentsRonda')"
         :aria-label="$t('partida.intentsRonda')"
