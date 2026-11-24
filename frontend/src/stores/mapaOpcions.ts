@@ -13,5 +13,9 @@ export const useMapaOpcionsStore = defineStore('mapaOpcions', () => {
     panelObert.value = !panelObert.value
   }
 
-  return { panelObert, mostraEscut, mostraBandera, alterna }
+  function tanca() {
+    panelObert.value = false
+  }
+
+  return { panelObert, mostraEscut, mostraBandera, alterna, tanca }
 })

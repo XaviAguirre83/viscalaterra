@@ -1,30 +1,33 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue'
 import { useMapaOpcionsStore } from '@/stores/mapaOpcions'
+import { useFocusTrap } from '@/composables/useFocusTrap'
 
 // Panell d'opcions del mapa de Cerca (s'obre/tanca amb el ⚙️ de la barra).
 // Pensat per créixer: avui escut/bandera, demà més capes de visualització.
+// Es tanca clicant fora (un vel transparent que s'empassa el clic, perquè no
+// seleccioni cap territori del mapa), amb Escape o tornant a prémer el ⚙️.
 const opcions = useMapaOpcionsStore()
+
+const panellRef = ref<HTMLElement | null>(null)
+useFocusTrap(
+  panellRef,
+  computed(() => opcions.panelObert),
+  () => opcions.tanca()
+)
 </script>
 
 <template>
+  <div v-if="opcions.panelObert" class="opcions-vel" aria-hidden="true" @click="opcions.tanca()" />
   <Transition name="opcions">
     <div
       v-if="opcions.panelObert"
+      ref="panellRef"
       class="opcions"
       role="dialog"
       :aria-label="$t('opcionsMapa.titol')"
     >
-      <div class="opcions__cap">
-        <h2 class="opcions__titol">{{ $t('opcionsMapa.titol') }}</h2>
-        <button
-          type="button"
-          class="opcions__tancar"
-          :aria-label="$t('comu.tanca')"
-          @click="opcions.alterna()"
-        >
-          ✕
-        </button>
-      </div>
+      <h2 class="opcions__titol">{{ $t('opcionsMapa.titol') }}</h2>
 
       <label class="opcions__opcio">
         <input v-model="opcions.mostraEscut" type="checkbox" />
@@ -41,12 +44,21 @@ const opcions = useMapaOpcionsStore()
 </template>
 
 <style scoped>
+/* Vel transparent a tota la pantalla: un clic fora del panell el tanca. Per
+   sobre de la capçalera (2100) i la barra de navegació (2000), perquè també
+   hi tanqui; el panell queda just a sobre. */
+.opcions-vel {
+  position: fixed;
+  inset: 0;
+  z-index: 2200;
+}
+
 .opcions {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 1200;
+  z-index: 2201;
   width: 240px;
   padding: 14px 16px 16px;
   background: var(--color-superficie, #fff);
@@ -55,35 +67,13 @@ const opcions = useMapaOpcionsStore()
   box-shadow: var(--ombra-3, 0 6px 24px rgba(0, 0, 0, 0.22));
 }
 
-.opcions__cap {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
 .opcions__titol {
+  margin-bottom: 10px;
   font-size: var(--text-sm);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: #777;
-}
-
-.opcions__tancar {
-  width: 26px;
-  height: 26px;
-  border: none;
-  border-radius: 6px;
-  background: none;
-  font-size: 0.95rem;
-  color: #999;
-  cursor: pointer;
-}
-
-.opcions__tancar:hover {
-  background: #f0f0ec;
-  color: #333;
 }
 
 .opcions__opcio {

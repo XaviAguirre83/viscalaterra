@@ -336,7 +336,7 @@ const imatgesDestacat = computed<{ escut?: ImatgeDestacada; bandera?: ImatgeDest
 )
 
 // Lightbox: imatge (escut/bandera) ampliada al centre en clicar-la. Tanca amb
-// clic fora, ✕ o Esc.
+// clic fora del recuadre o Esc.
 const ampliada = ref<ImatgeDestacada | null>(null)
 function textCredit(c?: Credit): string {
   if (!c) return ''
@@ -1732,14 +1732,6 @@ watch(
     <Transition name="lightbox">
       <div v-if="ampliada" class="lightbox" @click.self="ampliada = null">
         <div class="lightbox__caixa">
-          <button
-            type="button"
-            class="lightbox__tancar"
-            :aria-label="$t('comu.tanca')"
-            @click="ampliada = null"
-          >
-            ✕
-          </button>
           <img
             :src="ampliada.src"
             class="lightbox__img"
@@ -2096,29 +2088,10 @@ watch(
   align-items: center;
   gap: 14px;
   max-width: min(440px, 90vw);
-  padding: 26px 28px 16px;
+  padding: 20px 28px 16px;
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
-}
-
-.lightbox__tancar {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 8px;
-  background: none;
-  font-size: 1.05rem;
-  color: #888;
-  cursor: pointer;
-}
-
-.lightbox__tancar:hover {
-  background: #f0f0ec;
-  color: #333;
 }
 
 /* Mida fixa per tipus → tots els escuts iguals, totes les banderes iguals.
