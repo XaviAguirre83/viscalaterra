@@ -82,7 +82,6 @@ watch(nom, () => cos.value?.scrollTo({ top: 0 }))
       <article v-else class="legal">
         <h1 class="legal__titol">{{ $t('legal.titol') }}</h1>
         <p class="legal__intro">{{ $t('legal.intro') }}</p>
-        <p class="legal__avis" role="note">🚧 {{ $t('legal.enPreparacio') }}</p>
 
         <ul class="legal__index">
           <li v-for="t in TEXTOS_LEGALS" :key="t">

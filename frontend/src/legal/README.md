@@ -31,3 +31,5 @@ Els textos no porten NIF ni domicili, per no exposar dades personals: mentre el 
 ## Quan s'han de canviar
 
 Abans de posar en marxa qualsevol funció que tracti dades noves: classificacions dels jocs, aportacions de llocs, merchandising o anuncis. Si canvien les condicions d'ús, també se n'ha d'apujar la versió, perquè els comptes les tornin a acceptar.
+
+També quan es configurin les còpies de seguretat (ara no se'n fan): la política de privacitat ho diu així, i caldrà posar-hi el termini de conservació i que les dades esborrades hi poden romandre fins que caduquin.

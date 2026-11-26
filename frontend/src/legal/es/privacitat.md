@@ -1,6 +1,6 @@
 # Política de privacidad
 
-Última actualización: 20 de noviembre de 2026
+Última actualización: 26 de noviembre de 2026
 
 ## 1. Responsable
 
@@ -37,7 +37,7 @@ No elaboramos perfiles ni tomamos decisiones automatizadas con efectos jurídico
 
 ## 3. Con quién se comparten los datos
 
-- **Alojamiento:** OVH SAS, en Francia (Unión Europea), como encargado del tratamiento. [[PENDENT: añadir Hetzner cuando se contrate el servidor de producción.]]
+- **Alojamiento:** OVH SAS, en Francia (Unión Europea), como encargado del tratamiento.
 - **Correo:** los mensajes que nos envías se guardan en Proton AG, en Suiza, como encargado del tratamiento. Suiza cuenta con una decisión de adecuación de la Comisión Europea.
 - **Google:** si pulsas «Continuar con Google» en la ventana de acceso, el navegador carga el servicio de identidad de Google desde sus servidores, que reciben tu dirección IP y datos técnicos del navegador y pueden usar sus propias cookies (consulta la [Política de cookies](/legal/cookies)). Si entras, Google nos envía los datos del apartado 2. Google Ireland Limited trata estos datos como responsable, según su [política de privacidad](https://policies.google.com/privacy).
 - **Mapa:** las imágenes del mapa se descargan de los servidores del Institut Cartogràfic i Geològic de Catalunya (ICGC), que reciben tu dirección IP.
@@ -47,7 +47,7 @@ Fuera de estos casos, solo comunicaremos tus datos si lo exige una ley.
 ## 4. Cuánto tiempo los guardamos
 
 - **Cuenta:** mientras la tengas. Si pides borrarla, la borramos en el plazo máximo de un mes.
-- **Copias de seguridad:** [[PENDENT: plazo, cuando se configuren las copias.]] Los datos borrados pueden permanecer en las copias hasta que caduquen.
+- **Copias de seguridad:** Ahora mismo no se hacen.
 - **Invitaciones:** hasta que crees la cuenta o retiremos la invitación. [[PENDENT: aún no se borran solas al crear la cuenta.]]
 - **Mensajes:** el tiempo necesario para responderte y, si ejerces un derecho, mientras haga falta para demostrar que lo hemos atendido.
 - **Dirección IP:** un minuto, solo en memoria.
