@@ -89,7 +89,16 @@ onBeforeUnmount(() => {
 
     <!-- Identitat (esquerra) -->
     <RouterLink to="/llocs" class="cabecera__identitat">
-      <img ref="logoEl" :src="logoUrl" alt="viscalaterra" class="cabecera__logo" />
+      <!-- width/height: proporció del PNG, perquè el logo ocupi el seu lloc abans de
+           baixar-se (el poema el mesura en muntar-se per no escriure-hi a sobre) -->
+      <img
+        ref="logoEl"
+        :src="logoUrl"
+        alt="viscalaterra"
+        class="cabecera__logo"
+        width="230"
+        height="228"
+      />
       <span ref="nomEl" class="cabecera__nom"
         >viscalaterra<span class="cabecera__nom-tld">.cat</span></span
       >
