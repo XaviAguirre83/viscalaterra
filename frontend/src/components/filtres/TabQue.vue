@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useFiltresStore } from '@/stores/filtres'
 import type { Tema } from '@/data/categories'
 
@@ -8,6 +8,15 @@ const filtres = useFiltresStore()
 // Temes expandits (per defecte tots col·lapsats). Només s'usa en mòbil: en
 // desktop els subtemes són sempre visibles (mirall de les comarques al TabOn).
 const expandits = ref(new Set<string>())
+
+// Desktop: les files justes amb un màxim de MAX_COLUMNES, i els temes repartits
+// per igual entre les files (Llocs, 10 temes: 2 files de 5; Agenda, 6: 1 de 6).
+const MAX_COLUMNES = 6
+const estilGraella = computed(() => {
+  const n = filtres.temes.length
+  const files = Math.max(1, Math.ceil(n / MAX_COLUMNES))
+  return { '--columnes': String(Math.max(1, Math.ceil(n / files))) }
+})
 
 // Color base per tema. Cada tema té el seu (barra recta i estats de selecció),
 // igual que cada província al panell On?. Els tons parcial/hover/vora es deriven
@@ -175,7 +184,7 @@ function comptador(tema: Tema): { sel: number; total: number } {
       </button>
     </div>
 
-    <div class="grid-temes">
+    <div class="grid-temes" :style="estilGraella">
       <div
         v-for="tema in filtres.temes"
         :key="tema.codi"
@@ -236,13 +245,13 @@ function comptador(tema: Tema): { sel: number; total: number } {
   overflow-y: auto;
 }
 
-/* Graella de 6 columnes (Llocs n'omple dues files; Agenda, una). A mòbil és una
+/* Graella amb les columnes que calcula estilGraella (--columnes). A mòbil és una
    sola columna amb alçada natural (align-items:start); a desktop totes les files
    tenen la mateixa alçada fixa i cada cel·la scrolleja el seu propi contingut
    (vegeu la media query de 769px). */
 .grid-temes {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--columnes, 6), minmax(0, 1fr));
   gap: 18px;
   align-items: start;
 }
