@@ -9,10 +9,25 @@ import {
   type Ordinal,
   type SeleccioTemporal,
 } from '@/data/temporal'
+import { TEMES_PER_SECCIO, type SeccioCerca, type Tema } from '@/data/categories'
+
+function seleccionsBuides(): Record<SeccioCerca, Set<string>> {
+  return { llocs: new Set(), agenda: new Set() }
+}
 
 export const useFiltresStore = defineStore('filtres', () => {
-  // Conté els codis de subtema (la unitat mínima de selecció del Què?).
-  const categoriesActives = ref(new Set<string>())
+  // Llocs i Agenda tenen cadascuna el seu catàleg Què? i la seva selecció: en
+  // canviar de secció no s'arrosseguen categories que a l'altra no existeixen, i
+  // en tornar-hi es recupera el que hi havia. L'On? (store territoris) és comú.
+  // La secció la fixa PanellFiltres segons la ruta.
+  const seccio = ref<SeccioCerca>('llocs')
+  const seleccions = ref(seleccionsBuides())
+
+  // Catàleg del Què? de la secció activa.
+  const temes = computed<Tema[]>(() => TEMES_PER_SECCIO[seccio.value])
+
+  // Codis de subtema (la unitat mínima de selecció del Què?) triats a la secció activa.
+  const categoriesActives = computed(() => seleccions.value[seccio.value])
 
   // Selecció temporal del Quan? (vegeu @/data/temporal per al model).
   const temporal = ref<SeleccioTemporal>(seleccioTemporalBuida())
@@ -25,6 +40,10 @@ export const useFiltresStore = defineStore('filtres', () => {
     () => categoriesActives.value.size > 0 || teSeleccioTemporal.value
   )
 
+  function defineixSeccio(s: SeccioCerca) {
+    seccio.value = s
+  }
+
   function toggleSubtema(codi: string, seleccionat: boolean) {
     if (seleccionat) categoriesActives.value.add(codi)
     else categoriesActives.value.delete(codi)
@@ -35,7 +54,7 @@ export const useFiltresStore = defineStore('filtres', () => {
   function seleccionaTema(codisSubtemes: string[], seleccionat: boolean) {
     const s = new Set(categoriesActives.value)
     codisSubtemes.forEach((c) => (seleccionat ? s.add(c) : s.delete(c)))
-    categoriesActives.value = s
+    seleccions.value[seccio.value] = s
   }
 
   function estatTema(codisSubtemes: string[]): 'cap' | 'parcial' | 'total' {
@@ -84,20 +103,25 @@ export const useFiltresStore = defineStore('filtres', () => {
     temporal.value = seleccioTemporalBuida()
   }
 
+  // Buida el Què? de la secció activa (l'altra secció conserva la seva selecció).
   function netejaCategories() {
-    categoriesActives.value = new Set()
+    seleccions.value[seccio.value] = new Set()
   }
 
+  // Buida tots els filtres: el Què? de totes dues seccions i el Quan?.
   function netejaTotsFiltres() {
-    categoriesActives.value = new Set()
+    seleccions.value = seleccionsBuides()
     temporal.value = seleccioTemporalBuida()
   }
 
   return {
+    seccio,
+    temes,
     categoriesActives,
     temporal,
     teSeleccioTemporal,
     teFiltresActius,
+    defineixSeccio,
     toggleSubtema,
     seleccionaTema,
     estatTema,

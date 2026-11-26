@@ -115,6 +115,16 @@ const mostraFiltres = computed(
   () => seccioActiva.value?.id === 'llocs' || seccioActiva.value?.id === 'agenda'
 )
 const mostraQuan = computed(() => seccioActiva.value?.id === 'agenda')
+// Llocs i Agenda tenen cadascuna el seu catàleg i la seva selecció del Què?
+// (store filtres); l'On? és comú. Amb immediate, el Què? i el cercador ràpid
+// ja surten amb el catàleg de la secció bona des del primer render.
+watch(
+  () => seccioActiva.value?.id,
+  (id) => {
+    if (id === 'llocs' || id === 'agenda') filtres.defineixSeccio(id)
+  },
+  { immediate: true }
+)
 // El nom de secció dona context quan la barra va buida; s'amaga dins d'un joc
 // (p. ex. /jocs/geofreak) perquè el HUD injectat pel slot necessita l'espai.
 const mostraSeccio = computed(

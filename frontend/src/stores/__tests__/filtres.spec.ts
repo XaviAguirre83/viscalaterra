@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useFiltresStore } from '../filtres'
+import { TEMES_AGENDA, TEMES_LLOCS } from '@/data/categories'
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -81,14 +82,57 @@ describe('filtres — selecció temporal (Quan?)', () => {
     expect(f.teSeleccioTemporal).toBe(false)
   })
 
-  it('netejaTotsFiltres esborra categories i temporal alhora', () => {
+  it('netejaTotsFiltres esborra categories (de totes dues seccions) i temporal alhora', () => {
     const f = useFiltresStore()
     f.toggleSubtema('cat-1', true)
+    f.defineixSeccio('agenda')
+    f.toggleSubtema('cat-2', true)
     f.defineixModeTemporal('permanent')
     expect(f.teFiltresActius).toBe(true)
     f.netejaTotsFiltres()
     expect(f.categoriesActives.size).toBe(0)
     expect(f.temporal.mode).toBeNull()
     expect(f.teFiltresActius).toBe(false)
+    f.defineixSeccio('llocs')
+    expect(f.categoriesActives.size).toBe(0)
+  })
+})
+
+describe('filtres — Què? per secció (Llocs / Agenda)', () => {
+  it('arrenca a Llocs, amb el seu catàleg', () => {
+    const f = useFiltresStore()
+    expect(f.seccio).toBe('llocs')
+    expect(f.temes).toBe(TEMES_LLOCS)
+  })
+
+  it("a l'Agenda el catàleg és el dels esdeveniments", () => {
+    const f = useFiltresStore()
+    f.defineixSeccio('agenda')
+    expect(f.temes).toBe(TEMES_AGENDA)
+  })
+
+  it('cada secció guarda la seva selecció', () => {
+    const f = useFiltresStore()
+    f.toggleSubtema('cap', true)
+    f.defineixSeccio('agenda')
+    expect(f.categoriesActives.size).toBe(0)
+    f.seleccionaTema(['concert', 'teatre'], true)
+    expect(f.estatTema(['concert', 'teatre'])).toBe('total')
+    f.defineixSeccio('llocs')
+    expect([...f.categoriesActives]).toEqual(['cap'])
+    expect(f.estatTema(['concert', 'teatre'])).toBe('cap')
+    f.defineixSeccio('agenda')
+    expect([...f.categoriesActives]).toEqual(['concert', 'teatre'])
+  })
+
+  it('netejaCategories només buida la secció activa', () => {
+    const f = useFiltresStore()
+    f.toggleSubtema('cap', true)
+    f.defineixSeccio('agenda')
+    f.toggleSubtema('concert', true)
+    f.netejaCategories()
+    expect(f.categoriesActives.size).toBe(0)
+    f.defineixSeccio('llocs')
+    expect(f.categoriesActives.has('cap')).toBe(true)
   })
 })

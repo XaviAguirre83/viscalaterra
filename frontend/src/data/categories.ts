@@ -1,10 +1,18 @@
-// Catàleg de categories del filtre Què? — temes amb subtemes.
+// Catàlegs de categories del filtre Què? — temes amb subtemes. Llocs i Agenda
+// en tenen un cadascun (el Què? i el cercador ràpid mostren el de la secció
+// activa; vegeu el store filtres):
+//   - Llocs: espais i serveis públics accessibles en qualsevol moment o en el seu
+//     horari d'obertura (bancs, fonts, parcs, ajuntaments…). Mai negocis privats.
+//   - Agenda: esdeveniments amb data de celebració, que comencen i acaben (un
+//     partit, un torneig d'escacs, una trobada castellera…).
 //
 // NOTA fonts (2026-07-24): els Agents Rurals / guardes forestals NO tenen
 // inventari obert de seus com a PUNTS (s'organitzen per àrees/polígons) →
 // candidats al model d'àrees futur, no a `llocs`. Vegeu memòria project_llocs_cerca.
-// Llista provisional: la definitiva dependrà de les fonts de dades obertes.
-// Per afegir/treure: edita aquest fitxer i la secció "que" dels locales (ca/es/en).
+// Llistes provisionals: les definitives dependran de les fonts de dades obertes.
+// Per afegir/treure: edita aquest fitxer i la secció "que" dels locales (ca/es/en);
+// les claus de l'Agenda van sota "que.agenda". Els codis de subtema són únics
+// entre tots dos catàlegs.
 
 export interface Subtema {
   codi: string // identificador únic global (és el que es desa a la selecció)
@@ -17,7 +25,9 @@ export interface Tema {
   subtemes: Subtema[]
 }
 
-export const TEMES: Tema[] = [
+export type SeccioCerca = 'llocs' | 'agenda'
+
+export const TEMES_LLOCS: Tema[] = [
   {
     codi: 'esports',
     clau: 'que.esports.titol',
@@ -30,7 +40,7 @@ export const TEMES: Tema[] = [
       { codi: 'tennis', clau: 'que.esports.tennis' },
       { codi: 'patinatge', clau: 'que.esports.patinatge' },
       { codi: 'petanca', clau: 'que.esports.petanca' },
-      { codi: 'gimnas', clau: 'que.esports.gimnas' },
+      { codi: 'gimnas-aire-lliure', clau: 'que.esports.gimnasAireLliure' },
       { codi: 'gimnas-geriatric', clau: 'que.esports.gimnasGeriatric' },
     ],
   },
@@ -44,15 +54,6 @@ export const TEMES: Tema[] = [
       { codi: 'sorral', clau: 'que.nens.sorral' },
       { codi: 'jocs-aigua', clau: 'que.nens.jocsAigua' },
       { codi: 'tirolina', clau: 'que.nens.tirolina' },
-    ],
-  },
-  {
-    codi: 'culinari',
-    clau: 'que.culinari.titol',
-    subtemes: [
-      { codi: 'mercat-setmanal', clau: 'que.culinari.mercatSetmanal' },
-      { codi: 'fira-gastronomica', clau: 'que.culinari.firaGastronomica' },
-      { codi: 'food-trucks', clau: 'que.culinari.foodTrucks' },
     ],
   },
   {
@@ -158,3 +159,76 @@ export const TEMES: Tema[] = [
     ],
   },
 ]
+
+export const TEMES_AGENDA: Tema[] = [
+  {
+    codi: 'esports',
+    clau: 'que.agenda.esports.titol',
+    subtemes: [
+      { codi: 'partit', clau: 'que.agenda.esports.partit' },
+      { codi: 'torneig', clau: 'que.agenda.esports.torneig' },
+      { codi: 'cursa-popular', clau: 'que.agenda.esports.cursaPopular' },
+      { codi: 'caminada-popular', clau: 'que.agenda.esports.caminadaPopular' },
+    ],
+  },
+  {
+    codi: 'cultura-popular',
+    clau: 'que.agenda.culturaPopular.titol',
+    subtemes: [
+      { codi: 'festa-major', clau: 'que.agenda.culturaPopular.festaMajor' },
+      { codi: 'trobada-castellera', clau: 'que.agenda.culturaPopular.trobadaCastellera' },
+      { codi: 'correfoc', clau: 'que.agenda.culturaPopular.correfoc' },
+      { codi: 'sardanes', clau: 'que.agenda.culturaPopular.sardanes' },
+      { codi: 'trobada-gegants', clau: 'que.agenda.culturaPopular.trobadaGegants' },
+    ],
+  },
+  {
+    codi: 'espectacles',
+    clau: 'que.agenda.espectacles.titol',
+    subtemes: [
+      { codi: 'concert', clau: 'que.agenda.espectacles.concert' },
+      { codi: 'teatre', clau: 'que.agenda.espectacles.teatre' },
+      { codi: 'dansa', clau: 'que.agenda.espectacles.dansa' },
+      { codi: 'cinema-fresca', clau: 'que.agenda.espectacles.cinemaFresca' },
+    ],
+  },
+  {
+    codi: 'fires-mercats',
+    clau: 'que.agenda.firesMercats.titol',
+    subtemes: [
+      { codi: 'fira-gastronomica', clau: 'que.agenda.firesMercats.firaGastronomica' },
+      { codi: 'mercat-setmanal', clau: 'que.agenda.firesMercats.mercatSetmanal' },
+      { codi: 'fira-artesania', clau: 'que.agenda.firesMercats.firaArtesania' },
+    ],
+  },
+  {
+    codi: 'divulgacio',
+    clau: 'que.agenda.divulgacio.titol',
+    subtemes: [
+      { codi: 'exposicio', clau: 'que.agenda.divulgacio.exposicio' },
+      { codi: 'xerrada', clau: 'que.agenda.divulgacio.xerrada' },
+      { codi: 'visita-guiada', clau: 'que.agenda.divulgacio.visitaGuiada' },
+    ],
+  },
+  {
+    codi: 'nens',
+    clau: 'que.agenda.nens.titol',
+    subtemes: [
+      { codi: 'titelles', clau: 'que.agenda.nens.titelles' },
+      { codi: 'pallassos', clau: 'que.agenda.nens.pallassos' },
+      { codi: 'magia', clau: 'que.agenda.nens.magia' },
+      { codi: 'circ', clau: 'que.agenda.nens.circ' },
+      { codi: 'contacontes', clau: 'que.agenda.nens.contacontes' },
+      { codi: 'teatre-infantil', clau: 'que.agenda.nens.teatreInfantil' },
+      { codi: 'animacio-infantil', clau: 'que.agenda.nens.animacioInfantil' },
+      { codi: 'taller-infantil', clau: 'que.agenda.nens.tallerInfantil' },
+      { codi: 'inflables', clau: 'que.agenda.nens.inflables' },
+      { codi: 'festa-escuma', clau: 'que.agenda.nens.festaEscuma' },
+    ],
+  },
+]
+
+export const TEMES_PER_SECCIO: Record<SeccioCerca, Tema[]> = {
+  llocs: TEMES_LLOCS,
+  agenda: TEMES_AGENDA,
+}
