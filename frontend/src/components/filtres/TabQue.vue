@@ -9,12 +9,14 @@ const filtres = useFiltresStore()
 // desktop els subtemes són sempre visibles (mirall de les comarques al TabOn).
 const expandits = ref(new Set<string>())
 
-// Desktop: les files justes amb un màxim de MAX_COLUMNES, i els temes repartits
-// per igual entre les files (Llocs, 10 temes: 2 files de 5; Agenda, 6: 1 de 6).
+// Desktop: almenys MIN_FILES files (el panell fa el mateix alt a Llocs i a
+// Agenda) i com a màxim MAX_COLUMNES columnes, amb els temes repartits per igual
+// entre les files (Llocs, 10 temes: 2 files de 5; Agenda, 6: 2 de 3).
+const MIN_FILES = 2
 const MAX_COLUMNES = 6
 const estilGraella = computed(() => {
   const n = filtres.temes.length
-  const files = Math.max(1, Math.ceil(n / MAX_COLUMNES))
+  const files = Math.max(MIN_FILES, Math.ceil(n / MAX_COLUMNES))
   return { '--columnes': String(Math.max(1, Math.ceil(n / files))) }
 })
 

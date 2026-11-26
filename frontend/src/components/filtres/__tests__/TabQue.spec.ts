@@ -37,13 +37,13 @@ describe('TabQue.vue', () => {
     expect(text).not.toContain('Equipaments públics')
   })
 
-  it('reparteix els temes per igual entre les files (Llocs 2×5, Agenda 1×6)', async () => {
+  it('reparteix els temes per igual entre dues files (Llocs 2×5, Agenda 2×3)', async () => {
     const f = useFiltresStore()
     const w = muntar()
     expect(w.find('.grid-temes').attributes('style')).toContain('--columnes: 5')
     f.defineixSeccio('agenda')
     await nextTick()
-    expect(w.find('.grid-temes').attributes('style')).toContain('--columnes: 6')
+    expect(w.find('.grid-temes').attributes('style')).toContain('--columnes: 3')
   })
 
   it('en canviar de secció, cada una mostra la seva selecció', async () => {
