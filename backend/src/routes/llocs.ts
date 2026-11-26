@@ -3,8 +3,11 @@ import { pool } from '../db'
 
 const router = Router()
 
-// Límits defensius sobre la mida del cos (tota Catalunya són 947 municipis).
-const MAX_SUBTEMES = 60
+// Límits defensius sobre la mida del cos, amb marge sobre les dades reals: tota
+// Catalunya són 947 municipis, i marcar tot el Què? de Llocs ja passa de 60
+// subtemes. Només eviten llistes desmesurades (el cos ja va limitat a 100 kB):
+// han de quedar prou per sobre del catàleg perquè marcar-ho tot sempre funcioni.
+const MAX_SUBTEMES = 500
 const MAX_MUNICIPIS = 1000
 
 // Valida i normalitza una llista de codis (strings curts). Retorna null si no és vàlida.
@@ -24,7 +27,8 @@ function arrayDeCodis(valor: unknown, max: number): string[] | null {
  * POST /api/llocs/cerca
  *
  * Cos: { subtemes: string[], municipis?: string[] }
- *   - subtemes: codis del catàleg Què? (p. ex. 'policia-nacional', 'cap'). Obligatori, ≥1.
+ *   - subtemes: codis del catàleg Què? (p. ex. 'policia-nacional', 'cap'). Obligatori,
+ *     entre 1 i MAX_SUBTEMES.
  *   - municipis: codis de municipi que delimiten el On?. Omès o buit ⇒ tota Catalunya.
  *
  * El On? sempre es resol a un conjunt de municipis (la unitat mínima), així que el
@@ -36,7 +40,11 @@ router.post('/cerca', async (req, res, next) => {
   const body = (req.body ?? {}) as Record<string, unknown>
 
   const subtemes = arrayDeCodis(body.subtemes, MAX_SUBTEMES)
-  if (!subtemes || subtemes.length === 0) {
+  if (!subtemes) {
+    res.status(400).json({ error: 'La llista de subtemes no és vàlida.' })
+    return
+  }
+  if (subtemes.length === 0) {
     res.status(400).json({ error: 'Cal indicar almenys un subtema.' })
     return
   }
