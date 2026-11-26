@@ -3,7 +3,6 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTerritorisStore } from '@/stores/territoris'
 import { useFiltresStore } from '@/stores/filtres'
-import { TEMES } from '@/data/categories'
 import { normalitza } from '@/data/text'
 import { useFitxaStore } from '@/stores/fitxa'
 import { useLlocsStore } from '@/stores/llocs'
@@ -98,8 +97,9 @@ const cerca = computed<{ res: Resultat[]; totalMunicipis: number }>(() => {
     }
   }
 
-  // Categories del Què? — subtemes que coincideixen pel seu nom traduït.
-  for (const tema of TEMES) {
+  // Categories del Què? (catàleg de la secció activa) — subtemes que coincideixen
+  // pel seu nom traduït.
+  for (const tema of filtres.temes) {
     for (const sub of tema.subtemes) {
       const nom = t(sub.clau)
       if (normalitza(nom).includes(qN)) {

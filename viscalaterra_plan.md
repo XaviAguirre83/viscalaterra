@@ -105,19 +105,30 @@ Només apareix a Llocs i Agenda. Tres pestanyes —**On?** | **Què?** | **Quan?
 
 ### Què?
 
-Desplegable amb grans temes, cadascun amb subtemes. Enfocat en **espai públic
-i equipaments col·lectius** (no negocis privats). El contingut prové de fonts
-de dades obertes (Generalitat, ajuntaments, diputacions).
+Desplegable amb grans temes, cadascun amb subtemes. Llocs i Agenda tenen cadascuna
+el seu catàleg i la seva selecció (`frontend/src/data/categories.ts`):
 
-Temes i subtemes inicials (llista oberta):
+- **Llocs**: espais o serveis públics accessibles en qualsevol moment o en el seu
+  horari d'obertura (bancs per seure, fonts d'aigua potable, parcs, ajuntaments...).
+  **Mai negocis privats.** El contingut prové de fonts de dades obertes (Generalitat,
+  ajuntaments, diputacions).
+- **Agenda**: esdeveniments amb data de celebració, que comencen i acaben (un partit
+  de categories inferiors, un torneig municipal d'escacs, una trobada castellera...).
+
+Temes i subtemes inicials de Llocs (llista oberta):
 
 - **Esports**: pistes de futbol, bàsquet, tennis, patinatge, ping-pong, skate park...
 - **Nens**: parcs infantils, tobogans, gronxadors...
-- **Culinari**: mercats setmanals, fires culinàries...
 - **Activitats a l'aire lliure**: zones de pícnic, merenderos, zones de barbacoa...
 - **Patrimoni**: castells, monuments...
 - **Natura i aventura**: 100 cims, rutes de muntanya, rutes de bici...
-- _(llista completament oberta, el concepte pot pivotar)_
+
+Temes inicials d'Agenda (llista oberta): esports (partits, tornejos, curses
+populars...), cultura popular (festes majors, trobades castelleres, correfocs...),
+música i espectacles, fires i mercats (fires gastronòmiques, mercats setmanals...),
+divulgació i nens (titelles, pallassos, màgia...).
+
+_(llistes completament obertes, el concepte pot pivotar)_
 
 ### Quan?
 

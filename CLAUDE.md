@@ -11,7 +11,7 @@ Spec de producto detallada: `viscalaterra_plan.md`
 ### Concepto de las tres pestañas
 
 - **On?** — selector geográfico (Província → Comarca → Municipi)
-- **Què?** — categorías de espacio público y equipamientos colectivos (datos abiertos)
+- **Què?** — en Llocs, categorías de espacio público y equipamientos colectivos (datos abiertos; nunca negocios privados); en Agenda, tipos de evento. Cada sección tiene su catálogo y su selección
 - **Quan?** — temporalidad: cuatro modalidades excluyentes (Permanent / Dates concretes / Dies de la setmana / Cada mes). La unidad mínima es el **día** (nunca se seleccionan horas).
 
 ## Stack técnico
@@ -103,7 +103,7 @@ npm workspaces: `frontend` y `backend` son paquetes independientes. Las dependen
 - **Estado global**: Pinia (`frontend/src/stores/`). Stores activos:
   - `territoris` — árbol provincial completo (província → comarca → municipi), municipis seleccionats, helpers de selección global y per-provincia (distinción necesaria por las comarques transfrontereres)
   - `mapa` — zoom/centro del mapa, `capesVisibles` (toggles de líneas), `nivellSeleccio` (nivel de selección, radio) y el tipo `ModeJocMapa`
-  - `filtres` — pestaña activa del panel On?/Què?/Quan? + selección temporal
+  - `filtres` — selecció del Què? (una per secció: Llocs i Agenda tenen catàleg i selecció propis; la secció la fixa `PanellFiltres` segons la ruta) + selecció temporal del Quan?
   - `auth` — sesión de usuario (cookie `HttpOnly` que pone y borra el servidor: el JS nunca ve el token; `carregaJo()` pregunta a `/api/auth/jo` al arrancar la app)
   - `geofreak` — configuración del juego GeoFreak + el motor de partida común (detalle en § Secció Jocs)
   - `capitalComarca` — modalidad del juego Capital<>Comarca + el mismo motor de partida (§ Secció Jocs)
@@ -115,7 +115,7 @@ npm workspaces: `frontend` y `backend` son paquetes independientes. Las dependen
 - **Routing**: Vue Router con `createWebHistory`, rutas en `frontend/src/router/index.ts`, todas con import lazy. Implementadas: `/llocs` y `/agenda` (comparten `ExploradorView`; `/` y `/cerca` redirigen a `/llocs`), `/jocs`, `/jocs/geofreak`, `/jocs/capital-comarca`, `/legal` (índice) y `/legal/:text` (avís legal, privacitat, cookies, condicions; textos en `frontend/src/legal/`, véase su README). Placeholder (`VistaPlaceholder`, con o sin mapa): `/anuncis`, `/fet-a-la-terra`, `/merchandising`, `/sobre`, `/contacte`, `/suggeriments`, `/espai`.
 - **i18n**: Vue I18n (`frontend/src/i18n/`). Tres idiomes (`ca`/`es`/`en`) amb diccionaris JSON a `i18n/locales/`. L'idioma actiu es desa a `localStorage` (clau `viscalaterra-idioma`); a la primera visita (sense res desat) sempre s'arrenca en **català**, l'idioma principal de la plataforma (no es té en compte l'idioma del navegador). `canviaIdioma()` actualitza també l'atribut `<html lang>`. Els components tradueixen amb `$t('clau')` al template (o `useI18n().t()` a la lògica). **Important**: això tradueix només el text d'**interfície**; el contingut de **dades** (llocs, esdeveniments) es traduirà a nivell de base de dades, no amb i18n. Per afegir un idioma: nou codi a `IDIOMES` + nou JSON a `locales/`.
 - **Componentes**: `frontend/src/components/` para reutilizables, `frontend/src/views/` para páginas completas (una por ruta). Composables a `frontend/src/composables/` (p. ex. `useFocusTrap` per a l'accessibilitat dels modals: focus-trap + Esc + retorn de focus; `useMotorJoc` i `useVistaJoc`, comuns als jocs — § Secció Jocs).
-- **Mòduls de dades purs** (`frontend/src/data/`, sense Vue, testejables — patró `data/ ↔ stores/`): `temporal.ts` (model del Quan?), `categories.ts` (catàleg Què?), `partida.ts` (rondes, pista i puntuació comunes als jocs), `jugadors.ts` (colors i jugadors del wizard dels jocs), `geofreak.ts` i `capitalComarca.ts` (model de cada joc), `text.ts` (`normalitza()` — minúscules sense accents, compartit per CercaRapida i la resposta escrita dels jocs), `articles.ts` (articles catalans de comarques/vegueries: `nomAmbArticle`/`nomAmbDe` → "del Maresme", "de l'Anoia", "d'Osona"), `puntEtiqueta.ts` (on va el nom d'un territori al mapa: el punt de dins que millor combina allunyar-se de les vores i acostar-se al centroide —cerca de l'algorisme polylabel—; ni el centroide sol, que una punta estira i pot caure fora, ni el pol d'inaccessibilitat sol, que en una franja com el Maresme se'n va a l'extrem ample. El contorn se simplifica abans, a la precisió necessària), `url.ts` (`urlSegura()` — només deixa passar adreces http(s); els stores `llocs` i `enriquiment` hi passen tots els enllaços que venen de datasets i de Wikidata abans de fer-los servir com a href), `legal.ts` (Markdown reduït dels textos legals → blocs que pinta `components/legal/` sense `v-html`, amb les dades del titular del `.env`).
+- **Mòduls de dades purs** (`frontend/src/data/`, sense Vue, testejables — patró `data/ ↔ stores/`): `temporal.ts` (model del Quan?), `categories.ts` (catàlegs Què? de Llocs i d'Agenda), `partida.ts` (rondes, pista i puntuació comunes als jocs), `jugadors.ts` (colors i jugadors del wizard dels jocs), `geofreak.ts` i `capitalComarca.ts` (model de cada joc), `text.ts` (`normalitza()` — minúscules sense accents, compartit per CercaRapida i la resposta escrita dels jocs), `articles.ts` (articles catalans de comarques/vegueries: `nomAmbArticle`/`nomAmbDe` → "del Maresme", "de l'Anoia", "d'Osona"), `puntEtiqueta.ts` (on va el nom d'un territori al mapa: el punt de dins que millor combina allunyar-se de les vores i acostar-se al centroide —cerca de l'algorisme polylabel—; ni el centroide sol, que una punta estira i pot caure fora, ni el pol d'inaccessibilitat sol, que en una franja com el Maresme se'n va a l'extrem ample. El contorn se simplifica abans, a la precisió necessària), `url.ts` (`urlSegura()` — només deixa passar adreces http(s); els stores `llocs` i `enriquiment` hi passen tots els enllaços que venen de datasets i de Wikidata abans de fer-los servir com a href), `legal.ts` (Markdown reduït dels textos legals → blocs que pinta `components/legal/` sense `v-html`, amb les dades del titular del `.env`).
 
 ### Capçalera (`CabeceraApp.vue`)
 
@@ -138,7 +138,7 @@ Barra horitzontal de 48px sota la capçalera. Estructura:
 - **Botó hamburger** (☰ / ✕ animat): obre/tanca el menú principal de seccions.
 - **Menú de seccions** (desplegable vertical, `position: absolute`), en tres grups separats per línia: Llocs · Agenda · Anuncis · Fet a la terra · Jocs │ Merchandising │ Sobre nosaltres · Contacte · Suggeriments · Legal. Clic → navega i tanca el menú. Clic fora (overlay transparent) → tanca.
 - **Nom secció activa**: detectat via `useRoute()` comparant `route.path` amb les rutes de cada secció.
-- **Ítems contextuals**: tabs + `CercaRapida` només a Llocs i Agenda (`mostraTabs`). El tab **Quan? només apareix a Agenda** (`mostraQuan`) — els llocs són atemporals.
+- **Ítems contextuals**: tabs + `CercaRapida` només a Llocs i Agenda (`mostraTabs`). El tab **Quan? només apareix a Agenda** (`mostraQuan`) — els llocs són atemporals. El Què? i el cercador mostren el catàleg de la secció activa.
 
 ### Cercador ràpid (`CercaRapida.vue`)
 

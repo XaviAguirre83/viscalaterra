@@ -119,7 +119,7 @@
       "tennis": "Pista de tenis",
       "patinatge": "Pista de patinaje",
       "petanca": "Pista de petanca",
-      "gimnas": "Gimnasio",
+      "gimnasAireLliure": "Gimnasio al aire libre",
       "gimnasGeriatric": "Gimnasio geriátrico"
     },
     "nens": {
@@ -130,12 +130,6 @@
       "sorral": "Arenero",
       "jocsAigua": "Juegos de agua",
       "tirolina": "Tirolina"
-    },
-    "culinari": {
-      "titol": "Culinario",
-      "mercatSetmanal": "Mercado semanal",
-      "firaGastronomica": "Feria gastronómica",
-      "foodTrucks": "Zona de food trucks"
     },
     "aireLliure": {
       "titol": "Aire libre",
@@ -212,6 +206,55 @@
       "tsjc": "Tribunal Superior de Justicia",
       "fiscalia": "Fiscalía",
       "centrePenitenciari": "Centro penitenciario"
+    },
+    "agenda": {
+      "esports": {
+        "titol": "Deportes",
+        "partit": "Partido",
+        "torneig": "Torneo",
+        "cursaPopular": "Carrera popular",
+        "caminadaPopular": "Marcha popular"
+      },
+      "culturaPopular": {
+        "titol": "Cultura popular",
+        "festaMajor": "Fiesta mayor",
+        "trobadaCastellera": "Encuentro castellero",
+        "correfoc": "Correfoc",
+        "sardanes": "Baile de sardanas",
+        "trobadaGegants": "Encuentro de gigantes"
+      },
+      "espectacles": {
+        "titol": "Música y espectáculos",
+        "concert": "Concierto",
+        "teatre": "Teatro",
+        "dansa": "Danza",
+        "cinemaFresca": "Cine al aire libre"
+      },
+      "firesMercats": {
+        "titol": "Ferias y mercados",
+        "firaGastronomica": "Feria gastronómica",
+        "mercatSetmanal": "Mercado semanal",
+        "firaArtesania": "Feria de artesanía"
+      },
+      "divulgacio": {
+        "titol": "Divulgación",
+        "exposicio": "Exposición",
+        "xerrada": "Charla",
+        "visitaGuiada": "Visita guiada"
+      },
+      "nens": {
+        "titol": "Niños",
+        "titelles": "Títeres",
+        "pallassos": "Payasos",
+        "magia": "Magia",
+        "circ": "Circo",
+        "contacontes": "Cuentacuentos",
+        "teatreInfantil": "Teatro infantil",
+        "animacioInfantil": "Animación infantil",
+        "tallerInfantil": "Taller infantil",
+        "inflables": "Hinchables",
+        "festaEscuma": "Fiesta de la espuma"
+      }
     }
   },
   "quan": {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useFiltresStore } from '@/stores/filtres'
-import { TEMES, type Tema } from '@/data/categories'
+import type { Tema } from '@/data/categories'
 
 const filtres = useFiltresStore()
 
@@ -9,13 +9,25 @@ const filtres = useFiltresStore()
 // desktop els subtemes són sempre visibles (mirall de les comarques al TabOn).
 const expandits = ref(new Set<string>())
 
-// Color base per tema. Cada secció té el seu (barra recta i estats de selecció),
+// Desktop: almenys MIN_FILES files (el panell fa el mateix alt a Llocs i a
+// Agenda) i com a màxim MAX_COLUMNES columnes, amb els temes repartits per igual
+// entre les files (Llocs, 10 temes: 2 files de 5; Agenda, 6: 2 de 3).
+const MIN_FILES = 2
+const MAX_COLUMNES = 6
+const estilGraella = computed(() => {
+  const n = filtres.temes.length
+  const files = Math.max(MIN_FILES, Math.ceil(n / MAX_COLUMNES))
+  return { '--columnes': String(Math.max(1, Math.ceil(n / files))) }
+})
+
+// Color base per tema. Cada tema té el seu (barra recta i estats de selecció),
 // igual que cada província al panell On?. Els tons parcial/hover/vora es deriven
-// del base per CSS (color-mix), com les variables --prov-* del TabOn.
+// del base per CSS (color-mix), com les variables --prov-* del TabOn. Els temes
+// que surten a Llocs i a Agenda (Esports, Nens) hi comparteixen color i icona.
 const COLOR_TEMA: Record<string, string> = {
   esports: '#2b6cb0', // blau
   nens: '#d9701f', // taronja
-  culinari: '#b7472a', // terracota
+  // Llocs
   'aire-lliure': '#2c9a9a', // turquesa
   patrimoni: '#8a6a3a', // bronze
   natura: '#2f855a', // verd
@@ -24,6 +36,11 @@ const COLOR_TEMA: Record<string, string> = {
   emergencies: '#cf3430', // vermell
   administracio: '#5a5fd0', // indi
   justicia: '#7a4fb5', // violeta
+  // Agenda
+  'cultura-popular': '#a8323e', // carmí
+  espectacles: '#8e3a8c', // pruna
+  'fires-mercats': '#7c6f1d', // oliva
+  divulgacio: '#1f7a7a', // verd petroli
 }
 const COLOR_FALLBACK = '#2d6a2d'
 
@@ -42,12 +59,6 @@ const ICONA_TEMA: Record<string, string[]> = {
     'M15 12h.01',
     'M19.38 6.813A9 9 0 0 1 20.8 10.2a2 2 0 0 1 0 3.6 9 9 0 0 1-17.6 0 2 2 0 0 1 0-3.6A9 9 0 0 1 12 3c2 0 3.5 1.1 3.5 2.5s-.9 2.5-2 2.5c-.8 0-1.5-.4-1.5-1',
     'M9 12h.01',
-  ],
-  culinari: [
-    'm16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8',
-    'M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7',
-    'm2.1 21.8 6.4-6.3',
-    'm19 5-7 7',
   ],
   'aire-lliure': [
     'M2 4a2 2 0 1 0 4 0 2 2 0 1 0-4 0',
@@ -102,6 +113,37 @@ const ICONA_TEMA: Record<string, string[]> = {
     'm5 8 3 8a5 5 0 0 1-6 0zV7',
     'M7 21h10',
   ],
+  'cultura-popular': [
+    'M5.8 11.3 2 22l10.7-3.79',
+    'M4 3h.01',
+    'M22 8h.01',
+    'M15 2h.01',
+    'M22 20h.01',
+    'm22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10',
+    'm22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17',
+    'm11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7',
+    'M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z',
+  ],
+  espectacles: [
+    'M10 11h.01',
+    'M14 6h.01',
+    'M18 6h.01',
+    'M6.5 13.1h.01',
+    'M22 5c0 9-4 12-6 12s-6-3-6-12c0-2 2-3 6-3s6 1 6 3',
+    'M17.4 9.9c-.8.8-2 .8-2.8 0',
+    'M10.1 7.1C9 7.2 7.7 7.7 6 8.6c-3.5 2-4.7 3.9-3.7 5.6 4.5 7.8 9.5 8.4 11.2 7.4.9-.5 1.9-2.1 1.9-4.7',
+    'M9.1 16.5c.3-1.1 1.4-1.7 2.4-1.4',
+  ],
+  'fires-mercats': [
+    'M15 21v-5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5',
+    'M17.774 10.31a1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.451 0 1.12 1.12 0 0 0-1.548 0 2.5 2.5 0 0 1-3.452 0 1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.77-3.248l2.889-4.184A2 2 0 0 1 7 2h10a2 2 0 0 1 1.653.873l2.895 4.192a2.5 2.5 0 0 1-3.774 3.244',
+    'M4 10.95V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8.05',
+  ],
+  divulgacio: [
+    'M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5',
+    'M9 18h6',
+    'M10 22h4',
+  ],
 }
 
 function estilColumna(codi: string): Record<string, string> {
@@ -144,9 +186,9 @@ function comptador(tema: Tema): { sel: number; total: number } {
       </button>
     </div>
 
-    <div class="grid-temes">
+    <div class="grid-temes" :style="estilGraella">
       <div
-        v-for="tema in TEMES"
+        v-for="tema in filtres.temes"
         :key="tema.codi"
         class="columna-tema"
         :style="estilColumna(tema.codi)"
@@ -205,12 +247,13 @@ function comptador(tema: Tema): { sel: number; total: number } {
   overflow-y: auto;
 }
 
-/* Graella 6×2 (11 temes). A mòbil és una sola columna amb alçada natural
-   (align-items:start); a desktop les dues files tenen la mateixa alçada fixa i
-   cada cel·la scrolleja el seu propi contingut (vegeu la media query de 769px). */
+/* Graella amb les columnes que calcula estilGraella (--columnes). A mòbil és una
+   sola columna amb alçada natural (align-items:start); a desktop totes les files
+   tenen la mateixa alçada fixa i cada cel·la scrolleja el seu propi contingut
+   (vegeu la media query de 769px). */
 .grid-temes {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--columnes, 6), minmax(0, 1fr));
   gap: 18px;
   align-items: start;
 }

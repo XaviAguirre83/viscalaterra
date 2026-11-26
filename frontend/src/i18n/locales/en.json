@@ -119,7 +119,7 @@
       "tennis": "Tennis court",
       "patinatge": "Skating rink",
       "petanca": "Pétanque court",
-      "gimnas": "Gym",
+      "gimnasAireLliure": "Outdoor gym",
       "gimnasGeriatric": "Senior fitness area"
     },
     "nens": {
@@ -130,12 +130,6 @@
       "sorral": "Sandpit",
       "jocsAigua": "Water play area",
       "tirolina": "Zip line"
-    },
-    "culinari": {
-      "titol": "Food",
-      "mercatSetmanal": "Weekly market",
-      "firaGastronomica": "Food fair",
-      "foodTrucks": "Food trucks area"
     },
     "aireLliure": {
       "titol": "Outdoors",
@@ -212,6 +206,55 @@
       "tsjc": "High Court of Justice",
       "fiscalia": "Public prosecutor's office",
       "centrePenitenciari": "Prison"
+    },
+    "agenda": {
+      "esports": {
+        "titol": "Sports",
+        "partit": "Match",
+        "torneig": "Tournament",
+        "cursaPopular": "Fun run",
+        "caminadaPopular": "Community walk"
+      },
+      "culturaPopular": {
+        "titol": "Folk traditions",
+        "festaMajor": "Town festival",
+        "trobadaCastellera": "Human towers (castells)",
+        "correfoc": "Correfoc (fire run)",
+        "sardanes": "Sardana dancing",
+        "trobadaGegants": "Parade of giants"
+      },
+      "espectacles": {
+        "titol": "Music & shows",
+        "concert": "Concert",
+        "teatre": "Theatre",
+        "dansa": "Dance",
+        "cinemaFresca": "Open-air cinema"
+      },
+      "firesMercats": {
+        "titol": "Fairs & markets",
+        "firaGastronomica": "Food fair",
+        "mercatSetmanal": "Weekly market",
+        "firaArtesania": "Craft fair"
+      },
+      "divulgacio": {
+        "titol": "Learning",
+        "exposicio": "Exhibition",
+        "xerrada": "Talk",
+        "visitaGuiada": "Guided tour"
+      },
+      "nens": {
+        "titol": "Kids",
+        "titelles": "Puppet show",
+        "pallassos": "Clowns",
+        "magia": "Magic show",
+        "circ": "Circus",
+        "contacontes": "Storytelling",
+        "teatreInfantil": "Children's theatre",
+        "animacioInfantil": "Kids' entertainment",
+        "tallerInfantil": "Kids' workshop",
+        "inflables": "Bouncy castles",
+        "festaEscuma": "Foam party"
+      }
     }
   },
   "quan": {
