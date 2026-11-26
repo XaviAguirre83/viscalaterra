@@ -1,6 +1,6 @@
 # Privacy policy
 
-Last updated: 20 November 2026
+Last updated: 26 November 2026
 
 ## 1. Controller
 
@@ -37,7 +37,7 @@ We do not profile you or make automated decisions with legal or similarly signif
 
 ## 3. Who we share data with
 
-- **Hosting:** OVH SAS, in France (European Union), as processor. [[PENDENT: add Hetzner once the production server is contracted.]]
+- **Hosting:** OVH SAS, in France (European Union), as processor.
 - **Email:** the messages you send us are stored by Proton AG, in Switzerland, as processor. Switzerland has an adequacy decision from the European Commission.
 - **Google:** if you press “Continue with Google” in the sign-in window, your browser loads Google's identity service from Google's servers, which receive your IP address and technical data about your browser and may use their own cookies (see the [Cookie policy](/legal/cookies)). If you sign in, Google sends us the data in section 2. Google Ireland Limited processes this data as controller, under its [privacy policy](https://policies.google.com/privacy).
 - **Map:** map images are downloaded from the servers of the Institut Cartogràfic i Geològic de Catalunya (ICGC), which receive your IP address.
@@ -47,7 +47,7 @@ Apart from these cases, we will only disclose your data where required by law.
 ## 4. How long we keep it
 
 - **Account:** for as long as you have it. If you ask us to delete it, we will do so within one month at most.
-- **Backups:** [[PENDENT: period, once backups are set up.]] Deleted data may remain in backups until they expire.
+- **Backups:** None are made at the moment.
 - **Invitations:** until you create your account or we withdraw the invitation. [[PENDENT: not yet deleted automatically when the account is created.]]
 - **Messages:** for as long as needed to reply and, if you exercise a right, for as long as needed to show that we dealt with it.
 - **IP address:** one minute, in memory only.

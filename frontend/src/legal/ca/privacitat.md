@@ -1,6 +1,6 @@
 # Política de privacitat
 
-Darrera actualització: 20 de novembre del 2026
+Darrera actualització: 26 de novembre del 2026
 
 ## 1. Responsable
 
@@ -37,7 +37,7 @@ No elaborem perfils ni prenem decisions automatitzades amb efectes jurídics o s
 
 ## 3. Amb qui es comparteixen les dades
 
-- **Allotjament:** OVH SAS, a França (Unió Europea), com a encarregat del tractament. [[PENDENT: afegir Hetzner quan es contracti el servidor de producció.]]
+- **Allotjament:** OVH SAS, a França (Unió Europea), com a encarregat del tractament.
 - **Correu:** els missatges que ens envies es desen a Proton AG, a Suïssa, com a encarregat del tractament. Suïssa té una decisió d'adequació de la Comissió Europea.
 - **Google:** si prems «Continua amb Google» a la finestra d'accés, el navegador carrega el servei d'identitat de Google des dels seus servidors, que reben la teva adreça IP i dades tècniques del navegador i poden fer servir les seves pròpies galetes (consulta la [Política de galetes](/legal/cookies)). Si hi entres, Google ens envia les dades de l'apartat 2. Google Ireland Limited tracta aquestes dades com a responsable, segons la seva [política de privadesa](https://policies.google.com/privacy).
 - **Mapa:** les imatges del mapa es descarreguen dels servidors de l'Institut Cartogràfic i Geològic de Catalunya (ICGC), que reben la teva adreça IP.
@@ -47,7 +47,7 @@ Fora d'aquests casos, només comunicarem les teves dades si ho exigeix una llei.
 ## 4. Quant de temps les guardem
 
 - **Compte:** mentre el tinguis. Si demanes esborrar-lo, l'esborrem en el termini màxim d'un mes.
-- **Còpies de seguretat:** [[PENDENT: termini, quan es configurin les còpies.]] Les dades esborrades poden romandre a les còpies fins que caduquin.
+- **Còpies de seguretat:** Ara mateix no se'n fan.
 - **Invitacions:** fins que creïs el compte o retirem la invitació. [[PENDENT: encara no s'esborren soles en crear el compte.]]
 - **Missatges:** el temps necessari per respondre't i, si exerceixes un dret, mentre calgui per demostrar que l'hem atès.
 - **Adreça IP:** un minut, només en memòria.
